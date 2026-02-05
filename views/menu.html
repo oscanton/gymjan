@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Semanal | myfitpwa</title>
+    <link rel="stylesheet" href="../css/app.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#0f2027">
+</head>
+<body>
+
+    <div class="layout-container">
+        <a href="../index.html" class="btn-back">← Inicio</a>
+        <h1>Menú Semanal</h1>
+    </div>
+
+    <div id="menu-container" class="table-scroller layout-container">
+        <table class="menu-table">
+            <thead>
+                <tr>
+                    <th>Día</th>
+                    <th>Desayuno</th>
+                    <th>Comida</th>
+                    <th>Cena</th>
+                    <th>Total Día</th>
+                </tr>
+            </thead>
+            <tbody id="menu-body"></tbody>
+        </table>
+    </div>
+
+    <!-- Core -->
+    <script src="../js/core/config.js"></script>
+    <script src="../js/core/storage.js"></script>
+    <script src="../js/core/ui.js"></script>
+    <script src="../js/core/date.js"></script>
+    <script src="../js/core/menu.js"></script>
+    <script src="../js/core/stores.js"></script>
+    <script defer src="../js/core/pwa.js"></script>
+
+    <!-- Page -->
+    <script src="../js/pages/menu.page.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>
