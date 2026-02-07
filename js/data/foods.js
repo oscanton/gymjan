@@ -1,4 +1,4 @@
-﻿// Convenciones:
+// Convenciones:
 // - nutritionPer100: por 100 g (sodium en mg; resto en g).
 // - nutritionPerUnit: para unit="ud".
 // - processed: 0–10 (0 crudo/directo; 10 ultraprocesado).

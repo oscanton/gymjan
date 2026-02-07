@@ -8,18 +8,19 @@ function renderControlPage() {
 
     container.classList.add('layout-container');
 
-    ensureActivityCatalog()
+    ensureRoutines()
         .then(() => initControlPage(container))
         .catch(() => {
-            console.warn('No se pudo cargar actividad.js');
-            window.TIPOS_ACTIVIDAD = [{ value: 'descanso', label: 'Descanso' }];
+            console.warn('No se pudieron cargar rutinas');
             initControlPage(container);
         });
 }
 
-function ensureActivityCatalog() {
-    if (typeof TIPOS_ACTIVIDAD !== 'undefined') return Promise.resolve();
-    return UI.loadScript('js/data/actividad.js', 'activity-data');
+function ensureRoutines() {
+    if (typeof Routines === 'undefined') {
+        return UI.loadScript('js/core/routines.js').then(() => Routines.ensureLoaded());
+    }
+    return Routines.ensureLoaded();
 }
 
 function initControlPage(container) {
@@ -45,7 +46,8 @@ function initControlPage(container) {
     // Actividad por defecto: La del plan semanal para hoy
     const todayIndex = DateUtils.getTodayIndex();
     const weeklyPlan = ActivityStore.getWeeklyPlan();
-    const defaultActivity = weeklyPlan[todayIndex] || 'descanso';
+    const fallbackId = (typeof DEFAULT_RUTINA_ID !== 'undefined') ? DEFAULT_RUTINA_ID : 'descanso';
+    const defaultActivity = weeklyPlan[todayIndex] || fallbackId;
 
     const activityOptions = getActivityOptions(defaultActivity);
 
@@ -142,15 +144,19 @@ function initControlPage(container) {
 }
 
 function getActivityOptions(defaultActivity) {
-    return TIPOS_ACTIVIDAD.map(opt =>
-        `<option value="${opt.value}" ${opt.value === defaultActivity ? 'selected' : ''}>${opt.label}</option>`
+    const routines = (typeof Routines !== 'undefined') ? Routines.getAll() : [];
+    if (!routines.length) {
+        return `<option value="${defaultActivity}">${defaultActivity}</option>`;
+    }
+    return routines.map(opt =>
+        `<option value="${opt.id}" ${opt.id === defaultActivity ? 'selected' : ''}>${opt.nombre}</option>`
     ).join('');
 }
 
 function getActivityLabel(activityKey) {
-    const actObj = (typeof TIPOS_ACTIVIDAD !== 'undefined' ? TIPOS_ACTIVIDAD : [])
-        .find(t => t.value === activityKey);
-    return actObj ? actObj.label : (activityKey || '-');
+    const actObj = (typeof Routines !== 'undefined' ? Routines.getAll() : [])
+        .find(t => t.id === activityKey);
+    return actObj ? actObj.nombre : (activityKey || '-');
 }
 
 function renderHistoryTable(history) {

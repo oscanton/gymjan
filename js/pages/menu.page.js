@@ -1,4 +1,4 @@
-/* =========================================
+﻿/* =========================================
    pages/menu.page.js - MENÚ SEMANAL
    ========================================= */
 
@@ -15,6 +15,10 @@ function renderMenuPage() {
     }
 
     let currentFile = MenuStore.getSelectedFile();
+    if (!AVAILABLE_MENUS.some(m => m.file === currentFile)) {
+        currentFile = AVAILABLE_MENUS[0].file;
+        MenuStore.setSelectedFile(currentFile);
+    }
 
     const loadMenuData = (fileName) => {
         window.MENU_DATA = undefined;
@@ -61,26 +65,8 @@ function renderMenuPage() {
             }
         };
 
-        const wideBtn = document.createElement('button');
-        wideBtn.className = 'btn-back';
-        wideBtn.innerHTML = '↔️ Ancho';
-
-        let isWideMode = false;
-        wideBtn.onclick = () => {
-            isWideMode = !isWideMode;
-            wideBtn.classList.toggle('btn-back--active', isWideMode);
-            if (isWideMode) {
-                container.classList.remove('layout-container');
-                wideBtn.innerHTML = '📱 Normal';
-            } else {
-                container.classList.add('layout-container');
-                wideBtn.innerHTML = '↔️ Ancho';
-            }
-        };
-
         btnContainer.appendChild(editBtn);
         btnContainer.appendChild(resetBtn);
-        btnContainer.appendChild(wideBtn);
         container.after(btnContainer);
     }
 
@@ -179,7 +165,11 @@ function renderMenuPage() {
         const meals = ['desayuno', 'comida', 'cena'];
         const mealLabels = { 'desayuno': 'Desayuno', 'comida': 'Comida', 'cena': 'Cena' };
 
-        const activeMeal = MenuUtils.getActiveMealByHour();
+        const currentHour = new Date().getHours();
+        let activeMeal = null;
+        if (currentHour >= 6 && currentHour < 12) activeMeal = 'desayuno';
+        else if (currentHour >= 12 && currentHour < 18) activeMeal = 'comida';
+        else if (currentHour >= 18) activeMeal = 'cena';
 
         try {
             meals.forEach(mealKey => {
@@ -190,7 +180,7 @@ function renderMenuPage() {
 
                 currentData.forEach((day, dayIndex) => {
                     const mealData = day[mealKey];
-                    const nut = MenuUtils.calcMealMacros(mealData.items);
+                    const nut = Formulas.calculateMeal(mealData.items);
 
                     html += `
                         <td>
@@ -233,7 +223,14 @@ function renderMenuPage() {
             let totalsHtml = `<td class="menu-row-header">Totales</td>`;
 
             currentData.forEach((day, dayIndex) => {
-                const dayTotals = MenuUtils.calcDayTotals(day);
+                const dayTotals = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+                meals.forEach(mk => {
+                    const n = Formulas.calculateMeal(day[mk].items);
+                    dayTotals.kcal += n.kcal;
+                    dayTotals.protein += n.protein;
+                    dayTotals.carbs += n.carbs;
+                    dayTotals.fat += n.fat;
+                });
 
                 const target = storedTargets[day.dia];
                 totalsHtml += `
@@ -245,7 +242,16 @@ function renderMenuPage() {
             tableBody.appendChild(totalsRow);
 
             setTimeout(() => {
-                MenuUtils.scrollToToday(table, todayIndex);
+                if (table && table.parentElement) {
+                    const scroller = table.parentElement;
+                    const targetTh = table.querySelectorAll('thead th')[todayIndex + 1];
+                    const stickyTh = table.querySelector('thead th');
+
+                    if (targetTh && stickyTh) {
+                        const scrollLeft = targetTh.offsetLeft - stickyTh.offsetWidth;
+                        scroller.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                    }
+                }
             }, 100);
 
         } catch (error) {
@@ -313,7 +319,7 @@ function renderMenuPage() {
                 MenuStore.saveMenuData(currentFile, window.MENU_DATA);
 
                 const mealItems = window.MENU_DATA[dayIndex][mealKey].items;
-                const mealNut = MenuUtils.calcMealMacros(mealItems);
+                const mealNut = Formulas.calculateMeal(mealItems);
                 const mealMacroDiv = document.getElementById(`macros-${dayIndex}-${mealKey}`);
                 if (mealMacroDiv) {
                     mealMacroDiv.innerHTML = `
@@ -325,7 +331,14 @@ function renderMenuPage() {
                 }
 
                 const dayData = window.MENU_DATA[dayIndex];
-                const dayTotals = MenuUtils.calcDayTotals(dayData);
+                const dayTotals = { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+                ['desayuno', 'comida', 'cena'].forEach(mk => {
+                    const n = Formulas.calculateMeal(dayData[mk].items);
+                    dayTotals.kcal += n.kcal;
+                    dayTotals.protein += n.protein;
+                    dayTotals.carbs += n.carbs;
+                    dayTotals.fat += n.fat;
+                });
 
                 const storedTargets = DB.get('daily_nutrition_targets', {});
                 const target = storedTargets[dayData.dia];
@@ -340,7 +353,6 @@ function renderMenuPage() {
     const loadDependencies = () => {
         const promises = [];
         if (typeof Formulas === 'undefined') promises.push(UI.loadScript('js/core/formulas.js'));
-        if (typeof MenuUtils === 'undefined') promises.push(UI.loadScript('js/core/menu.js'));
         if (typeof FOODS === 'undefined') promises.push(UI.loadScript('js/data/foods.js'));
         if (typeof DAILY_NUTRITION_TARGETS === 'undefined') promises.push(UI.loadScript('js/data/targets.js'));
 

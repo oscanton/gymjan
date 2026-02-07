@@ -132,8 +132,11 @@
     appearance: none;
     -webkit-appearance: none;
     cursor: pointer;
-    padding-right: 12px;
-    background-image: none;
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
 }
 
 .input-select option {
@@ -143,15 +146,17 @@
 }
 
 .input-select--sm {
-    padding: 6px 8px;
+    padding: 6px 28px 6px 8px;
     font-size: 0.85rem;
     border-radius: var(--ui-radius-sm);
+    background-size: 14px;
+    background-position: right 8px center;
 }
 
 .input-select--header {
     width: auto;
     font-size: 1rem;
-    padding: 6px 16px;
+    padding: 6px 32px 6px 16px;
     background-color: var(--glass-light);
     border-radius: 20px;
     border: 1px solid transparent;
@@ -232,7 +237,7 @@ input[type=number]::-webkit-outer-spin-button {
 .row-item__quantity { font-weight: 500; opacity: 0.8; }
 .row-item__label-mini { font-size: 0.85rem; text-transform: uppercase; opacity: 0.9; font-weight: 600; }
 
-/* --- 5. TABLES (MENU) --- */
+/* --- 5. TABLES (MENU / ACTIVITY) --- */
 
 .table-scroller {
     overflow-x: auto;
@@ -242,7 +247,8 @@ input[type=number]::-webkit-outer-spin-button {
     position: relative; /* Para el botón de edición */
 }
 
-.menu-table {
+.menu-table,
+.activity-table {
     width: 100%;
     min-width: 600px;
     border-collapse: collapse;
@@ -250,7 +256,9 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .menu-table th,
-.menu-table td {
+.menu-table td,
+.activity-table th,
+.activity-table td {
     padding: var(--space-md);
     border-bottom: 1px solid var(--border-light);
     text-align: left;
@@ -258,7 +266,8 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /* Sticky First Column */
-.menu-table .menu-row-header {
+.menu-table .menu-row-header,
+.activity-table .activity-row-header {
     color: var(--color-primary);
     font-size: 1rem;
     font-weight: normal;
@@ -273,7 +282,8 @@ input[type=number]::-webkit-outer-spin-button {
     box-shadow: 4px 0 10px rgba(0, 0, 0, 0.3);
 }
 
-.menu-table td.menu-row-header {
+.menu-table td.menu-row-header,
+.activity-table td.activity-row-header {
     writing-mode: vertical-rl;
     transform: rotate(180deg);
     text-align: center;
@@ -283,24 +293,30 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .menu-table .menu-row-header.text-status--ok,
-.menu-table th.text-status--ok { font-weight: bold; }
+.menu-table th.text-status--ok,
+.activity-table .activity-row-header.text-status--ok,
+.activity-table th.text-status--ok { font-weight: bold; }
 
-.menu-table th {
+.menu-table th,
+.activity-table th {
     color: var(--color-primary);
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     min-width: 320px;
     text-align: center;
     font-weight: normal;
 }
 
-.menu-table td {
+.menu-table td,
+.activity-table td {
     min-width: 320px;
 }
 
 .menu-header-empty { padding: var(--space-xs); }
 
-.menu-table td:nth-child(even) { background: var(--glass-faint); }
-.menu-table tbody tr:last-child td { border-bottom: none; }
+.menu-table td:nth-child(even),
+.activity-table td:nth-child(even) { background: var(--glass-faint); }
+.menu-table tbody tr:last-child td,
+.activity-table tbody tr:last-child td { border-bottom: none; }
 
 /* Meal Items */
 .meal-list { 
@@ -351,32 +367,89 @@ input[type=number]::-webkit-outer-spin-button {
 .totals-pill__label { opacity: 0.8; }
 
 /* --- 6. MODULES: ACTIVITY --- */
-.activity-card {
-    border-radius: var(--ui-radius-md);
-    padding: var(--space-lg);
+.activity-day-header {
     display: flex;
     flex-direction: column;
-    gap: var(--space-xs);
-}
-
-.activity-card--active {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 15px rgba(var(--color-primary-rgb), 0.15);
-}
-
-.activity-header { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--color-primary); opacity: 0.9; }
-.activity-main { font-size: 1.1rem; font-weight: 500; }
-.activity-exercises { font-size: 0.9rem; margin-top: 4px; opacity: 0.9; }
-.activity-desc { font-size: 0.85rem; color: var(--color-text-muted); font-style: italic; margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--border-light); }
-
-.activity-stats {
-    display: flex;
-    flex-wrap: wrap;
     gap: 6px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-light);
+    align-items: center;
 }
+
+.activity-day-title { font-size: 1rem; }
+
+.activity-routine {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.activity-routine__meta {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.activity-exercise {
+    border: 1px solid var(--border-light);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--ui-radius-sm);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.activity-exercise__name {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.activity-exercise__desc {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.activity-exercise__tech {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.activity-exercise__row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    align-items: center;
+    font-size: 0.75rem;
+}
+
+.activity-exercise__pill {
+    background: rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+}
+
+.activity-exercise__weight {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.activity-exercise__weight input {
+    width: 60px;
+    padding: 4px 6px;
+    text-align: right;
+}
+
+.activity-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.activity-totals .stat-pill { font-size: 0.85rem; }
+
 
 .stat-pill {
     background: rgba(255,255,255,0.1);

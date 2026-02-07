@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Actividad | gymjan</title>
+    <title>Actividad | myfitpwa</title>
     <link rel="stylesheet" href="../css/app.css">
     <link rel="stylesheet" href="../css/components.css">
     <link rel="manifest" href="../manifest.json">
@@ -13,10 +13,14 @@
 
     <div class="layout-container">
         <a href="../index.html" class="btn-back">← Inicio</a>
+        <h1>Plan de Actividad</h1>
+    </div>
 
-        <h1>Tu Plan de Actividad</h1>
-
-        <div id="actividad-container" class="stack-vertical"></div>
+    <div id="actividad-container" class="table-scroller">
+        <table class="activity-table">
+            <thead></thead>
+            <tbody id="actividad-body"></tbody>
+        </table>
     </div>
 
     <!-- Core -->
@@ -24,8 +28,8 @@
     <script src="../js/core/storage.js"></script>
     <script src="../js/core/ui.js"></script>
     <script src="../js/core/date.js"></script>
-    <script src="../js/core/targets.js"></script>
     <script src="../js/core/stores.js"></script>
+    <script src="../js/core/routines.js"></script>
 
     <!-- Page -->
     <script src="../js/pages/actividad.page.js"></script>
