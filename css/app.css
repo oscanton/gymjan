@@ -1,0 +1,277 @@
+﻿/* =========================================
+   app.css - CORE & VARIABLES
+   ========================================= */
+
+:root {
+    /* --- 1. Paleta Base --- */
+    --color-surface-base: #0f2027;
+    --color-surface-strong: #203a43;
+    --color-surface-deep: #2c5364;
+    --color-bg-gradient: linear-gradient(180deg, var(--color-surface-base), var(--color-surface-strong), var(--color-surface-deep));
+    --color-bg-sticky: var(--color-surface-strong); /* Fondo sÃ³lido para elementos fijos */
+    --color-text-main:   #ffffff;
+    --color-text-muted:  rgba(255, 255, 255, 0.7);
+    --color-text-inverse: #1a1a1a; /* Texto oscuro sobre colores brillantes */
+    
+    /* --- 2. Colores de Acento --- */
+    --color-primary-rgb: 255, 209, 102; /* #ffd166 */
+    --color-primary:     rgb(var(--color-primary-rgb));
+
+    --color-danger-rgb:  239, 71, 111;  /* #ef476f */
+    --color-danger:      rgb(var(--color-danger-rgb));
+
+    --color-success-rgb: 76, 175, 80;   /* #4caf50 */
+    --color-success:     rgb(var(--color-success-rgb));
+
+    --color-warning-rgb: 255, 152, 0;   /* #ff9800 */
+    --color-warning:     rgb(var(--color-warning-rgb));
+
+    --color-info-rgb:    79, 195, 247;  /* #4fc3f7 */
+    --color-info:        rgb(var(--color-info-rgb));
+
+    --color-critical-rgb: 183, 28, 28;  /* #b71c1c */
+    --color-critical:     rgb(var(--color-critical-rgb));
+
+    /* --- 3. UI: Fondos Glassmorphism --- */
+    /* Usamos niveles de opacidad para jerarquÃ­a */
+    --glass-light: rgba(255, 255, 255, 0.1);  /* Contenedores principales */
+    --glass-medium: rgba(255, 255, 255, 0.06); /* Celdas impares */
+    --glass-dark:  rgba(0, 0, 0, 0.25);       /* Fondos oscuros/contrastes */
+    --glass-faint: rgba(255, 255, 255, 0.03); /* Fondos muy sutiles */
+
+    /* Bordes */
+    --border-light: rgba(255, 255, 255, 0.1);
+    --border-faint: rgba(255, 255, 255, 0.05);
+    --surface-white-10: rgba(255, 255, 255, 0.1);
+    --surface-white-15: rgba(255, 255, 255, 0.15);
+    --surface-white-20: rgba(255, 255, 255, 0.2);
+    --surface-white-25: rgba(255, 255, 255, 0.25);
+    --surface-white-30: rgba(255, 255, 255, 0.3);
+    --surface-white-50: rgba(255, 255, 255, 0.5);
+    --surface-black-20: rgba(0, 0, 0, 0.2);
+    --surface-black-30: rgba(0, 0, 0, 0.3);
+    --surface-black-40: rgba(0, 0, 0, 0.4);
+    --surface-black-50: rgba(0, 0, 0, 0.5);
+    --overlay-backdrop: rgba(0, 0, 0, 0.6);
+    
+    /* --- 4. UI: Elementos SemÃ¡nticos --- */
+    --ui-radius-lg: 18px;
+    --ui-radius-md: 14px;
+    --ui-radius-sm: 10px;
+    --ui-radius-table: 12px;
+    --ui-radius-pill: 20px;
+    
+    --ui-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    --ui-modal-gradient: linear-gradient(135deg, var(--color-surface-strong), var(--color-surface-deep));
+    --ui-shadow-primary: 0 4px 15px rgba(var(--color-primary-rgb), 0.3);
+    --ui-shadow-sticky: 4px 0 10px var(--surface-black-30);
+    --ui-shadow-sticky-inverse: -4px 0 10px var(--surface-black-30);
+    --ui-shadow-modal: 0 25px 50px -12px var(--surface-black-50);
+    --ui-focus-ring-md: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
+    --ui-focus-ring-sm: 0 0 0 2px rgba(var(--color-primary-rgb), 0.1);
+    --ui-transition-fast: 0.2s;
+    --ui-transition-press: 0.1s;
+    --ui-control-height: 31px;
+    
+    /* Highlight para filas activas o botones principales */
+    --ui-highlight-gradient: linear-gradient(135deg, var(--color-primary), var(--color-danger));
+
+    /* --- 5. Espaciado --- */
+    --space-xs: 6px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --page-gap: var(--space-lg);
+
+    /* --- 6. TipografÃ­a --- */
+    --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-size-2xs: 0.7rem;
+    --font-size-caption: 0.8rem;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.85rem;
+    --font-size-body: 0.9rem;
+    --font-size-md: 0.95rem;
+    --font-size-lg: 1.1rem;
+    --font-size-text-lg: 1.2rem;
+    --font-size-value: 1.4rem;
+    --font-size-xl: 1.5rem;
+    --font-size-h1: 1.6rem;
+    --line-height-tight: 1.2;
+
+    /* --- 7. Layout scales --- */
+    --table-min-width-sm: 240px;
+    --table-min-width-md: 320px;
+    --table-min-width-lg: 600px;
+    --table-min-width-xl: 900px;
+    --column-min-width-md: 180px;
+}
+
+/* =========================================
+   RESET & BASE
+   ========================================= */
+
+* {
+    box-sizing: border-box;
+    /* Mejora el tap highlight en mÃ³viles */
+    -webkit-tap-highlight-color: transparent; 
+}
+
+body {
+    margin: 0;
+    padding: var(--space-sm);
+    min-height: 100vh;
+    
+    font-family: var(--font-stack);
+    background: var(--color-bg-gradient);
+    background-attachment: fixed; /* Evita que el fondo se mueva al hacer scroll */
+    color: var(--color-text-main);
+    
+    /* Comportamiento PWA nativo */
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Utilidades Globales */
+.text-center { text-align: center; }
+.w-100 { width: 100%; }
+.w-auto { width: auto; }
+.mt-lg { margin-top: var(--space-lg); }
+.my-sm { margin-top: var(--space-sm); margin-bottom: var(--space-sm); }
+.mt-auto { margin-top: auto; }
+.mb-sm { margin-bottom: var(--space-sm); }
+.opacity-70 { opacity: 0.7; }
+.p-lg { padding: var(--space-lg); }
+
+/* =========================================
+   UI: SKINS (GLASSMORPHISM)
+   ========================================= */
+.glass-card {
+    background: var(--glass-light);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-light);
+    border-radius: var(--ui-radius-lg);
+    box-shadow: var(--ui-shadow);
+}
+
+/* =========================================
+   TIPOGRAFÃA GLOBAL
+   ========================================= */
+
+h1 {
+    text-align: center;
+    margin: var(--space-lg) 0;
+    font-size: var(--font-size-h1);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.menu-label {
+    font-size: 0.6em;
+    color: var(--color-primary);
+    vertical-align: middle;
+    margin-left: var(--space-sm);
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+h2 {
+    margin: var(--space-lg) 0 var(--space-sm);
+    font-size: var(--font-size-lg);
+    color: var(--color-primary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Clases de TipografÃ­a EstÃ¡ndar */
+.text-label {
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.text-value {
+    font-size: var(--font-size-value);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--color-text-main);
+}
+
+.text-lg { font-size: var(--font-size-text-lg); font-weight: 600; }
+.text-sm { font-size: var(--font-size-sm); }
+.text-xs { font-size: var(--font-size-xs); }
+.text-muted { color: var(--color-text-muted); }
+.text-primary { color: var(--color-primary); }
+
+.text-status--ok { color: var(--color-success); font-weight: bold; }
+.text-status--warning { color: var(--color-warning); font-weight: bold; }
+.text-status--danger { color: var(--color-danger); font-weight: bold; }
+
+/* Utilidades de Color (Movidas desde components.css) */
+.color-blue { color: var(--color-info); }
+.color-success { color: var(--color-success); }
+.color-warning { color: var(--color-warning); }
+.color-danger { color: var(--color-danger); }
+.color-critical { color: var(--color-critical); }
+
+/* =========================================
+   LAYOUT UTILS
+   ========================================= */
+
+/* Para centrar contenido (usado en index.html) */
+.layout-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* Contenedor principal para las vistas */
+.layout-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.page-header {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: var(--space-lg) var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.page-header h1 { margin: 0; }
+
+.page-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--page-gap);
+    width: 100%;
+}
+
+@media (min-width: 700px) {
+    body { padding: var(--space-md); }
+    .page-header { padding: var(--space-xl); }
+}
+
+@media (min-width: 1100px) {
+    body { padding: var(--space-lg); }
+    :root { --page-gap: var(--space-xl); }
+}
+
+/* Stack vertical con separaciÃ³n (usado en actividad.html) */
+.stack-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    width: 100%;
+}
+
+

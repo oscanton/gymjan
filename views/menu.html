@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Semanal | gymjan</title>
+    <link rel="stylesheet" href="../css/app.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#0f2027">
+</head>
+<body>
+
+    <div class="page-header">
+        <a href="../index.html" class="btn-back">← Inicio</a>
+        <h1>Menú Semanal</h1>
+    </div>
+
+    <main class="page-content">
+        <div id="menu-container" class="table-scroller">
+            <table class="menu-table">
+                <thead></thead>
+                <tbody id="menu-body"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Core -->
+    <script src="../js/core/config.js"></script>
+    <script src="../js/core/storage.js"></script>
+    <script src="../js/core/ui.js"></script>
+    <script src="../js/core/date.js"></script>
+    <script src="../js/core/stores.js"></script>
+    <script defer src="../js/core/pwa.js"></script>
+
+    <!-- Page -->
+    <script src="../js/pages/menu.page.js"></script>
+    <script src="../js/app.js"></script>
+</body>
+</html>
