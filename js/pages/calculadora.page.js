@@ -45,6 +45,11 @@ function renderCalculatorPage() {
 
 function initCalculator(container) {
     const getMacroContextForRoutine = (routineId) => Targets.getMacroContext(routineId);
+    const getObjectiveDescription = (key) => (
+        (typeof Targets.getObjectiveDescription === 'function')
+            ? Targets.getObjectiveDescription(key)
+            : ''
+    );
 
     const formatActivity = (key) => {
         if (typeof Routines !== 'undefined') {
@@ -155,15 +160,16 @@ function initCalculator(container) {
     `;
 
     const ADJUSTMENT_ROWS = [
-        { key: 'kcal', icon: '🔥', label: 'Energía', rule: () => 'Objetivo: 1,2 x BMR', adjustmentSource: 'macro', adjustmentKey: 'kcal' },
-        { key: 'p', icon: '🥩', label: 'Proteína', rule: () => `Objetivo: (Kcals x ${formatRuleFactor(reposoMacroRatios.p)}) / 4`, adjustmentSource: 'macro', adjustmentKey: 'p' },
-        { key: 'c', icon: '🍚', label: 'Carbo H', rule: () => `Objetivo: (Kcals x ${formatRuleFactor(reposoMacroRatios.c)}) / 4`, adjustmentSource: 'macro', adjustmentKey: 'c' },
-        { key: 'f', icon: '🥑', label: 'Grasas', rule: () => `Objetivo: (Kcals x ${formatRuleFactor(reposoMacroRatios.f)}) / 9`, adjustmentSource: 'macro', adjustmentKey: 'f' },
+        { key: 'kcal', icon: '🔥', label: 'Energía', rule: () => 'Objetivo: 1,2 x BMR', description: getObjectiveDescription('kcal'), adjustmentSource: 'macro', adjustmentKey: 'kcal' },
+        { key: 'p', icon: '🥩', label: 'Proteína', rule: () => `Objetivo: (Kcals x ${formatRuleFactor(reposoMacroRatios.p)}) / 4`, description: getObjectiveDescription('p'), adjustmentSource: 'macro', adjustmentKey: 'p' },
+        { key: 'c', icon: '🍚', label: 'Carbo H', rule: () => `Objetivo: (Kcals x ${formatRuleFactor(reposoMacroRatios.c)}) / 4`, description: getObjectiveDescription('c'), adjustmentSource: 'macro', adjustmentKey: 'c' },
+        { key: 'f', icon: '🥑', label: 'Grasas', rule: () => `Objetivo: (Kcals x ${formatRuleFactor(reposoMacroRatios.f)}) / 9`, description: getObjectiveDescription('f'), adjustmentSource: 'macro', adjustmentKey: 'f' },
         {
             key: 'salt',
             icon: '🧂',
             label: 'Sal',
             rule: () => `Máx: ${formatRuleValue(defaultSecondaryTargets.saltMaxG, 2)}g / día`,
+            description: getObjectiveDescription('salt'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'saltMaxG'
         },
@@ -172,6 +178,7 @@ function initCalculator(container) {
             icon: '🌾',
             label: 'Fibra',
             rule: () => `Mín: ${formatRuleValue(defaultSecondaryTargets.fiberPer1000Kcal, 1)}g / 1000kcals`,
+            description: getObjectiveDescription('fiber'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'fiberPer1000Kcal'
         },
@@ -180,6 +187,7 @@ function initCalculator(container) {
             icon: '🍬',
             label: 'Azúcar',
             rule: () => `Máximo: ${formatRuleValue(defaultSecondaryTargets.sugarMaxPctKcal * 100, 1)}% kcals`,
+            description: getObjectiveDescription('sugar'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'sugarMaxPctKcal'
         },
@@ -188,6 +196,7 @@ function initCalculator(container) {
             icon: '🧈',
             label: 'Grasa sat.',
             rule: () => `Máximo: ${formatRuleValue(defaultSecondaryTargets.satFatMaxPctKcal * 100, 1)}% kcals`,
+            description: getObjectiveDescription('saturatedFat'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'satFatMaxPctKcal'
         },
@@ -196,6 +205,7 @@ function initCalculator(container) {
             icon: '🏭',
             label: 'Procesado',
             rule: () => `Máximo: ${formatRuleValue(defaultSecondaryTargets.processingMaxScore, 1)}/10`,
+            description: getObjectiveDescription('processing'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'processingMaxScore'
         }
@@ -222,7 +232,7 @@ function initCalculator(container) {
     );
 
     adjustmentsCard.innerHTML = `
-        <h2>OBJETIVOS GENERALES EN REPOSO</h2>
+        <h2>OBJETIVOS GENERALES (EN REPOSO)</h2>
         <div class="adjustments-table-wrap">
             <table class="adjustments-table">
                 <thead>
@@ -262,7 +272,7 @@ function initCalculator(container) {
     const weeklyGoalsCard = document.createElement('div');
     weeklyGoalsCard.className = 'glass-card card mt-lg';
     weeklyGoalsCard.innerHTML = `
-        <h2>OBJETIVOS DIARIOS CON ACTIVIDAD</h2>
+        <h2>OBJETIVOS DIARIOS</h2>
         <div class="table-scroller mt-sm">
             <table id="daily-goals-table" class="goals-table">
                 <thead id="daily-goals-head"></thead>
@@ -373,7 +383,14 @@ function initCalculator(container) {
         UI.showModal({
             id: 'rule-info-modal',
             titleHtml: `<h3 class="modal-title">${row.label}</h3>`,
-            bodyHtml: `<p class="text-muted">${row.rule()}</p>`
+            bodyHtml: `
+                <div class="text-sm">
+                    <div class="text-label">C&aacute;lculo</div>
+                    <p class="text-muted">${row.rule()}</p>
+                    <div class="text-label">Descripci&oacute;n</div>
+                    <p class="text-muted">${row.description || '-'}</p>
+                </div>
+            `
         });
     };
 
@@ -493,5 +510,4 @@ function initCalculator(container) {
 
     updateAndCalculate();
 }
-
 

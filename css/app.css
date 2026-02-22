@@ -100,8 +100,8 @@
     --line-height-tight: 1.2;
 
     /* --- 7. Layout scales --- */
-    --table-min-width-sm: 240px;
-    --table-min-width-md: 320px;
+    --table-min-width-sm: 260px;
+    --table-min-width-md: 340px;
     --table-min-width-lg: 600px;
     --table-min-width-xl: 900px;
     --column-min-width-md: 180px;
