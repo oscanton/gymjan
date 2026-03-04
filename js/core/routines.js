@@ -18,8 +18,10 @@ const Routines = {
 
     getById: (id) => {
         const list = window.WORKOUT_ROUTINES || [];
-        if (id === 'descanso') id = 'recuperacion';
-        return list.find(r => r.id === id) || null;
+        const found = list.find(r => r.id === id);
+        if (found) return found;
+        if (id === 'descanso') return list.find(r => r.id === 'recuperacion') || null;
+        return null;
     },
 
     getActivityKey: (id) => {

@@ -195,6 +195,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .input-base--table-edit {
     width: 65px;
+    height: 26px;
     padding: 4px 10px;
     font-size: 0.75rem;
     font-weight: 600;
@@ -202,6 +203,7 @@ input[type=number]::-webkit-outer-spin-button {
     border-radius: var(--ui-radius-pill);
     text-align: right;
     display: inline-block;
+    box-sizing: border-box;
 }
 
 /* --- 4. LISTS & ROWS --- */
@@ -366,6 +368,17 @@ input[type=number]::-webkit-outer-spin-button {
 }
 .meal-item__name { 
     margin-right: var(--space-sm);
+}
+.meal-item__food-select {
+    min-width: 150px;
+    max-width: 210px;
+    height: 26px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    border-radius: var(--ui-radius-pill);
+    box-sizing: border-box;
 }
 .meal-item__amount { white-space: nowrap; display: flex; align-items: center; }
 .meal-item__unit { margin-left: 4px; opacity: 0.8; font-size: 0.85rem; }

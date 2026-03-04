@@ -64,10 +64,43 @@ function renderMenuPage() {
 
     const MEAL_KEYS = ['desayuno', 'comida', 'cena'];
     const SECONDARY_TARGET_KEYS = ['salt', 'fiber', 'sugar', 'saturatedFat', 'processing'];
+    const DEFAULT_GRAMS_AMOUNT = 100;
+    const DEFAULT_UNIT_AMOUNT = 1;
 
     const formatNumber = (value, decimals = 1) => {
         const numeric = Number.isFinite(value) ? value : 0;
         return numeric.toFixed(decimals).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+    };
+    const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    const getDefaultAmountForFood = (food) => {
+        if (!food) return 0;
+        return food.nutritionPerUnit ? DEFAULT_UNIT_AMOUNT : DEFAULT_GRAMS_AMOUNT;
+    };
+    const getSimilarFoods = (foodId) => {
+        if (typeof FOODS === 'undefined') return [];
+
+        const currentFood = FOODS[foodId];
+        const currentCategory = currentFood ? currentFood.category : null;
+        const allFoods = Object.entries(FOODS).map(([id, food]) => ({ id, food }));
+
+        const filtered = currentCategory
+            ? allFoods.filter(({ food }) => food && food.category === currentCategory)
+            : allFoods;
+
+        return filtered.sort((a, b) => (a.food.name || a.id).localeCompare((b.food.name || b.id), 'es', { sensitivity: 'base' }));
+    };
+    const renderFoodSelectOptions = (currentFoodId) => {
+        const similarFoods = getSimilarFoods(currentFoodId);
+        if (similarFoods.length === 0) return '';
+        return similarFoods.map(({ id, food }) => {
+            const selected = id === currentFoodId ? 'selected' : '';
+            return `<option value="${escapeHtml(id)}" ${selected}>${escapeHtml(food.name || id)}</option>`;
+        }).join('');
     };
     const renderMealMacroPills = (nut) => `
         <div class="stat-pill stat-pill--kcal stat-pill--xs">🔥 ${Math.round(nut.kcal)} kcal</div>
@@ -85,8 +118,8 @@ function renderMenuPage() {
         fiber: 0,
         sugar: 0,
         salt: 0,
-        processingSum: 0,
-        processingCount: 0,
+        processingWeightedSum: 0,
+        processingKcalBase: 0,
         processingAvg: 0
     });
 
@@ -109,7 +142,8 @@ function renderMenuPage() {
             }
             if (!nutrition || ratio <= 0) return;
 
-            totals.kcal += (nutrition.kcal || 0) * ratio;
+            const itemKcal = (nutrition.kcal || 0) * ratio;
+            totals.kcal += itemKcal;
             totals.protein += (nutrition.protein || 0) * ratio;
             totals.carbs += (nutrition.carbs || 0) * ratio;
             totals.fat += (nutrition.fat || 0) * ratio;
@@ -118,12 +152,15 @@ function renderMenuPage() {
             totals.sugar += (nutrition.sugar || 0) * ratio;
             totals.salt += ((nutrition.sodium || 0) * ratio * 2.5) / 1000;
 
-            if (Number.isFinite(food.processed)) {
-                totals.processingSum += food.processed;
-                totals.processingCount += 1;
+            if (Number.isFinite(food.processed) && itemKcal > 0) {
+                totals.processingWeightedSum += food.processed * itemKcal;
+                totals.processingKcalBase += itemKcal;
             }
         });
 
+        totals.processingAvg = totals.processingKcalBase
+            ? (totals.processingWeightedSum / totals.processingKcalBase)
+            : 0;
         return totals;
     };
 
@@ -141,11 +178,13 @@ function renderMenuPage() {
             dayTotals.fiber += mealTotals.fiber;
             dayTotals.sugar += mealTotals.sugar;
             dayTotals.salt += mealTotals.salt;
-            dayTotals.processingSum += mealTotals.processingSum;
-            dayTotals.processingCount += mealTotals.processingCount;
+            dayTotals.processingWeightedSum += mealTotals.processingWeightedSum;
+            dayTotals.processingKcalBase += mealTotals.processingKcalBase;
         });
 
-        dayTotals.processingAvg = dayTotals.processingCount ? (dayTotals.processingSum / dayTotals.processingCount) : 0;
+        dayTotals.processingAvg = dayTotals.processingKcalBase
+            ? (dayTotals.processingWeightedSum / dayTotals.processingKcalBase)
+            : 0;
         return dayTotals;
     };
 
@@ -182,10 +221,16 @@ function renderMenuPage() {
     };
 
     const renderSecondaryNutrientsHtml = ({
-        salt, fiber, sugar, saturatedFat, processing, containerClass = '', targets = null, statusClasses = {}
+        salt, fiber, sugar, saturatedFat, processing, containerClass = '', targets = null, statusClasses = {},
+        decimals = {}
     }) => {
+        const saltDecimals = Number.isFinite(decimals.salt) ? decimals.salt : 2;
+        const fiberDecimals = Number.isFinite(decimals.fiber) ? decimals.fiber : 1;
+        const sugarDecimals = Number.isFinite(decimals.sugar) ? decimals.sugar : 1;
+        const saturatedFatDecimals = Number.isFinite(decimals.saturatedFat) ? decimals.saturatedFat : 1;
+        const processingDecimals = Number.isFinite(decimals.processing) ? decimals.processing : 1;
         const classSuffix = containerClass ? ` ${containerClass}` : '';
-        const processingValue = Number.isFinite(processing) ? `${formatNumber(processing, 1)}/10` : '-';
+        const processingValue = Number.isFinite(processing) ? `${formatNumber(processing, processingDecimals)}/10` : '-';
         const targetSalt = targets ? targets.salt : null;
         const targetFiber = targets ? targets.fiber : null;
         const targetSugar = targets ? targets.sugar : null;
@@ -197,39 +242,39 @@ function renderMenuPage() {
                 <div class="stat-pill nutrition-pill">
                     <div class="nutrition-pill__label">🧂 Sal</div>
                     <div>
-                        <span class="${statusClasses.salt || ''}">${formatNumber(salt, 2)}g</span>
-                        ${Number.isFinite(targetSalt) ? ` <span class="text-muted">/ ${formatNumber(targetSalt, 2)}g</span>` : ''}
-                    </div>
-                </div>
-                <div class="stat-pill nutrition-pill">
-                    <div class="nutrition-pill__label">🌾 Fibra</div>
-                    <div>
-                        <span class="${statusClasses.fiber || ''}">${formatNumber(fiber, 1)}g</span>
-                        ${Number.isFinite(targetFiber) ? ` <span class="text-muted">/ ${formatNumber(targetFiber, 1)}g</span>` : ''}
+                        <span class="${statusClasses.salt || ''}">${formatNumber(salt, saltDecimals)}g</span>
+                        ${Number.isFinite(targetSalt) ? ` <span class="text-muted">/ ${formatNumber(targetSalt, saltDecimals)}g</span>` : ''}
                     </div>
                 </div>
                 <div class="stat-pill nutrition-pill">
                     <div class="nutrition-pill__label">🍬 Azúcar</div>
                     <div>
-                        <span class="${statusClasses.sugar || ''}">${formatNumber(sugar, 1)}g</span>
-                        ${Number.isFinite(targetSugar) ? ` <span class="text-muted">/ ${formatNumber(targetSugar, 1)}g</span>` : ''}
+                        <span class="${statusClasses.sugar || ''}">${formatNumber(sugar, sugarDecimals)}g</span>
+                        ${Number.isFinite(targetSugar) ? ` <span class="text-muted">/ ${formatNumber(targetSugar, sugarDecimals)}g</span>` : ''}
+                    </div>
+                </div>
+                <div class="stat-pill nutrition-pill">
+                    <div class="nutrition-pill__label">🧈 Grasa sat.</div>
+                    <div>
+                        <span class="${statusClasses.saturatedFat || ''}">${formatNumber(saturatedFat, saturatedFatDecimals)}g</span>
+                        ${Number.isFinite(targetSaturatedFat) ? ` <span class="text-muted">/ ${formatNumber(targetSaturatedFat, saturatedFatDecimals)}g</span>` : ''}
                     </div>
                 </div>
             </div>
 
             <div class="modal-grid-2 modal-grid-2--compact${classSuffix}">
                 <div class="stat-pill nutrition-pill">
-                    <div class="nutrition-pill__label">🧈 Grasa sat.</div>
+                    <div class="nutrition-pill__label">🌾 Fibra</div>
                     <div>
-                        <span class="${statusClasses.saturatedFat || ''}">${formatNumber(saturatedFat, 1)}g</span>
-                        ${Number.isFinite(targetSaturatedFat) ? ` <span class="text-muted">/ ${formatNumber(targetSaturatedFat, 1)}g</span>` : ''}
+                        <span class="${statusClasses.fiber || ''}">${formatNumber(fiber, fiberDecimals)}g</span>
+                        ${Number.isFinite(targetFiber) ? ` <span class="text-muted">/ ${formatNumber(targetFiber, fiberDecimals)}g</span>` : ''}
                     </div>
                 </div>
                 <div class="stat-pill nutrition-pill">
                     <div class="nutrition-pill__label">🏭 Procesamiento</div>
                     <div>
                         <span class="${statusClasses.processing || ''}">${processingValue}</span>
-                        ${Number.isFinite(targetProcessing) ? ` <span class="text-muted">/ ${formatNumber(targetProcessing, 1)}/10</span>` : ''}
+                        ${Number.isFinite(targetProcessing) ? ` <span class="text-muted">/ ${formatNumber(targetProcessing, processingDecimals)}/10</span>` : ''}
                     </div>
                 </div>
             </div>
@@ -240,7 +285,8 @@ function renderMenuPage() {
         targets = null,
         statusClasses = {},
         kcalSizeClass = 'stat-pill--sm',
-        secondaryContainerClass = ''
+        secondaryContainerClass = '',
+        secondaryDecimals = {}
     } = {}) => `
         <div class="nutrition-stack">
             ${renderPrimaryNutrientsHtml(nutrients, { targets, statusClasses, kcalSizeClass })}
@@ -252,7 +298,8 @@ function renderMenuPage() {
                 processing: nutrients.processing,
                 containerClass: secondaryContainerClass,
                 targets,
-                statusClasses
+                statusClasses,
+                decimals: secondaryDecimals
             })}
         </div>
     `;
@@ -307,7 +354,14 @@ function renderMenuPage() {
                 processing: classProcessing
             },
             kcalSizeClass: 'stat-pill--sm',
-            secondaryContainerClass: 'totals-secondary-grid'
+            secondaryContainerClass: 'totals-secondary-grid',
+            secondaryDecimals: {
+                salt: 2,
+                fiber: 0,
+                sugar: 0,
+                saturatedFat: 0,
+                processing: 1
+            }
         });
     };
 
@@ -402,16 +456,25 @@ function renderMenuPage() {
                             <ul class="meal-list">
                                 ${mealData.items.map((item, itemIndex) => {
                                     const food = FOODS[item.foodId];
+                                    const similarOptions = renderFoodSelectOptions(item.foodId);
                                     let amountHtml;
+                                    let nameHtml;
                                     if (isEditMode) {
+                                        nameHtml = `
+                                            <select class="input-base input-select input-select--sm meal-item__food-select"
+                                                data-role="food-select" data-day="${dayIndex}" data-meal="${mealKey}" data-item="${itemIndex}">
+                                                ${similarOptions}
+                                            </select>
+                                        `;
                                         amountHtml = `<input type="text" inputmode="decimal" value="${item.amount}" 
                                             class="input-base input-base--table-edit" 
                                             data-day="${dayIndex}" data-meal="${mealKey}" data-item="${itemIndex}">`;
                                     } else {
+                                        nameHtml = `<span class="meal-item__name food-info-trigger modal-trigger" data-food-id="${item.foodId}">${food ? food.name : item.foodId}</span>`;
                                         amountHtml = `<span>${item.amount}</span>`;
                                     }
                                     return `<li class="meal-item">
-                                        <span class="meal-item__name food-info-trigger modal-trigger" data-food-id="${item.foodId}">${food ? food.name : item.foodId}</span>
+                                        ${nameHtml}
                                         <div class="meal-item__amount">
                                             ${amountHtml}
                                             <span class="meal-item__unit">${food ? food.unit : ''}</span>
@@ -533,6 +596,34 @@ function renderMenuPage() {
                 }
             }
         }
+    });
+
+    tableBody.addEventListener('change', (e) => {
+        if (!e.target.matches('select[data-role="food-select"][data-day][data-meal][data-item]')) return;
+
+        const dayIndex = parseInt(e.target.dataset.day, 10);
+        const mealKey = e.target.dataset.meal;
+        const itemIndex = parseInt(e.target.dataset.item, 10);
+        const nextFoodId = e.target.value;
+
+        if (!window.MENU_DATA || !window.MENU_DATA[dayIndex] || !window.MENU_DATA[dayIndex][mealKey]) return;
+
+        const item = window.MENU_DATA[dayIndex][mealKey].items[itemIndex];
+        if (!item || !nextFoodId || item.foodId === nextFoodId) return;
+
+        const prevFood = (typeof FOODS !== 'undefined') ? FOODS[item.foodId] : null;
+        const nextFood = (typeof FOODS !== 'undefined') ? FOODS[nextFoodId] : null;
+
+        item.foodId = nextFoodId;
+
+        if (nextFood && prevFood && prevFood.unit !== nextFood.unit) {
+            item.amount = getDefaultAmountForFood(nextFood);
+        } else if (nextFood && !Number.isFinite(parseFloat(item.amount))) {
+            item.amount = getDefaultAmountForFood(nextFood);
+        }
+
+        MenuStore.saveMenuData(currentFile, window.MENU_DATA);
+        renderTableContent();
     });
 
     const loadDependencies = () => {

@@ -25,7 +25,6 @@ const FOODS = {
   endibia: { name: "Endibia", category: "🥔 Verduras y hortalizas", unit: "g", nutritionPer100: { kcal: 17, protein: 1.3, carbs: 3.4, fat: 0.2, saturated_fat: 0.0, fiber: 3.1, sugar: 0.3, sodium: 22 }, processed: 0 },
   esparragos: { name: "Espárragos", category: "🥔 Verduras y hortalizas", unit: "g", nutritionPer100: { kcal: 20, protein: 2.2, carbs: 3.9, fat: 0.1, saturated_fat: 0.0, fiber: 2.1, sugar: 1.9, sodium: 2 }, processed: 0 },
   espinacas: { name: "Espinacas", category: "🥔 Verduras y hortalizas", unit: "g", nutritionPer100: { kcal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, saturated_fat: 0.1, fiber: 2.2, sugar: 0.4, sodium: 79 }, processed: 0 },
-  guisantes: { name: "Guisantes", category: "🥔 Verduras y hortalizas", unit: "g", nutritionPer100: { kcal: 81, protein: 5.4, carbs: 14.5, fat: 0.4, saturated_fat: 0.1, fiber: 5.1, sugar: 5.7, sodium: 5 }, processed: 1 },
   judias_verdes: { name: "Judías verdes", category: "🥔 Verduras y hortalizas", unit: "g", nutritionPer100: { kcal: 31, protein: 1.8, carbs: 7.0, fat: 0.1, saturated_fat: 0.0, fiber: 3.4, sugar: 3.3, sodium: 6 }, processed: 0 },
   lechuga: { name: "Lechuga", category: "🥔 Verduras y hortalizas", unit: "g", nutritionPer100: { kcal: 15, protein: 1.4, carbs: 2.9, fat: 0.2, saturated_fat: 0.0, fiber: 1.3, sugar: 0.8, sodium: 28 }, processed: 0 },
   maiz: { name: "Maíz", category: "🥔 Verduras y hortalizas", unit: "g", nutritionPer100: { kcal: 96, protein: 3.4, carbs: 21.0, fat: 1.5, saturated_fat: 0.2, fiber: 2.4, sugar: 4.5, sodium: 15 }, processed: 2 },
@@ -83,15 +82,19 @@ const FOODS = {
   pan: { name: "Pan", category: "🍚 Cereales, legumbres y tubérculos", unit: "g", nutritionPer100: { kcal: 250, protein: 9.0, carbs: 49.0, fat: 3.2, saturated_fat: 0.7, fiber: 2.7, sugar: 5.0, sodium: 490 }, processed: 5 },
   pan_centeno: { name: "Pan de centeno", category: "🍚 Cereales, legumbres y tubérculos", unit: "g", nutritionPer100: { kcal: 259, protein: 8.5, carbs: 48.0, fat: 3.3, saturated_fat: 0.6, fiber: 6.0, sugar: 5.0, sodium: 600 }, processed: 5 },
   pan_integral: { name: "Pan integral", category: "🍚 Cereales, legumbres y tubérculos", unit: "g", nutritionPer100: { kcal: 240, protein: 9.0, carbs: 42.0, fat: 4.0, saturated_fat: 0.8, fiber: 6.0, sugar: 5.0, sodium: 450 }, processed: 4 },
+  pan_molde_integral: { name: "Pan de molde integral", category: "🍚 Cereales, legumbres y tubérculos", unit: "g", nutritionPer100: { kcal: 250, protein: 10.0, carbs: 41.0, fat: 4.5, saturated_fat: 0.8, fiber: 7.0, sugar: 5.0, sodium: 470 }, processed: 5 },
   pasta_integral: { name: "Pasta integral cocida", category: "🍚 Cereales, legumbres y tubérculos", unit: "g", nutritionPer100: { kcal: 124, protein: 5.0, carbs: 26.0, fat: 0.9, saturated_fat: 0.2, fiber: 3.0, sugar: 1.0, sodium: 6 }, processed: 3 },
   patata: { name: "Patata cocida", category: "🍚 Cereales, legumbres y tubérculos", unit: "g", nutritionPer100: { kcal: 87, protein: 2.0, carbs: 20.1, fat: 0.1, saturated_fat: 0.0, fiber: 1.8, sugar: 0.9, sodium: 7 }, processed: 0 },
   quinoa: { name: "Quinoa cocida", category: "🍚 Cereales, legumbres y tubérculos", unit: "g", nutritionPer100: { kcal: 120, protein: 4.4, carbs: 21.3, fat: 1.9, saturated_fat: 0.2, fiber: 2.8, sugar: 0.9, sodium: 7 }, processed: 1 },
+  tortilla_trigo: { name: "Tortilla de trigo", category: "🍚 Cereales, legumbres y tubérculos", unit: "g", nutritionPer100: { kcal: 310, protein: 8.0, carbs: 52.0, fat: 8.0, saturated_fat: 2.0, fiber: 3.0, sugar: 2.0, sodium: 620 }, processed: 6 },
+  warp_integral: { name: "Wrap integral", category: "🍚 Cereales, legumbres y tubérculos", unit: "g", nutritionPer100: { kcal: 290, protein: 9.0, carbs: 48.0, fat: 7.0, saturated_fat: 1.5, fiber: 6.0, sugar: 3.0, sodium: 560 }, processed: 5 },
 
   /* =========================
      PROTEÍNAS (CARNES, PESCADOS, MARISCOS, VEGETALES)
      ========================= */
   atun: { name: "Atún", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 109, protein: 24.0, carbs: 0.0, fat: 1.0, saturated_fat: 0.3, fiber: 0.0, sugar: 0.0, sodium: 50 }, processed: 2 },
   atun_lata_natural: { name: "Atún al natural (lata)", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 116, protein: 26.0, carbs: 0.0, fat: 1.0, saturated_fat: 0.3, fiber: 0.0, sugar: 0.0, sodium: 300 }, processed: 5 },
+  atun_lata_aceite: { name: "Atún en aceite (lata)", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 198, protein: 24.0, carbs: 0.0, fat: 11.0, saturated_fat: 1.8, fiber: 0.0, sugar: 0.0, sodium: 320 }, processed: 6 },
   bacalao: { name: "Bacalao", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 82, protein: 18.0, carbs: 0.0, fat: 0.7, saturated_fat: 0.1, fiber: 0.0, sugar: 0.0, sodium: 54 }, processed: 1 },
   bonito: { name: "Bonito", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 140, protein: 24.0, carbs: 0.0, fat: 5.0, saturated_fat: 1.3, fiber: 0.0, sugar: 0.0, sodium: 60 }, processed: 1 },
   calamar: { name: "Calamar", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 92, protein: 15.6, carbs: 3.1, fat: 1.4, saturated_fat: 0.4, fiber: 0.0, sugar: 0.0, sodium: 44 }, processed: 1 },
@@ -122,10 +125,14 @@ const FOODS = {
      LÁCTEOS Y QUESOS
      ========================= */
   kefir: { name: "Kéfir", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 60, protein: 3.5, carbs: 4.8, fat: 3.3, saturated_fat: 2.1, fiber: 0.0, sugar: 4.8, sodium: 40 }, processed: 4 },
-  leche: { name: "Leche", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 42, protein: 3.4, carbs: 5.0, fat: 1.0, saturated_fat: 0.6, fiber: 0.0, sugar: 5.0, sodium: 44 }, processed: 2 },
+  leche_entera: { name: "Leche entera", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 61, protein: 3.3, carbs: 4.8, fat: 3.3, saturated_fat: 2.1, fiber: 0.0, sugar: 4.8, sodium: 43 }, processed: 2 },
+  leche_semidesnatada: { name: "Leche semidesnatada", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 46, protein: 3.3, carbs: 4.9, fat: 1.6, saturated_fat: 1.0, fiber: 0.0, sugar: 4.9, sodium: 44 }, processed: 2 },
+  leche_desnatada: { name: "Leche desnatada", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 35, protein: 3.4, carbs: 5.0, fat: 0.2, saturated_fat: 0.1, fiber: 0.0, sugar: 5.0, sodium: 45 }, processed: 2 },
   mozzarella: { name: "Mozzarella", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 280, protein: 28.0, carbs: 3.0, fat: 17.0, saturated_fat: 10.0, fiber: 0.0, sugar: 1.0, sodium: 620 }, processed: 6 },
   queso_emmental: { name: "Queso emmental", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 380, protein: 29.0, carbs: 4.0, fat: 29.0, saturated_fat: 18.0, fiber: 0.0, sugar: 0.5, sodium: 300 }, processed: 6 },
   queso_fresco: { name: "Queso fresco", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 98, protein: 11.0, carbs: 3.0, fat: 4.0, saturated_fat: 2.5, fiber: 0.0, sugar: 3.0, sodium: 400 }, processed: 4 },
+  queso_lonchas: { name: "Queso en lonchas", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 280, protein: 16.0, carbs: 6.0, fat: 22.0, saturated_fat: 14.0, fiber: 0.0, sugar: 2.0, sodium: 950 }, processed: 8 },
+  queso_lonchas_light: { name: "Queso en lonchas light", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 190, protein: 24.0, carbs: 6.0, fat: 8.0, saturated_fat: 5.0, fiber: 0.0, sugar: 2.0, sodium: 980 }, processed: 8 },
   yogur_griego: { name: "Yogur griego", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 120, protein: 10.0, carbs: 4.0, fat: 8.0, saturated_fat: 5.0, fiber: 0.0, sugar: 4.0, sodium: 40 }, processed: 4 },
   yogur_natural: { name: "Yogur natural", category: "🥛 Lácteos", unit: "g", nutritionPer100: { kcal: 60, protein: 4.0, carbs: 5.0, fat: 3.0, saturated_fat: 2.0, fiber: 0.0, sugar: 5.0, sodium: 36 }, processed: 3 },
 
@@ -147,11 +154,17 @@ const FOODS = {
   canela: { name: "Canela", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 247, protein: 4.0, carbs: 81.0, fat: 1.2, saturated_fat: 0.3, fiber: 53.0, sugar: 2.2, sodium: 10 }, processed: 2 },
   comino: { name: "Comino", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 375, protein: 18.0, carbs: 44.0, fat: 22.0, saturated_fat: 1.5, fiber: 10.5, sugar: 2.3, sodium: 168 }, processed: 2 },
   curry: { name: "Curry en polvo", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 325, protein: 14.0, carbs: 58.0, fat: 14.0, saturated_fat: 2.1, fiber: 33.0, sugar: 2.8, sodium: 52 }, processed: 3 },
+  perejil: { name: "Perejil", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 36, protein: 3.0, carbs: 6.3, fat: 0.8, saturated_fat: 0.1, fiber: 3.3, sugar: 0.9, sodium: 56 }, processed: 1 },
+  azucar: { name: "Azúcar", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 387, protein: 0.0, carbs: 100.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 100.0, sodium: 1 }, processed: 3 },
+  edulcorante_estevia: { name: "Edulcorante (estevia)", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 0, protein: 0.0, carbs: 0.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 0.0, sodium: 0 }, processed: 5 },
+  ketchup: { name: "Ketchup", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 112, protein: 1.3, carbs: 25.0, fat: 0.2, saturated_fat: 0.0, fiber: 0.3, sugar: 22.0, sodium: 900 }, processed: 7 },
+  mayonesa: { name: "Mayonesa", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 680, protein: 1.0, carbs: 1.0, fat: 75.0, saturated_fat: 11.0, fiber: 0.0, sugar: 1.0, sodium: 700 }, processed: 8 },
   mostaza: { name: "Mostaza", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 66, protein: 4.4, carbs: 5.8, fat: 4.4, saturated_fat: 0.2, fiber: 3.3, sugar: 1.8, sodium: 1135 }, processed: 7 },
   oregano: { name: "Orégano", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 265, protein: 9.0, carbs: 69.0, fat: 4.3, saturated_fat: 1.6, fiber: 42.0, sugar: 4.1, sodium: 25 }, processed: 2 },
   pimenton: { name: "Pimentón", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 282, protein: 14.0, carbs: 54.0, fat: 13.0, saturated_fat: 2.1, fiber: 35.0, sugar: 10.3, sodium: 68 }, processed: 2 },
   pimienta_negra: { name: "Pimienta negra", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 251, protein: 10.4, carbs: 64.0, fat: 3.3, saturated_fat: 1.4, fiber: 26.5, sugar: 0.6, sodium: 20 }, processed: 2 },
   sal: { name: "Sal", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 0, protein: 0.0, carbs: 0.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 0.0, sodium: 38758 }, processed: 3 },
+  salsa_soja: { name: "Salsa de soja", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 53, protein: 8.1, carbs: 4.9, fat: 0.1, saturated_fat: 0.0, fiber: 0.8, sugar: 0.4, sodium: 5490 }, processed: 7 },
   vinagre: { name: "Vinagre", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 18, protein: 0.0, carbs: 0.04, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 0.04, sodium: 2 }, processed: 2 },
   vinagre_balsamico: { name: "Vinagre balsámico", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 88, protein: 0.5, carbs: 17.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 15.0, sodium: 23 }, processed: 4 },
   miel: { name: "Miel", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 304, protein: 0.3, carbs: 82.4, fat: 0.0, saturated_fat: 0.0, fiber: 0.2, sugar: 82.1, sodium: 4 }, processed: 2 },
@@ -159,6 +172,19 @@ const FOODS = {
   /* =========================
      BEBIDAS E INFUSIONES
      ========================= */
+  cerveza_330: { name: "1 cerveza (330ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 143, protein: 1.3, carbs: 11.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 0.0, sodium: 14 }, processed: 5 },
+  vino_150: { name: "1 vino (150ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 125, protein: 0.1, carbs: 4.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 1.0, sodium: 7 }, processed: 4 },
+  coca_cola_330: { name: "1 coca-cola (330ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 139, protein: 0.0, carbs: 35.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 35.0, sodium: 11 }, processed: 8 },
+  bolero_sobre_9g: { name: "Bolero (1 sobre de 9g)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 1, protein: 0.0, carbs: 0.1, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 0.0, sodium: 15 }, processed: 7 },
+  refresco_330: { name: "1 refresco (330ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 132, protein: 0.0, carbs: 33.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 33.0, sodium: 20 }, processed: 8 },
+  refresco_light_330: { name: "Refresco light (330ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 2, protein: 0.0, carbs: 0.3, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 0.0, sodium: 15 }, processed: 7 },
+  batido_250: { name: "1 batido (250ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 180, protein: 7.0, carbs: 26.0, fat: 5.0, saturated_fat: 3.0, fiber: 0.0, sugar: 24.0, sodium: 120 }, processed: 8 },
+  zumo_natural_250: { name: "Zumo natural (250ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 110, protein: 1.5, carbs: 25.0, fat: 0.2, saturated_fat: 0.0, fiber: 0.5, sugar: 21.0, sodium: 5 }, processed: 3 },
+  zumo_procesado_250: { name: "Zumo procesado (250ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 115, protein: 0.5, carbs: 27.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.1, sugar: 26.0, sodium: 15 }, processed: 6 },
+  agua_coco_250: { name: "Agua de coco (250ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 48, protein: 0.5, carbs: 11.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 10.0, sodium: 105 }, processed: 4 },
+  bebida_energetica_250: { name: "Bebida energética (250ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 112, protein: 0.0, carbs: 27.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 27.0, sodium: 200 }, processed: 8 },
+  te: { name: "Té", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 0, protein: 0.0, carbs: 0.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 0.0, sodium: 3 }, processed: 1 },
+  tonica_330: { name: "Tónica (330ml)", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 112, protein: 0.0, carbs: 28.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 28.0, sodium: 33 }, processed: 7 },
   cafe: { name: "Café", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 0, protein: 0.0, carbs: 0.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 0.0, sodium: 5 }, processed: 1 },
   infusion: { name: "Infusión", category: "☕ Bebidas", unit: "ud", nutritionPerUnit: { kcal: 0, protein: 0.0, carbs: 0.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 0.0, sodium: 5 }, processed: 1 },
 
@@ -174,6 +200,11 @@ const FOODS = {
      ========================= */
   jamon_iberico: { name: "Jamón ibérico", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 250, protein: 33.0, carbs: 0.0, fat: 13.0, saturated_fat: 4.5, fiber: 0.0, sugar: 0.0, sodium: 1800 }, processed: 7 },
   jamon_york: { name: "Jamón york", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 110, protein: 18.0, carbs: 2.0, fat: 3.0, saturated_fat: 1.0, fiber: 0.0, sugar: 1.0, sodium: 1000 }, processed: 7 },
+  fiambre_pavo: { name: "Fiambre de pavo", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 105, protein: 19.0, carbs: 2.0, fat: 2.0, saturated_fat: 0.7, fiber: 0.0, sugar: 1.5, sodium: 1100 }, processed: 7 },
+  chorizo: { name: "Chorizo", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 455, protein: 24.0, carbs: 1.5, fat: 38.0, saturated_fat: 14.0, fiber: 0.0, sugar: 1.0, sodium: 1600 }, processed: 9 },
+  salchichon: { name: "Salchichón", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 420, protein: 25.0, carbs: 1.0, fat: 35.0, saturated_fat: 12.0, fiber: 0.0, sugar: 0.5, sodium: 1700 }, processed: 9 },
+  bacon: { name: "Bacon", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 541, protein: 37.0, carbs: 1.5, fat: 42.0, saturated_fat: 14.0, fiber: 0.0, sugar: 1.0, sodium: 1700 }, processed: 9 },
+  salchichas: { name: "Salchichas", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 290, protein: 12.0, carbs: 2.0, fat: 25.0, saturated_fat: 9.0, fiber: 0.0, sugar: 1.0, sodium: 1000 }, processed: 9 },
   patatas_fritas: { name: "Patatas fritas", category: "📦 Otros / Procesados", unit: "g", nutritionPer100: { kcal: 536, protein: 7.0, carbs: 53.0, fat: 35.0, saturated_fat: 5.0, fiber: 4.0, sugar: 0.5, sodium: 525 }, processed: 9 },
   pepinillos_encurtidos: { name: "Pepinillos encurtidos", category: "🥔 Verduras y hortalizas", unit: "g", nutritionPer100: { kcal: 11, protein: 0.5, carbs: 2.3, fat: 0.2, saturated_fat: 0.0, fiber: 1.2, sugar: 1.2, sodium: 1200 }, processed: 6 },
   salmon_ahumado: { name: "Salmón ahumado", category: "🥩 Proteínas", unit: "g", nutritionPer100: { kcal: 117, protein: 18.3, carbs: 0.0, fat: 4.3, saturated_fat: 0.9, fiber: 0.0, sugar: 0.0, sodium: 1200 }, processed: 7 },

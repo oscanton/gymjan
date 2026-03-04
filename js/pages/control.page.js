@@ -30,7 +30,10 @@ function initControlPage(container) {
     history = history
         .map((h) => {
             const date = DateUtils.normalizeISODate(h.date || '');
-            const activity = (h.activity === 'descanso') ? 'recuperacion' : (h.activity || 'recuperacion');
+            let activity = h.activity || 'recuperacion';
+            if (activity === 'descanso' && typeof Routines !== 'undefined' && !Routines.getById('descanso')) {
+                activity = 'recuperacion';
+            }
             return { ...h, date, activity };
         })
         .filter((h) => h.date && h.weight);
@@ -149,7 +152,10 @@ function getActivityOptions(defaultActivity) {
     if (!routines.length) {
         return `<option value="${defaultActivity}">${defaultActivity}</option>`;
     }
-    return routines.map(opt =>
+    const routinesSorted = [...routines].sort((a, b) =>
+        (a.nombre || '').localeCompare((b.nombre || ''), 'es', { sensitivity: 'base', numeric: true })
+    );
+    return routinesSorted.map(opt =>
         `<option value="${opt.id}" ${opt.id === defaultActivity ? 'selected' : ''}>${opt.nombre}</option>`
     ).join('');
 }

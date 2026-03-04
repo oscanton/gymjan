@@ -9,7 +9,7 @@ const ActivityStore = {
         const raw = DB.get('user_activity_plan', Array(daysCount).fill(fallbackId));
         const plan = Array.isArray(raw) ? raw.slice(0, daysCount) : Array(daysCount).fill(fallbackId);
         while (plan.length < daysCount) plan.push(fallbackId);
-        return plan.map(v => (v === 'descanso' ? 'recuperacion' : v));
+        return plan.map(v => v || fallbackId);
     },
     saveWeeklyPlan: (plan) => DB.save('user_activity_plan', plan),
     getDailySteps: (defaultSteps = null) => {

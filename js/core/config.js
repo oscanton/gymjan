@@ -17,6 +17,7 @@ const AVAILABLE_MENUS = [
 // Available routine data files.
 const AVAILABLE_ROUTINE_FILES = [
     'rutinas/rutina_recuperacion.js',
+    'rutinas/rutina_descanso.js',
     'rutinas/rutina_fuerza_A.js',
     'rutinas/rutina_fuerza_B.js',
     'rutinas/rutina_fuerza_C.js',

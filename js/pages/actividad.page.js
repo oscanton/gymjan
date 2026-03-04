@@ -137,6 +137,9 @@ function renderActivityPage() {
         const weights = getWeights();
         const overrides = getOverrides();
         const routines = Routines.getAll();
+        const routinesSorted = [...routines].sort((a, b) =>
+            (a.nombre || '').localeCompare((b.nombre || ''), 'es', { sensitivity: 'base', numeric: true })
+        );
 
         const table = tableBody.closest('table');
         const thead = table.querySelector('thead');
@@ -215,7 +218,7 @@ function renderActivityPage() {
         weeklyPlan.forEach((routineId, dayIndex) => {
             const routine = getRoutineById(routineId, fallbackId);
             const selectedId = routineId || fallbackId;
-            const options = routines.map(r =>
+            const options = routinesSorted.map(r =>
                 `<option value="${r.id}" ${r.id === selectedId ? 'selected' : ''}>${r.nombre}</option>`
             ).join('');
             const meta = routine ? `${routine.objetivo || ''}` : '';

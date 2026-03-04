@@ -148,7 +148,7 @@ function initCalculator(container) {
     const formatMetricValue = (key, value) => {
         const safe = Number.isFinite(value) ? value : 0;
         if (key === 'kcal') return `${Math.round(safe)} kcal`;
-        if (key === 'p' || key === 'c' || key === 'f') return `${Math.round(safe)} g`;
+        if (key === 'p' || key === 'c' || key === 'f' || key === 'saturatedFat' || key === 'fiber' || key === 'sugar') return `${Math.round(safe)} g`;
         if (key === 'salt') return `${formatRuleValue(safe, 2)} g`;
         if (key === 'processing') return `${formatRuleValue(safe, 1)} /10`;
         return `${formatRuleValue(safe, 1)} g`;
@@ -161,9 +161,9 @@ function initCalculator(container) {
 
     const ADJUSTMENT_ROWS = [
         { key: 'kcal', icon: '🔥', label: 'Energía', rule: () => 'Objetivo: 1,2 x BMR', description: getObjectiveDescription('kcal'), adjustmentSource: 'macro', adjustmentKey: 'kcal' },
-        { key: 'p', icon: '🥩', label: 'Proteína', rule: () => `Objetivo: (Kcals x ${formatRuleFactor(reposoMacroRatios.p)}) / 4`, description: getObjectiveDescription('p'), adjustmentSource: 'macro', adjustmentKey: 'p' },
-        { key: 'c', icon: '🍚', label: 'Carbo H', rule: () => `Objetivo: (Kcals x ${formatRuleFactor(reposoMacroRatios.c)}) / 4`, description: getObjectiveDescription('c'), adjustmentSource: 'macro', adjustmentKey: 'c' },
-        { key: 'f', icon: '🥑', label: 'Grasas', rule: () => `Objetivo: (Kcals x ${formatRuleFactor(reposoMacroRatios.f)}) / 9`, description: getObjectiveDescription('f'), adjustmentSource: 'macro', adjustmentKey: 'f' },
+        { key: 'p', icon: '🥩', label: 'Proteína', rule: () => `Objetivo: ${formatRuleValue(reposoMacroRatios.p * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('p'), adjustmentSource: 'macro', adjustmentKey: 'p' },
+        { key: 'c', icon: '🍚', label: 'Carbo H', rule: () => `Objetivo: ${formatRuleValue(reposoMacroRatios.c * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('c'), adjustmentSource: 'macro', adjustmentKey: 'c' },
+        { key: 'f', icon: '🥑', label: 'Grasas', rule: () => `Objetivo: ${formatRuleValue(reposoMacroRatios.f * 100, 1)}% de kcals (g = (kcals x %)/9)`, description: getObjectiveDescription('f'), adjustmentSource: 'macro', adjustmentKey: 'f' },
         {
             key: 'salt',
             icon: '🧂',
@@ -186,7 +186,7 @@ function initCalculator(container) {
             key: 'sugar',
             icon: '🍬',
             label: 'Azúcar',
-            rule: () => `Máximo: ${formatRuleValue(defaultSecondaryTargets.sugarMaxPctKcal * 100, 1)}% kcals`,
+            rule: () => `Máx: ${formatRuleValue(defaultSecondaryTargets.sugarMaxPctKcal * 100, 1)}% de kcals (g = (kcals x %)/4)`,
             description: getObjectiveDescription('sugar'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'sugarMaxPctKcal'
@@ -195,7 +195,7 @@ function initCalculator(container) {
             key: 'saturatedFat',
             icon: '🧈',
             label: 'Grasa sat.',
-            rule: () => `Máximo: ${formatRuleValue(defaultSecondaryTargets.satFatMaxPctKcal * 100, 1)}% kcals`,
+            rule: () => `Máx: ${formatRuleValue(defaultSecondaryTargets.satFatMaxPctKcal * 100, 1)}% de kcals (g = (kcals x %)/9)`,
             description: getObjectiveDescription('saturatedFat'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'satFatMaxPctKcal'

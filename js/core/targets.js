@@ -10,7 +10,7 @@ const Targets = {
         f: 'Las grasas son clave para funcion hormonal, absorcion de vitaminas y salud celular. Un aporte muy bajo puede afectar hormonas y bienestar general.',
         salt: 'Controla el sodio total aproximado (expresado como sal). Exceso mantenido puede empeorar retencion de liquidos y tension arterial en personas sensibles.',
         fiber: 'La fibra mejora salud digestiva, saciedad y control glucemico. Un aporte bajo suele empeorar transito intestinal y calidad global de la dieta.',
-        sugar: 'Limita azucares libres para mejorar calidad nutricional y estabilidad energetica. Un exceso sostenido facilita picos de apetito y desplazamiento de alimentos de calidad.',
+        sugar: 'Limita azucares libres para mejorar calidad nutricional y estabilidad energetica. Regla base: maximo % de kcal y conversion a gramos con (kcal x %)/4. Un exceso sostenido facilita picos de apetito y desplazamiento de alimentos de calidad.',
         saturatedFat: 'Limita grasas saturadas para proteger perfil lipidico y salud cardiovascular. Un exceso habitual puede empeorar marcadores cardiometabolicos.',
         processing: 'Refleja el grado medio de procesado de la dieta. Cuanto mas alto, mayor riesgo de baja densidad nutricional y peor adherencia a largo plazo.'
     }),
@@ -79,7 +79,10 @@ const Targets = {
     },
 
     getMacroContext: (routineId) => {
-        const normalizedId = routineId === 'descanso' ? 'recuperacion' : routineId;
+        let normalizedId = routineId;
+        if (routineId === 'descanso' && typeof Routines !== 'undefined' && !Routines.getById('descanso')) {
+            normalizedId = 'recuperacion';
+        }
         const fallbackId = (typeof Routines !== 'undefined') ? Routines.getDefaultId() : 'recuperacion';
         if (!normalizedId || typeof Routines === 'undefined') {
             return { activityKey: fallbackId, macroRatios: null };
@@ -163,7 +166,10 @@ const Targets = {
         const secondaryDefaults = Targets.getSecondaryDefaults();
         const secondaryAdjustments = Targets.getSecondaryAdjustments();
         WEEK_DAYS.forEach((day, index) => {
-            const routineId = (weekly[index] === 'descanso' ? 'recuperacion' : weekly[index]) || fallbackId;
+            let routineId = weekly[index] || fallbackId;
+            if (routineId === 'descanso' && typeof Routines !== 'undefined' && !Routines.getById('descanso')) {
+                routineId = 'recuperacion';
+            }
             const macroContext = Targets.getMacroContext(routineId);
             const activityKcal = Targets.getRoutineActivityKcal(routineId, exercises, userProfile);
             const stepsKcal = (typeof UI !== 'undefined')
