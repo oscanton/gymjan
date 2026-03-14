@@ -1,5 +1,5 @@
 /* =========================================
-   app.js - BOOTSTRAP (Inicialización)
+   app.js - BOOTSTRAP (Inicializacin)
    ========================================= */
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -21,9 +21,16 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if (document.getElementById('menu-body')) renderMenuPage();
-    if (document.getElementById('lista-container')) renderShoppingListPage();
-    if (document.getElementById('actividad-container')) renderActivityPage();
-    if (document.getElementById('control-container')) renderControlPage();
-    if (document.getElementById('calculadora-container')) renderCalculatorPage();
+    const pageRegistry = [
+        { rootId: 'menu-body', render: window.renderMenuPage },
+        { rootId: 'lista-container', render: window.renderShoppingListPage },
+        { rootId: 'actividad-container', render: window.renderActivityPage },
+        { rootId: 'control-container', render: window.renderControlPage },
+        { rootId: 'calculadora-container', render: window.renderCalculatorPage }
+    ];
+
+    pageRegistry.forEach(({ rootId, render }) => {
+        if (!document.getElementById(rootId)) return;
+        if (typeof render === 'function') render();
+    });
 });

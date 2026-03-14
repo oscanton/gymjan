@@ -1,4 +1,4 @@
-﻿/* =========================================
+/* =========================================
    core/config.js - GLOBAL CONFIGURATION
    ========================================= */
 
@@ -7,6 +7,7 @@ const APP_PREFIX = "myfitpwa_";
 
 // Global constants (single source of truth).
 const WEEK_DAYS = ["Lunes", "Martes", "Mi\u00E9rcoles", "Jueves", "Viernes", "S\u00E1bado", "Domingo"];
+const MEAL_KEYS = ['desayuno', 'comida', 'cena'];
 
 // Available menu data files.
 const AVAILABLE_MENUS = [
@@ -34,12 +35,34 @@ const APP_DEFAULTS = {
         perMinute: 100,
         met: 3.5
     },
+    routineTimes: {
+        segPorRep: 4,
+        descansoSeg: 90
+    },
+    nutritionKeys: {
+        primary: ['kcal', 'protein', 'carbs', 'fat'],
+        secondary: ['salt', 'fiber', 'sugar', 'saturatedFat', 'processing']
+    },
     secondaryTargets: {
         saltMaxG: 5,
         fiberPer1000Kcal: 14,
         sugarMaxPctKcal: 0.10,
         satFatMaxPctKcal: 0.10,
         processingMaxScore: 3.5
+    },
+    nutritionScore: {
+        curve: { c: 5.3, k: 1.5 },
+        metrics: {
+            kcal: { mode: 'target_asymmetric', belowRatePer10: 0.2, aboveRatePer10: 1.2, cap: 3.0 },
+            protein: { mode: 'target_asymmetric', belowRatePer10: 0.8, aboveRatePer10: 0.2, cap: 2.0 },
+            carbs: { mode: 'target_symmetric', ratePer10: 0.35, cap: 1.0 },
+            fat: { mode: 'target_symmetric', ratePer10: 0.35, cap: 1.0 },
+            fiber: { mode: 'min_only', belowRatePer10: 0.8, cap: 2.0 },
+            sugar: { mode: 'max_only', aboveRatePer10: 0.6, cap: 1.5 },
+            saturatedFat: { mode: 'max_only', aboveRatePer10: 1.0, cap: 2.5 },
+            salt: { mode: 'max_only', aboveRatePer10: 0.5, cap: 1.5 },
+            processing: { mode: 'max_only', aboveRatePer10: 0.6, cap: 1.5 }
+        }
     }
 };
 
@@ -52,6 +75,16 @@ const APP_MACRO_RATIOS = (APP_DEFAULTS.macroRatios && Number.isFinite(APP_DEFAUL
 const APP_STEPS_DEFAULTS = (APP_DEFAULTS.steps && Number.isFinite(APP_DEFAULTS.steps.target) && Number.isFinite(APP_DEFAULTS.steps.perMinute) && Number.isFinite(APP_DEFAULTS.steps.met))
     ? APP_DEFAULTS.steps
     : { target: 8000, perMinute: 100, met: 3.5 };
+const ROUTINE_TIME_DEFAULTS = (APP_DEFAULTS.routineTimes
+    && Number.isFinite(APP_DEFAULTS.routineTimes.segPorRep)
+    && Number.isFinite(APP_DEFAULTS.routineTimes.descansoSeg))
+    ? APP_DEFAULTS.routineTimes
+    : { segPorRep: 4, descansoSeg: 90 };
+const APP_NUTRITION_KEYS = (APP_DEFAULTS.nutritionKeys
+    && Array.isArray(APP_DEFAULTS.nutritionKeys.primary)
+    && Array.isArray(APP_DEFAULTS.nutritionKeys.secondary))
+    ? APP_DEFAULTS.nutritionKeys
+    : { primary: ['kcal', 'protein', 'carbs', 'fat'], secondary: ['salt', 'fiber', 'sugar', 'saturatedFat', 'processing'] };
 const APP_SECONDARY_DEFAULTS = (APP_DEFAULTS.secondaryTargets
     && Number.isFinite(APP_DEFAULTS.secondaryTargets.saltMaxG)
     && Number.isFinite(APP_DEFAULTS.secondaryTargets.fiberPer1000Kcal)

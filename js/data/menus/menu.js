@@ -7,7 +7,7 @@ window.MENU_DATA = [
     {
         dia: "Lunes",
         desayuno: {
-            items: [{ foodId: "cafe", amount: 1 }, { foodId: "yogur_griego", amount: 125 }, { foodId: "suplemento_proteina", amount: 35 }, { foodId: "frutos_rojos", amount: 100 }],
+            items: [{ foodId: "cafe", amount: 1 }, { foodId: "yogur_griego", amount: 125 }, { foodId: "proteina", amount: 35 }, { foodId: "frutos_rojos", amount: 100 }],
             description: "Foco en grasas saludables y antioxidantes."
         },
         comida: {
@@ -37,7 +37,7 @@ window.MENU_DATA = [
     {
         dia: "Miércoles",
         desayuno: {
-            items: [{ foodId: "cafe", amount: 1 }, { foodId: "suplemento_proteina", amount: 35 }, { foodId: "platano", amount: 150 }, { foodId: "frutos_secos", amount: 20 }],
+            items: [{ foodId: "cafe", amount: 1 }, { foodId: "proteina", amount: 35 }, { foodId: "platano", amount: 150 }, { foodId: "frutos_secos", amount: 20 }],
             description: "Rápido, saciante y energético."
         },
         comida: {
@@ -56,7 +56,7 @@ window.MENU_DATA = [
             description: "Lácteo, cereal y fruta fresca."
         },
         comida: {
-            items: [{ foodId: "lentejas", amount: 250 }, { foodId: "arroz", amount: 50 }, { foodId: "zanahoria", amount: 50 }, { foodId: "yogur_natural", amount: 125 }, { foodId: "suplemento_proteina", amount: 35 }],
+            items: [{ foodId: "lentejas", amount: 250 }, { foodId: "arroz", amount: 50 }, { foodId: "zanahoria", amount: 50 }, { foodId: "yogur_natural", amount: 125 }, { foodId: "proteina", amount: 35 }],
             description: "Legumbre con cereal (protein complete)."
         },
         cena: {
@@ -82,7 +82,7 @@ window.MENU_DATA = [
     {
         dia: "Sábado",
         desayuno: {
-            items: [{ foodId: "cafe", amount: 1 }, { foodId: "suplemento_proteina", amount: 35 }, { foodId: "pan_integral", amount: 80 }, { foodId: "frutos_secos", amount: 15 }],
+            items: [{ foodId: "cafe", amount: 1 }, { foodId: "proteina", amount: 35 }, { foodId: "pan_integral", amount: 80 }, { foodId: "frutos_secos", amount: 15 }],
             description: "Pre-actividad aeróbica."
         },
         comida: {

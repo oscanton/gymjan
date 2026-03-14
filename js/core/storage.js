@@ -14,7 +14,7 @@ const DB = {
         }
     },
     clearAll: () => {
-        if (confirm("¿Borrar todos los datos de la aplicación?")) {
+        if (confirm("Borrar todos los datos de la aplicacin?")) {
             Object.keys(localStorage).forEach(k => k.startsWith(APP_PREFIX) && localStorage.removeItem(k));
             location.reload();
         }

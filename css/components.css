@@ -513,6 +513,18 @@ input[type=number]::-webkit-outer-spin-button {
     border: 1px solid rgba(var(--color-primary-rgb), 0.3);
 }
 
+.stat-pill--nutritional-score {
+    background: var(--surface-black-30);
+    border: 1px solid var(--border-light);
+}
+.nutritional-score-info-trigger { margin-top: 8px; }
+.nutritional-score-modal-score-pill { text-align: center; justify-content: center; display: inline-flex; }
+.pill-trigger {
+    border: none;
+    cursor: pointer;
+    font: inherit;
+}
+
 /* Stat pill modifiers */
 .stat-pill--sm { padding: 4px 8px; font-size: 0.85rem; }
 .stat-pill--xs { padding: 2px 8px; font-size: 0.75rem; }
@@ -707,6 +719,7 @@ input[type=number]::-webkit-outer-spin-button {
 .modal-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0 0; width: 100%; }
 .modal-grid-2--compact { margin-top: 4px; }
 .modal-stat-pill-lg { font-size: var(--font-size-lg); padding: 6px 16px; text-align: center; }
+.nutritional-score-modal-note { line-height: 1.35; }
 
 /* --- 9. UTILS & ANIMATIONS --- */
 .menu-controls { display: flex; justify-content: center; gap: var(--space-md); margin-top: var(--space-lg); flex-wrap: wrap; }

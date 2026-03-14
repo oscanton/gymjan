@@ -12,8 +12,8 @@
 
   window.addEventListener("load", () => {
     try {
-      // pwa.js está en: /js/core/pwa.js
-      // ../../sw.js => /sw.js relativo a la "raíz del site publicado"
+      // pwa.js est en: /js/core/pwa.js
+      // ../../sw.js => /sw.js relativo a la "raz del site publicado"
       const scriptUrl = document.currentScript?.src;
       const swUrl = scriptUrl
         ? new URL("../../sw.js", scriptUrl).toString()

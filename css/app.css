@@ -1,4 +1,4 @@
-﻿/* =========================================
+/* =========================================
    app.css - CORE & VARIABLES
    ========================================= */
 
@@ -8,7 +8,7 @@
     --color-surface-strong: #203a43;
     --color-surface-deep: #2c5364;
     --color-bg-gradient: linear-gradient(180deg, var(--color-surface-base), var(--color-surface-strong), var(--color-surface-deep));
-    --color-bg-sticky: var(--color-surface-strong); /* Fondo sÃ³lido para elementos fijos */
+    --color-bg-sticky: var(--color-surface-strong); /* Fondo sólido para elementos fijos */
     --color-text-main:   #ffffff;
     --color-text-muted:  rgba(255, 255, 255, 0.7);
     --color-text-inverse: #1a1a1a; /* Texto oscuro sobre colores brillantes */
@@ -33,7 +33,7 @@
     --color-critical:     rgb(var(--color-critical-rgb));
 
     /* --- 3. UI: Fondos Glassmorphism --- */
-    /* Usamos niveles de opacidad para jerarquÃ­a */
+    /* Usamos niveles de opacidad para jerarquía */
     --glass-light: rgba(255, 255, 255, 0.1);  /* Contenedores principales */
     --glass-medium: rgba(255, 255, 255, 0.06); /* Celdas impares */
     --glass-dark:  rgba(0, 0, 0, 0.25);       /* Fondos oscuros/contrastes */
@@ -54,7 +54,7 @@
     --surface-black-50: rgba(0, 0, 0, 0.5);
     --overlay-backdrop: rgba(0, 0, 0, 0.6);
     
-    /* --- 4. UI: Elementos SemÃ¡nticos --- */
+    /* --- 4. UI: Elementos Semánticos --- */
     --ui-radius-lg: 18px;
     --ui-radius-md: 14px;
     --ui-radius-sm: 10px;
@@ -84,7 +84,7 @@
     --space-xl: 24px;
     --page-gap: var(--space-lg);
 
-    /* --- 6. TipografÃ­a --- */
+    /* --- 6. Tipografía --- */
     --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-size-2xs: 0.7rem;
     --font-size-caption: 0.8rem;
@@ -113,7 +113,7 @@
 
 * {
     box-sizing: border-box;
-    /* Mejora el tap highlight en mÃ³viles */
+    /* Mejora el tap highlight en móviles */
     -webkit-tap-highlight-color: transparent; 
 }
 
@@ -156,7 +156,7 @@ body {
 }
 
 /* =========================================
-   TIPOGRAFÃA GLOBAL
+   TIPOGRAFÍA GLOBAL
    ========================================= */
 
 h1 {
@@ -185,7 +185,7 @@ h2 {
     letter-spacing: 0.5px;
 }
 
-/* Clases de TipografÃ­a EstÃ¡ndar */
+/* Clases de Tipografía Estándar */
 .text-label {
     font-size: var(--font-size-xs);
     text-transform: uppercase;
@@ -266,7 +266,7 @@ h2 {
     :root { --page-gap: var(--space-xl); }
 }
 
-/* Stack vertical con separaciÃ³n (usado en actividad.html) */
+/* Stack vertical con separación (usado en actividad.html) */
 .stack-vertical {
     display: flex;
     flex-direction: column;

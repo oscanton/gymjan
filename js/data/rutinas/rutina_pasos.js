@@ -13,3 +13,4 @@ window.STEP_ROUTINE = {
     { ejercicioId: "caminar", pasosPorMin: 100, totalPasos: 8000 }
   ]
 };
+

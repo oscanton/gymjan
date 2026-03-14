@@ -6,13 +6,13 @@ const UI = {
     // Detectar si estamos en subdirectorio views/
     isInViews: () => window.location.pathname.includes('/views/'),
 
-    // Resolver ruta relativa desde la raíz del proyecto
+    // Resolver ruta relativa desde la raz del proyecto
     resolvePath: (path) => {
         const prefix = UI.isInViews() ? '../' : '';
         return prefix + path;
     },
 
-    // Cargar script dinámicamente (Promesa)
+    // Cargar script dinmicamente (Promesa)
     loadScript: (path, id = null) => {
         return new Promise((resolve, reject) => {
             const resolvedPath = UI.resolvePath(path) + `?v=${Date.now()}`;
@@ -29,7 +29,7 @@ const UI = {
         });
     },
 
-    // Cargar dependencias con condición
+    // Cargar dependencias con condicin
     loadDependencies: (deps, { settled = false } = {}) => {
         const loads = (deps || []).filter(dep => {
             if (typeof dep.when === 'function') return dep.when();
@@ -40,12 +40,57 @@ const UI = {
         return settled ? Promise.allSettled(loads) : Promise.all(loads);
     },
 
+    ensureDependencies: (deps, { settled = false } = {}) => {
+        const normalizedDeps = (deps || []).map(dep => {
+            const globalName = dep && dep.global;
+            const shouldLoad = () => !globalName || typeof window[globalName] === 'undefined';
+            return {
+                when: shouldLoad,
+                path: dep.path,
+                id: dep.id
+            };
+        });
+        return UI.loadDependencies(normalizedDeps, { settled });
+    },
+
+    bootstrapPage: ({
+        rootId,
+        requiredDeps = [],
+        optionalDeps = [],
+        afterRequired = null,
+        afterOptional = null,
+        run = null,
+        onError = null
+    } = {}) => {
+        const root = document.getElementById(rootId);
+        if (!root || typeof run !== 'function') return Promise.resolve(false);
+
+        const callMaybe = (fn) => (typeof fn === 'function' ? Promise.resolve().then(fn) : Promise.resolve());
+
+        return UI.ensureDependencies(requiredDeps)
+            .then(() => callMaybe(afterRequired))
+            .then(() => UI.ensureDependencies(optionalDeps, { settled: true }))
+            .then(() => callMaybe(afterOptional))
+            .then(() => {
+                run(root);
+                return true;
+            })
+            .catch((err) => {
+                if (typeof onError === 'function') {
+                    onError(root, err);
+                } else {
+                    UI.showError(root, 'Error cargando dependencias.');
+                }
+                return false;
+            });
+    },
+
     // Renderizar mensaje de error en contenedor
     showError: (container, message) => {
         container.innerHTML = `<div class="glass-card card"><p class="text-status--danger">${message}</p></div>`;
     },
 
-    // Clase de estado para totales (Visualización de cumplimiento de objetivos)
+    // Clase de estado para totales (Visualizacin de cumplimiento de objetivos)
     getStatusClass: (current, target) => {
         if (!target || target === 0) return '';
         const pct = (current / target) * 100;
@@ -88,14 +133,15 @@ const UI = {
             </div>
         `;
 
-        const close = () => overlay.remove();
+        const close = () => {
+            document.removeEventListener('keydown', onKey);
+            overlay.remove();
+        };
+        const onKey = (e) => {
+            if (e.key === 'Escape') close();
+        };
         overlay.addEventListener('click', close);
-        document.addEventListener('keydown', function onKey(e) {
-            if (e.key === 'Escape') {
-                document.removeEventListener('keydown', onKey);
-                close();
-            }
-        });
+        document.addEventListener('keydown', onKey);
 
         document.body.appendChild(overlay);
         return overlay;
@@ -138,60 +184,102 @@ const UI = {
         const val = parseFloat(str);
         return Number.isNaN(val) ? 0 : val;
     },
+    isTimedItem: (item) => {
+        if (!item) return false;
+        const series = parseFloat(item.series);
+        const reps = parseFloat(item.reps);
+        const segPorRep = parseFloat(item.segPorRep);
+        return Number.isFinite(series)
+            && series > 0
+            && Number.isFinite(reps)
+            && reps === 1
+            && Number.isFinite(segPorRep)
+            && segPorRep >= 30;
+    },
 
-    formatTrabajo: (item, ex) => {
-        if (item && item.tiempoMin) return `⏱️ ${item.tiempoMin} min`;
+    formatTrabajo: (item) => {
+        if (item && UI.isTimedItem(item)) {
+            const series = Math.round(item.series || 0);
+            const segPorRep = Math.round(item.segPorRep || 0);
+            if (series > 1) return `⏱️ ${series} x ${segPorRep}s`;
+            const totalMin = segPorRep / 60;
+            if (Number.isFinite(totalMin)) return `⏱️ ${UI.formatMinutes(totalMin)} min`;
+        }
         if (item && item.series && item.reps) return `🔁 ${item.series} x ${item.reps}`;
-        if (ex && ex.unidad === 'min') return 'Tiempo libre';
         return '-';
     },
 
-    getExerciseTimeBreakdown: (item, ex) => {
-        if (!ex || !item) return { workMin: 0, restMin: 0, transMin: 0, totalMin: 0 };
-        if (item.tiempoMin) {
-            const workMin = item.tiempoMin;
-            return { workMin, restMin: 0, transMin: 0, totalMin: workMin };
-        }
-        if (ex.unidad !== 'rep') return { workMin: 0, restMin: 0, transMin: 0, totalMin: 0 };
+    getExerciseTimeBreakdown: (item, ex, { routineTimes = null } = {}) => {
+        if (!ex || !item) return { workMin: 0, restMin: 0, totalMin: 0 };
+
+        const defaults = (typeof ROUTINE_TIME_DEFAULTS !== 'undefined') ? ROUTINE_TIME_DEFAULTS : {
+            segPorRep: 4,
+            descansoSeg: 90
+        };
+        const safeRoutineTimes = routineTimes || {};
+        const pickTime = (...values) => {
+            for (let i = 0; i < values.length; i += 1) {
+                const val = values[i];
+                if (Number.isFinite(val)) return val;
+            }
+            return null;
+        };
 
         const repsAvg = UI.parseReps(item.reps);
         const series = item.series || 0;
-        const secPerRep = item.segPorRep || ex.segPorRep || 4;
-        const restSeconds = item.descansoSeg || ex.descansoSeg || 60;
-        const segTransicion = item.segTransicion || ex.segTransicion || 0;
+        if (!series || !repsAvg) return { workMin: 0, restMin: 0, totalMin: 0 };
+        const secPerRep = pickTime(item.segPorRep, safeRoutineTimes.segPorRep, defaults.segPorRep) || 4;
+        const restSeconds = pickTime(item.descansoSeg, safeRoutineTimes.descansoSeg, defaults.descansoSeg) || 60;
         const workSeg = repsAvg * series * secPerRep;
         const restSeg = series > 1 ? (series - 1) * restSeconds : 0;
-        const transSeg = series > 0 ? series * segTransicion : 0;
         const workMin = workSeg / 60;
         const restMin = restSeg / 60;
-        const transMin = transSeg / 60;
-        return { workMin, restMin, transMin, totalMin: workMin + restMin + transMin };
+        return { workMin, restMin, totalMin: workMin + restMin };
     },
 
-    estimateExerciseMinutes: (item, ex) => {
-        return UI.getExerciseTimeBreakdown(item, ex).totalMin;
+    estimateExerciseMinutes: (item, ex, { routineTimes = null } = {}) => {
+        return UI.getExerciseTimeBreakdown(item, ex, { routineTimes }).totalMin;
     },
 
-    calculateExerciseKcal: (item, ex, { weightKg = null } = {}) => {
+    getEstimatedOneRmEpley: (weightKg, reps) => {
+        const weight = parseFloat(weightKg);
+        const repsVal = parseFloat(reps);
+        if (!Number.isFinite(weight) || weight <= 0) return null;
+        if (!Number.isFinite(repsVal) || repsVal <= 0) return null;
+        return weight * (1 + (repsVal / 30));
+    },
+
+    getIntensityFactorFromEpley: (weightKg, reps) => {
+        const weight = parseFloat(weightKg);
+        const oneRm = UI.getEstimatedOneRmEpley(weight, reps);
+        if (!oneRm || !Number.isFinite(weight) || weight <= 0) return 1;
+        const intensity = Math.min(Math.max(weight / oneRm, 0), 1);
+        return 0.7 + (0.8 * intensity);
+    },
+    getExerciseKcalCoef: (item, ex, { routineTimes = null } = {}) => {
         if (!ex || !item) return 0;
-        const effectiveWeight = UI.getEffectiveWeightKg(weightKg);
         const met = ex.met || 0;
         if (!met) return 0;
 
-        if (ex.unidad === 'min' && item.tiempoMin) {
-            return (met * effectiveWeight / 60) * item.tiempoMin;
+        const { workMin, restMin } = UI.getExerciseTimeBreakdown(item, ex, { routineTimes });
+        if (!workMin && !restMin) return 0;
+        const restMet = 1.5;
+        const workCoef = (met / 60) * workMin;
+        const restCoef = (restMet / 60) * restMin;
+        if (ex.tipo === 'fuerza') {
+            const repsAvg = UI.parseReps(item.reps);
+            const intensityFactor = UI.getIntensityFactorFromEpley(item.pesoKg, repsAvg);
+            return (workCoef * intensityFactor) + restCoef;
         }
+        return workCoef + restCoef;
+    },
 
-        if (ex.unidad === 'rep') {
-            const { workMin, restMin, transMin } = UI.getExerciseTimeBreakdown(item, ex);
-            const restMet = 1.5;
-            const transMet = 2.0;
-            const workKcal = (met * effectiveWeight / 60) * workMin;
-            const restKcal = (restMet * effectiveWeight / 60) * restMin;
-            const transKcal = (transMet * effectiveWeight / 60) * transMin;
-            return workKcal + restKcal + transKcal;
-        }
-        return 0;
+    calculateExerciseKcal: (item, ex, { weightKg = null, routineTimes = null } = {}) => {
+        if (!ex || !item) return 0;
+        const effectiveWeight = UI.getEffectiveWeightKg(weightKg);
+        const coef = UI.getExerciseKcalCoef(item, ex, { routineTimes });
+        if (!coef) return 0;
+        return coef * effectiveWeight;
     },
 
     getEffectiveWeightKg: (weightKg = null) => {
@@ -220,6 +308,7 @@ const UI = {
 
         if (!routine) return { kcal: 0, min: 0, exerciseCount: 0 };
         const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : {});
+        const routineTimes = routine.tiempos || null;
 
         routine.ejercicios.forEach(item => {
             const override = (routineOverrides && routineOverrides[item.ejercicioId]) || {};
@@ -227,8 +316,8 @@ const UI = {
             const ex = exercises[item.ejercicioId];
             if (!ex) return;
             totalEj += 1;
-            totalMin += UI.estimateExerciseMinutes(effectiveItem, ex);
-            totalKcal += UI.calculateExerciseKcal(effectiveItem, ex, { weightKg });
+            totalMin += UI.estimateExerciseMinutes(effectiveItem, ex, { routineTimes });
+            totalKcal += UI.calculateExerciseKcal(effectiveItem, ex, { weightKg, routineTimes });
         });
 
         return { kcal: totalKcal, min: totalMin, exerciseCount: totalEj };
@@ -270,7 +359,7 @@ const UI = {
 
         const editBtn = document.createElement('button');
         editBtn.className = 'btn-back';
-        editBtn.innerHTML = isEditMode ? '✅ Listo' : '✏️ Editar';
+        editBtn.innerHTML = isEditMode ? ' Listo' : ' Editar';
         editBtn.classList.toggle('btn-back--active', isEditMode);
         editBtn.onclick = onToggle;
 

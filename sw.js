@@ -18,6 +18,8 @@ const FILES_TO_CACHE = [
   "js/core/config.js",
   "js/core/date.js",
   "js/core/formulas.js",
+  "js/core/nutrition-score.js",
+  "js/core/nutrition-ui.js",
   "js/core/pwa.js",
   "js/core/storage.js",
   "js/core/stores.js",
@@ -26,12 +28,15 @@ const FILES_TO_CACHE = [
   "js/core/routines.js",
 
   "js/data/foods.js",
-  "js/data/calculadora.js",
+  "js/data/ejercicios.js",
   "js/data/menus/menu.js",
   "js/data/menus/menu_1.js",
   "js/data/rutinas/rutina_descanso.js",
   "js/data/rutinas/rutina_fuerza_A.js",
-  "js/data/targets.js",
+  "js/data/rutinas/rutina_fuerza_B.js",
+  "js/data/rutinas/rutina_fuerza_C.js",
+  "js/data/rutinas/rutina_pasos.js",
+  "js/data/rutinas/rutina_recuperacion.js",
 
   "js/pages/actividad.page.js",
   "js/pages/calculadora.page.js",
@@ -39,8 +44,7 @@ const FILES_TO_CACHE = [
   "js/pages/lista.page.js",
   "js/pages/menu.page.js",
 
-  "assets/icon-192.png",
-  "assets/icon-512.png"
+  "assets/icon-192.png"
 ];
 
 self.addEventListener("install", event => {

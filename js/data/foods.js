@@ -213,6 +213,9 @@ const FOODS = {
   /* =========================
      SUPLEMENTOS
      ========================= */
-  suplemento_proteina: { name: "Suplemento de proteína", category: "💊 Suplementos", unit: "g", nutritionPer100: { kcal: 400, protein: 80.0, carbs: 8.0, fat: 6.0, saturated_fat: 2.0, fiber: 2.0, sugar: 3.0, sodium: 500 }, processed: 7 },
+  creatina_monohidrato: { name: "Creatina monohidrato", category: "💊 Suplementos", unit: "g", nutritionPer100: { kcal: 0, protein: 0.0, carbs: 0.0, fat: 0.0, saturated_fat: 0.0, fiber: 0.0, sugar: 0.0, sodium: 0 }, processed: 6 },
+  proteina: { name: "Proteína", category: "💊 Suplementos", unit: "g", nutritionPer100: { kcal: 400, protein: 80.0, carbs: 8.0, fat: 6.0, saturated_fat: 2.0, fiber: 2.0, sugar: 3.0, sodium: 500 }, processed: 7 },
+  proteina_aislada: { name: "Proteína aislada", category: "💊 Suplementos", unit: "g", nutritionPer100: { kcal: 375, protein: 90.0, carbs: 3.0, fat: 1.5, saturated_fat: 0.6, fiber: 0.0, sugar: 1.0, sodium: 350 }, processed: 7 },
+  proteina_caseina: { name: "Proteína caseína", category: "💊 Suplementos", unit: "g", nutritionPer100: { kcal: 370, protein: 82.0, carbs: 7.0, fat: 2.5, saturated_fat: 1.2, fiber: 0.0, sugar: 4.0, sodium: 420 }, processed: 7 },
 
 };

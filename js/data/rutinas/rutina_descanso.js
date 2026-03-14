@@ -12,5 +12,7 @@ window.WORKOUT_ROUTINES.push({
   macroRatios: { p: 0.30, c: 0.20, f: 0.50 },
   objetivo: "Descanso completo sin actividad programada.",
   estructura: "Sin entrenamiento ni ejercicio.",
+  tiempos: { segPorRep: 4, descansoSeg: 90 },
   ejercicios: []
 });
+

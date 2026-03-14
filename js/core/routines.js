@@ -16,6 +16,23 @@ const Routines = {
 
     getAll: () => window.WORKOUT_ROUTINES || [],
 
+    compareByName: (a, b) => (
+        (a && a.nombre ? a.nombre : '').localeCompare(
+            (b && b.nombre ? b.nombre : ''),
+            'es',
+            { sensitivity: 'base', numeric: true }
+        )
+    ),
+
+    getSortedByName: () => [...Routines.getAll()].sort(Routines.compareByName),
+
+    getOptionsHtml: ({ selectedId = null } = {}) => {
+        const list = Routines.getSortedByName();
+        return list.map(r =>
+            `<option value="${r.id}" ${r.id === selectedId ? 'selected' : ''}>${r.nombre}</option>`
+        ).join('');
+    },
+
     getById: (id) => {
         const list = window.WORKOUT_ROUTINES || [];
         const found = list.find(r => r.id === id);

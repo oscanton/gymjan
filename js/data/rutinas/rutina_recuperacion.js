@@ -12,8 +12,10 @@ window.WORKOUT_ROUTINES.unshift({
   macroRatios: { p: 0.30, c: 0.25, f: 0.45 },
   objetivo: "Día libre o recuperación activa suave.",
   estructura: "Opcional: paseo suave + movilidad ligera",
+  tiempos: { segPorRep: 4, descansoSeg: 90 },
   ejercicios: [
-    { ejercicioId: "movilidad_articular", tiempoMin: 6 },
-    { ejercicioId: "estiramientos", tiempoMin: 8 }
+    { ejercicioId: "movilidad_articular", series: 1, reps: 1, segPorRep: 360 },
+    { ejercicioId: "estiramientos", series: 1, reps: 1, segPorRep: 480 }
   ]
 });
+

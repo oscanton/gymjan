@@ -30,7 +30,7 @@ window.MENU_DATA = [
                 { foodId: "coliflor", amount: 220 },
                 { foodId: "aceite_oliva", amount: 5 },
                 { foodId: "kefir", amount: 125 },
-                { foodId: "suplemento_proteina", amount: 30 }
+                { foodId: "proteina", amount: 30 }
             ],
             description: "Cena ligera y digestiva, rica en proteína y fibra, pensada para favorecer la recuperación tras el entrenamiento."
         }
@@ -103,7 +103,7 @@ window.MENU_DATA = [
         desayuno: {
             items: [
                 { foodId: "cafe", amount: 1 },
-                { foodId: "suplemento_proteina", amount: 30 },
+                { foodId: "proteina", amount: 30 },
                 { foodId: "kefir", amount: 125 },
                 { foodId: "avena", amount: 50 },
                 { foodId: "fruta", amount: 150 }
@@ -139,7 +139,7 @@ window.MENU_DATA = [
                 { foodId: "cafe", amount: 1 },
                 { foodId: "yogur_natural", amount: 170 },
                 { foodId: "avena", amount: 40 },
-                { foodId: "suplemento_proteina", amount: 30 },
+                { foodId: "proteina", amount: 30 },
                 { foodId: "fruta", amount: 100 }
             ],
             description: "Desayuno ligero pero saciante, con hidratos complejos y proteína para un día activo."

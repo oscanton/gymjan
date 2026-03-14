@@ -51,7 +51,6 @@ function renderActivityPage() {
             enfoque: 'full_body',
             musculos: 'piernas, core',
             equipo: 'ninguno',
-            unidad: 'min',
             met: defaultStepsCfg.met,
             descripcion: 'Actividad base de baja intensidad.',
             tecnica: 'Actividad diaria basada en pasos.'
@@ -136,10 +135,6 @@ function renderActivityPage() {
         const dailySteps = ActivityStore.getDailySteps(defaultSteps);
         const weights = getWeights();
         const overrides = getOverrides();
-        const routines = Routines.getAll();
-        const routinesSorted = [...routines].sort((a, b) =>
-            (a.nombre || '').localeCompare((b.nombre || ''), 'es', { sensitivity: 'base', numeric: true })
-        );
 
         const table = tableBody.closest('table');
         const thead = table.querySelector('thead');
@@ -218,10 +213,9 @@ function renderActivityPage() {
         weeklyPlan.forEach((routineId, dayIndex) => {
             const routine = getRoutineById(routineId, fallbackId);
             const selectedId = routineId || fallbackId;
-            const options = routinesSorted.map(r =>
-                `<option value="${r.id}" ${r.id === selectedId ? 'selected' : ''}>${r.nombre}</option>`
-            ).join('');
+            const options = Routines.getOptionsHtml({ selectedId });
             const meta = routine ? `${routine.objetivo || ''}` : '';
+            const routineTimes = routine && routine.tiempos ? routine.tiempos : null;
 
             const exercisesHtml = (routine && routine.ejercicios && routine.ejercicios.length)
                 ? UI.groupExercisesByTypeFocus(routine, EXERCISES).map(group => {
@@ -239,15 +233,22 @@ function renderActivityPage() {
                         return `<div class="activity-exercise">Ejercicio no encontrado: ${item.ejercicioId}</div>`;
                     }
 
-                    const showWeight = ex.tipo === 'fuerza' && ex.unidad === 'rep' && effectiveItem.series && effectiveItem.reps;
                     const dayWeights = weights[dayIndex] || {};
                     const defaultWeight = effectiveItem.pesoKg ?? '';
                     const currentWeight = (dayWeights[item.ejercicioId] ?? defaultWeight);
-                    const kcal = UI.calculateExerciseKcal(effectiveItem, ex);
-                    const estimatedMin = UI.estimateExerciseMinutes(effectiveItem, ex);
+                    const isTimeBased = UI.isTimedItem(effectiveItem);
+                    const numericWeight = parseFloat(currentWeight);
+                    const showWeight = ex.tipo === 'fuerza' && !isTimeBased && Number.isFinite(numericWeight) && numericWeight > 0;
+                    const kcal = UI.calculateExerciseKcal(effectiveItem, ex, { routineTimes });
+                    const estimatedMin = UI.estimateExerciseMinutes(effectiveItem, ex, { routineTimes });
+                    const routineRest = routineTimes && Number.isFinite(routineTimes.descansoSeg)
+                        ? routineTimes.descansoSeg
+                        : (typeof ROUTINE_TIME_DEFAULTS !== 'undefined' && Number.isFinite(ROUTINE_TIME_DEFAULTS.descansoSeg))
+                            ? ROUTINE_TIME_DEFAULTS.descansoSeg
+                            : '';
 
                     return `
-                        <div class="activity-exercise" data-ex-name="${ex.name}" data-ex-tech="${ex.tecnica || ''}" data-ex-kcal="${kcal}" data-ex-tipo="${ex.tipo || ''}" data-ex-enfoque="${ex.enfoque || ''}" data-ex-musculos="${ex.musculos || ''}" data-ex-equipo="${ex.equipo || ''}" data-ex-descanso="${effectiveItem.descansoSeg || ex.descansoSeg || ''}">
+                        <div class="activity-exercise" data-ex-name="${ex.name}" data-ex-tech="${ex.tecnica || ''}" data-ex-kcal="${kcal}" data-ex-tipo="${ex.tipo || ''}" data-ex-enfoque="${ex.enfoque || ''}" data-ex-musculos="${ex.musculos || ''}" data-ex-equipo="${ex.equipo || ''}" data-ex-descanso="${effectiveItem.descansoSeg || routineRest || ''}">
                             <div class="activity-exercise__name modal-trigger">${ex.name}</div>
                             <div class="activity-exercise__row">
                                 ${showWeight ? (
@@ -261,7 +262,7 @@ function renderActivityPage() {
                                         `
                                         : `<span class="activity-exercise__pill">&#127947;&#65039; ${currentWeight || 0} kg</span>`
                                 ) : '<span class="activity-exercise__pill">Sin carga</span>'}
-                                ${isEditMode && ex.unidad === 'rep' ? `
+                                ${isEditMode && !isTimeBased ? `
                                     <div class="activity-exercise__weight">
                                         <span>&#128290;</span>
                                         <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
@@ -272,9 +273,9 @@ function renderActivityPage() {
                                         <input type="text" class="input-base input-base--table-edit"
                                             data-routine-id="${routine.id}" data-exercise-id="${item.ejercicioId}" data-field="reps" value="${effectiveItem.reps || ''}">
                                     </div>
-                                ` : ((isEditMode && ex.unidad === 'rep') || ex.unidad === 'min'
+                                ` : (isEditMode
                                     ? ''
-                                    : `<div class="activity-exercise__pill">${UI.formatTrabajo(effectiveItem, ex)}</div>`)}
+                                    : `<div class="activity-exercise__pill">${UI.formatTrabajo(effectiveItem)}</div>`)}
                             </div>
                             <div class="activity-exercise__row">
                                 <div class="activity-exercise__pill">&#128293; ${Math.round(kcal)} kcal</div>
@@ -446,18 +447,17 @@ function renderActivityPage() {
         });
     });
 
-    const loadDependencies = () => {
-        UI.loadDependencies([
-            { when: () => typeof EXERCISES === 'undefined', path: 'js/data/ejercicios.js' },
-            { when: () => typeof STEP_ROUTINE === 'undefined', path: 'js/data/rutinas/rutina_pasos.js' },
-            { when: () => typeof Routines === 'undefined', path: 'js/core/routines.js' }
-        ])
-            .then(() => Routines.ensureLoaded())
-            .then(() => renderTableContent())
-            .catch(() => {
-                tableBody.innerHTML = `<tr><td colspan="${errorColspan}" class="text-status--danger text-center">Error cargando dependencias (ejercicios/rutinas).</td></tr>`;
-            });
-    };
-
-    loadDependencies();
+    UI.bootstrapPage({
+        rootId: 'actividad-body',
+        requiredDeps: [
+            { global: 'EXERCISES', path: 'js/data/ejercicios.js' },
+            { global: 'STEP_ROUTINE', path: 'js/data/rutinas/rutina_pasos.js' },
+            { global: 'Routines', path: 'js/core/routines.js' }
+        ],
+        afterRequired: () => Routines.ensureLoaded(),
+        run: () => renderTableContent(),
+        onError: () => {
+            tableBody.innerHTML = `<tr><td colspan="${errorColspan}" class="text-status--danger text-center">Error cargando dependencias (ejercicios/rutinas).</td></tr>`;
+        }
+    });
 }
