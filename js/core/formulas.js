@@ -84,10 +84,10 @@ const Formulas = {
             totals.protein += (nutrition.protein || 0) * ratio;
             totals.carbs += (nutrition.carbs || 0) * ratio;
             totals.fat += (nutrition.fat || 0) * ratio;
-            totals.saturatedFat += (nutrition.saturated_fat || 0) * ratio;
+            totals.saturatedFat += (nutrition.saturatedFat || 0) * ratio;
             totals.fiber += (nutrition.fiber || 0) * ratio;
             totals.sugar += (nutrition.sugar || 0) * ratio;
-            totals.salt += ((nutrition.sodium || 0) * ratio * 2.5) / 1000;
+            totals.salt += ((nutrition.sodiumMg || 0) * ratio * 2.5) / 1000;
 
             if (Number.isFinite(food.processed) && itemKcal > 0) {
                 totals.processingWeightedSum += food.processed * itemKcal;
@@ -102,12 +102,12 @@ const Formulas = {
         return totals;
     },
 
-    calculateDayTotals: (dayData, mealKeys = ['desayuno', 'comida', 'cena']) => {
+    calculateDayTotals: (dayData, mealKeys = ['breakfast', 'lunch', 'dinner']) => {
         const safeMealKeys = (Array.isArray(mealKeys) && mealKeys.length)
             ? mealKeys
             : ((typeof MEAL_KEYS !== 'undefined' && Array.isArray(MEAL_KEYS) && MEAL_KEYS.length)
                 ? MEAL_KEYS
-                : ['desayuno', 'comida', 'cena']);
+                : ['breakfast', 'lunch', 'dinner']);
         const dayTotals = Formulas.createEmptyNutritionTotals();
         if (!dayData || !Array.isArray(safeMealKeys)) return dayTotals;
 
@@ -147,7 +147,7 @@ const Formulas = {
             ? mealKeys
             : ((typeof MEAL_KEYS !== 'undefined' && Array.isArray(MEAL_KEYS) && MEAL_KEYS.length)
                 ? MEAL_KEYS
-                : ['desayuno', 'comida', 'cena']);
+                : ['breakfast', 'lunch', 'dinner']);
         const totals = {};
         if (!Array.isArray(menuData)) return totals;
 
@@ -169,4 +169,3 @@ const Formulas = {
 };
 
 window.Formulas = Formulas;
-

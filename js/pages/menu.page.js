@@ -1,4 +1,4 @@
-﻿/* =========================================
+/* =========================================
    pages/menu.page.js - MENÚ SEMANAL
    ========================================= */
 
@@ -62,21 +62,28 @@ function renderMenuPage() {
         container.after(controls);
     }
 
-    const MEAL_KEYS = ['desayuno', 'comida', 'cena'];
+    const mealKeys = (typeof MEAL_KEYS !== 'undefined' && Array.isArray(MEAL_KEYS) && MEAL_KEYS.length)
+        ? MEAL_KEYS
+        : ['breakfast', 'lunch', 'dinner'];
     const SECONDARY_TARGET_KEYS = ['salt', 'fiber', 'sugar', 'saturatedFat', 'processing'];
     const DEFAULT_GRAMS_AMOUNT = 100;
     const DEFAULT_UNIT_AMOUNT = 1;
-
-    const formatNumber = (value, decimals = 1) => {
-        const numeric = Number.isFinite(value) ? value : 0;
-        return numeric.toFixed(decimals).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+    const NUTRITION_METRIC_LABELS = {
+        kcal: 'Kcal',
+        protein: 'Proteína',
+        carbs: 'Carbohidratos',
+        fat: 'Grasas',
+        fiber: 'Fibra',
+        sugar: 'Azúcar',
+        saturatedFat: 'Grasa sat.',
+        salt: 'Sal',
+        processing: 'Procesamiento'
     };
-    const escapeHtml = (value) => String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+
+    const formatNumber = UI.formatNumber;
+    const encodePayload = UI.encodePayload;
+    const decodePayload = UI.decodePayload;
+    const escapeHtml = UI.escapeHtml;
     const getDefaultAmountForFood = (food) => {
         if (!food) return 0;
         return food.nutritionPerUnit ? DEFAULT_UNIT_AMOUNT : DEFAULT_GRAMS_AMOUNT;
@@ -109,107 +116,69 @@ function renderMenuPage() {
         <div class="stat-pill stat-pill--xs">🥑 ${Math.round(nut.fat)}g</div>
     `;
 
-    const createEmptyDayTotals = () => ({
-        kcal: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-        saturatedFat: 0,
-        fiber: 0,
-        sugar: 0,
-        salt: 0,
-        processingWeightedSum: 0,
-        processingKcalBase: 0,
-        processingAvg: 0
-    });
-
-    const calculateMealDetails = (items) => {
-        const totals = createEmptyDayTotals();
-        if (!Array.isArray(items) || typeof FOODS === 'undefined') return totals;
-
-        items.forEach(item => {
-            const food = FOODS[item.foodId];
-            if (!food) return;
-
-            let ratio = 0;
-            let nutrition = null;
-            if (food.nutritionPer100) {
-                ratio = (parseFloat(item.amount) || 0) / 100;
-                nutrition = food.nutritionPer100;
-            } else if (food.nutritionPerUnit) {
-                ratio = parseFloat(item.amount) || 0;
-                nutrition = food.nutritionPerUnit;
-            }
-            if (!nutrition || ratio <= 0) return;
-
-            const itemKcal = (nutrition.kcal || 0) * ratio;
-            totals.kcal += itemKcal;
-            totals.protein += (nutrition.protein || 0) * ratio;
-            totals.carbs += (nutrition.carbs || 0) * ratio;
-            totals.fat += (nutrition.fat || 0) * ratio;
-            totals.saturatedFat += (nutrition.saturated_fat || 0) * ratio;
-            totals.fiber += (nutrition.fiber || 0) * ratio;
-            totals.sugar += (nutrition.sugar || 0) * ratio;
-            totals.salt += ((nutrition.sodium || 0) * ratio * 2.5) / 1000;
-
-            if (Number.isFinite(food.processed) && itemKcal > 0) {
-                totals.processingWeightedSum += food.processed * itemKcal;
-                totals.processingKcalBase += itemKcal;
-            }
+    const mealLabels = { breakfast: 'Desayuno', lunch: 'Comida', dinner: 'Cena' };
+    const calculateDayTotals = (dayData) => Formulas.calculateDayTotals(dayData, mealKeys);
+    const renderNutritionScorePill = (dayTotals, target) => {
+        if (typeof NutritionScore === 'undefined') return '';
+        const result = NutritionScore.calculate({
+            kcal: dayTotals.kcal,
+            protein: dayTotals.protein,
+            carbs: dayTotals.carbs,
+            fat: dayTotals.fat,
+            fiber: dayTotals.fiber,
+            sugar: dayTotals.sugar,
+            saturatedFat: dayTotals.saturatedFat,
+            salt: dayTotals.salt,
+            processing: dayTotals.processingAvg
+        }, target || {});
+        const statusClass = NutritionScore.getStatusClass(result.score);
+        const scoreText = Number.isFinite(result.score) ? formatNumber(result.score, 1) : '-';
+        const debugPayload = encodePayload({
+            score: result.score,
+            penalties: result.penalties,
+            deviationsPct: result.deviationsPct
         });
-
-        totals.processingAvg = totals.processingKcalBase
-            ? (totals.processingWeightedSum / totals.processingKcalBase)
-            : 0;
-        return totals;
-    };
-
-    const calculateDayTotals = (dayData) => {
-        const dayTotals = createEmptyDayTotals();
-
-        MEAL_KEYS.forEach(mealKey => {
-            const items = dayData && dayData[mealKey] ? dayData[mealKey].items : [];
-            const mealTotals = calculateMealDetails(items);
-            dayTotals.kcal += mealTotals.kcal;
-            dayTotals.protein += mealTotals.protein;
-            dayTotals.carbs += mealTotals.carbs;
-            dayTotals.fat += mealTotals.fat;
-            dayTotals.saturatedFat += mealTotals.saturatedFat;
-            dayTotals.fiber += mealTotals.fiber;
-            dayTotals.sugar += mealTotals.sugar;
-            dayTotals.salt += mealTotals.salt;
-            dayTotals.processingWeightedSum += mealTotals.processingWeightedSum;
-            dayTotals.processingKcalBase += mealTotals.processingKcalBase;
-        });
-
-        dayTotals.processingAvg = dayTotals.processingKcalBase
-            ? (dayTotals.processingWeightedSum / dayTotals.processingKcalBase)
-            : 0;
-        return dayTotals;
+        return `
+            <button type="button" class="stat-pill stat-pill--nutritional-score stat-pill--block pill-trigger nutritional-score-info-trigger" data-nutritional-score="${debugPayload}">
+                Score nutricional: <span class="${statusClass}">${scoreText}</span>
+            </button>
+        `;
     };
 
     const renderPrimaryNutrientsHtml = ({ kcal, protein, carbs, fat }, {
         targets = null,
         statusClasses = {},
-        kcalSizeClass = 'stat-pill--sm'
+        kcalSizeClass = 'stat-pill--sm',
+        kcalDebugPayload = ''
     } = {}) => {
         const targetKcal = targets ? targets.kcal : null;
         const targetProtein = targets ? targets.protein : null;
         const targetCarbs = targets ? targets.carbs : null;
         const targetFat = targets ? targets.fat : null;
 
+        const kcalPillHtml = kcalDebugPayload
+            ? `
+                <button type="button" class="stat-pill stat-pill--kcal ${kcalSizeClass} stat-pill--block pill-trigger kcal-info-trigger" data-kcal-debug="${kcalDebugPayload}">
+                    🔥 <span class="${statusClasses.kcal || ''}">${Math.round(kcal)} kcal</span>
+                    ${Number.isFinite(targetKcal) ? `<span class="text-muted">/ ${targetKcal} kcal</span>` : ''}
+                </button>
+            `
+            : `
+                <div class="stat-pill stat-pill--kcal ${kcalSizeClass} stat-pill--block">
+                    🔥 <span class="${statusClasses.kcal || ''}">${Math.round(kcal)} kcal</span>
+                    ${Number.isFinite(targetKcal) ? `<span class="text-muted">/ ${targetKcal} kcal</span>` : ''}
+                </div>
+            `;
+
         return `
-            <div class="stat-pill stat-pill--kcal ${kcalSizeClass} stat-pill--block">
-                🔥 <span class="${statusClasses.kcal || ''}">${Math.round(kcal)} kcal</span>
-                ${Number.isFinite(targetKcal) ? `<span class="text-muted">/ ${targetKcal} kcal</span>` : ''}
-            </div>
+            ${kcalPillHtml}
             <div class="nutrition-row">
                 <div class="stat-pill nutrition-pill">
                     <div class="nutrition-pill__label">🥩 Prot</div>
                     <div><span class="${statusClasses.protein || ''}">${Math.round(protein)}g</span>${Number.isFinite(targetProtein) ? ` <span class="text-muted">/ ${targetProtein}g</span>` : ''}</div>
                 </div>
                 <div class="stat-pill nutrition-pill">
-                    <div class="nutrition-pill__label">🍚 Carbs</div>
+                    <div class="nutrition-pill__label">🍚 Carbohidratos</div>
                     <div><span class="${statusClasses.carbs || ''}">${Math.round(carbs)}g</span>${Number.isFinite(targetCarbs) ? ` <span class="text-muted">/ ${targetCarbs}g</span>` : ''}</div>
                 </div>
                 <div class="stat-pill nutrition-pill">
@@ -286,10 +255,11 @@ function renderMenuPage() {
         statusClasses = {},
         kcalSizeClass = 'stat-pill--sm',
         secondaryContainerClass = '',
-        secondaryDecimals = {}
+        secondaryDecimals = {},
+        kcalDebugPayload = ''
     } = {}) => `
         <div class="nutrition-stack">
-            ${renderPrimaryNutrientsHtml(nutrients, { targets, statusClasses, kcalSizeClass })}
+            ${renderPrimaryNutrientsHtml(nutrients, { targets, statusClasses, kcalSizeClass, kcalDebugPayload })}
             ${renderSecondaryNutrientsHtml({
                 salt: nutrients.salt,
                 fiber: nutrients.fiber,
@@ -305,22 +275,53 @@ function renderMenuPage() {
     `;
 
     const generateTotalsHtml = (dayTotals, target) => {
-        const tKcal = target ? target.kcal : 0;
-        const tProt = target ? target.protein : 0;
-        const tCarb = target ? target.carbs : 0;
-        const tFat  = target ? target.fat : 0;
+        const safeTarget = target || {};
+        const tKcal = safeTarget.kcal || 0;
+        const tProt = safeTarget.protein || 0;
+        const tCarb = safeTarget.carbs || 0;
+        const tFat  = safeTarget.fat || 0;
 
         const classKcal = UI.getStatusClass(dayTotals.kcal, tKcal);
         const classProt = UI.getStatusClass(dayTotals.protein, tProt);
         const classCarb = UI.getStatusClass(dayTotals.carbs, tCarb);
         const classFat  = UI.getStatusClass(dayTotals.fat, tFat);
-        const classSalt = UI.getStatusClassByRule(dayTotals.salt, target && target.salt, { rule: 'max', tolerancePct: 10 });
-        const classFiber = UI.getStatusClassByRule(dayTotals.fiber, target && target.fiber, { rule: 'min', tolerancePct: 10 });
-        const classSugar = UI.getStatusClassByRule(dayTotals.sugar, target && target.sugar, { rule: 'max', tolerancePct: 10 });
-        const classSaturatedFat = UI.getStatusClassByRule(dayTotals.saturatedFat, target && target.saturatedFat, { rule: 'max', tolerancePct: 10 });
-        const classProcessing = UI.getStatusClassByRule(dayTotals.processingAvg, target && target.processing, { rule: 'max', tolerancePct: 10 });
+        const classSalt = UI.getStatusClassByRule(dayTotals.salt, safeTarget.salt, { rule: 'max', tolerancePct: 10 });
+        const classFiber = UI.getStatusClassByRule(dayTotals.fiber, safeTarget.fiber, { rule: 'min', tolerancePct: 10 });
+        const classSugar = UI.getStatusClassByRule(dayTotals.sugar, safeTarget.sugar, { rule: 'max', tolerancePct: 10 });
+        const classSaturatedFat = UI.getStatusClassByRule(dayTotals.saturatedFat, safeTarget.saturatedFat, { rule: 'max', tolerancePct: 10 });
+        const classProcessing = UI.getStatusClassByRule(dayTotals.processingAvg, safeTarget.processing, { rule: 'max', tolerancePct: 10 });
 
-        return renderCompleteNutritionHtml({
+        const targets = {
+            kcal: tKcal,
+            protein: tProt,
+            carbs: tCarb,
+            fat: tFat,
+            salt: safeTarget.salt ?? null,
+            fiber: safeTarget.fiber ?? null,
+            sugar: safeTarget.sugar ?? null,
+            saturatedFat: safeTarget.saturatedFat ?? null,
+            processing: safeTarget.processing ?? null
+        };
+        const kcalFromMacros = (parseFloat(dayTotals.protein) * 4)
+            + (parseFloat(dayTotals.carbs) * 4)
+            + (parseFloat(dayTotals.fat) * 9);
+        const kcalDebugPayload = encodePayload({
+            actuals: {
+                kcal: dayTotals.kcal,
+                protein: dayTotals.protein,
+                carbs: dayTotals.carbs,
+                fat: dayTotals.fat,
+                fiber: dayTotals.fiber,
+                sugar: dayTotals.sugar,
+                saturatedFat: dayTotals.saturatedFat,
+                salt: dayTotals.salt,
+                processing: dayTotals.processingAvg
+            },
+            targets,
+            kcalFromMacros
+        });
+
+        const totalsHtml = renderCompleteNutritionHtml({
             kcal: dayTotals.kcal,
             protein: dayTotals.protein,
             carbs: dayTotals.carbs,
@@ -331,17 +332,7 @@ function renderMenuPage() {
             saturatedFat: dayTotals.saturatedFat,
             processing: dayTotals.processingAvg
         }, {
-            targets: {
-                kcal: tKcal,
-                protein: tProt,
-                carbs: tCarb,
-                fat: tFat,
-                salt: target ? target.salt : null,
-                fiber: target ? target.fiber : null,
-                sugar: target ? target.sugar : null,
-                saturatedFat: target ? target.saturatedFat : null,
-                processing: target ? target.processing : null
-            },
+            targets,
             statusClasses: {
                 kcal: classKcal,
                 protein: classProt,
@@ -361,8 +352,10 @@ function renderMenuPage() {
                 sugar: 0,
                 saturatedFat: 0,
                 processing: 1
-            }
+            },
+            kcalDebugPayload
         });
+        return `${totalsHtml}${renderNutritionScorePill(dayTotals, target)}`;
     };
 
     const ensureDailyTargets = () => {
@@ -425,23 +418,21 @@ function renderMenuPage() {
             currentData.forEach((day, index) => {
                 const isToday = index === todayIndex;
                 const activeClass = isToday ? 'text-status--ok' : '';
-                headerHtml += `<th class="${activeClass}">${day.dia}</th>`;
+                headerHtml += `<th class="${activeClass}">${day.day}</th>`;
             });
             headerHtml += '</tr>';
             thead.innerHTML = headerHtml;
         }
 
         tableBody.innerHTML = "";
-        const mealLabels = { desayuno: 'Desayuno', comida: 'Comida', cena: 'Cena' };
-
         const currentHour = new Date().getHours();
         let activeMeal = null;
-        if (currentHour >= 6 && currentHour < 12) activeMeal = 'desayuno';
-        else if (currentHour >= 12 && currentHour < 18) activeMeal = 'comida';
-        else if (currentHour >= 18) activeMeal = 'cena';
+        if (currentHour >= 6 && currentHour < 12) activeMeal = 'breakfast';
+        else if (currentHour >= 12 && currentHour < 18) activeMeal = 'lunch';
+        else if (currentHour >= 18) activeMeal = 'dinner';
 
         try {
-            MEAL_KEYS.forEach(mealKey => {
+            mealKeys.forEach(mealKey => {
                 const row = document.createElement("tr");
                 const isActive = mealKey === activeMeal;
                 const activeClass = isActive ? 'text-status--ok' : '';
@@ -500,7 +491,7 @@ function renderMenuPage() {
             currentData.forEach((day, dayIndex) => {
                 const dayTotals = calculateDayTotals(day);
 
-                const target = storedTargets[day.dia];
+                const target = storedTargets[day.day];
                 totalsHtml += `
                     <td class="day-total" id="day-totals-${dayIndex}">
                         ${generateTotalsHtml(dayTotals, target)}
@@ -518,8 +509,9 @@ function renderMenuPage() {
     };
 
     tableBody.addEventListener('click', (e) => {
-        if (e.target.classList.contains('food-info-trigger')) {
-            const foodId = e.target.dataset.foodId;
+        const foodTrigger = e.target.closest('.food-info-trigger');
+        if (foodTrigger) {
+            const foodId = foodTrigger.dataset.foodId;
 
             if (typeof FOODS === 'undefined') return;
             const food = FOODS[foodId];
@@ -537,10 +529,10 @@ function renderMenuPage() {
                 vals = food.nutritionPerUnit;
                 label = 'Valores por Unidad';
             }
-            const saturatedFat = vals.saturated_fat ?? 0;
+            const saturatedFat = vals.saturatedFat ?? 0;
             const fiber = vals.fiber ?? 0;
             const sugar = vals.sugar ?? 0;
-            const sodiumMg = vals.sodium ?? 0;
+            const sodiumMg = vals.sodiumMg ?? 0;
             const saltG = (sodiumMg * 2.5) / 1000;
             const processingScore = Number.isFinite(food.processed) ? food.processed : NaN;
 
@@ -563,7 +555,148 @@ function renderMenuPage() {
                     }, { kcalSizeClass: 'modal-stat-pill-lg' })}
                 `
             });
+            return;
         }
+
+        const scoreTrigger = e.target.closest('.nutritional-score-info-trigger');
+        if (scoreTrigger) {
+            const payload = decodePayload(scoreTrigger.dataset.nutritionalScore);
+            if (!payload) return;
+
+            const rows = Object.keys(NUTRITION_METRIC_LABELS).map((key) => {
+                const deviation = payload.deviationsPct ? payload.deviationsPct[key] : null;
+                const penalty = payload.penalties ? payload.penalties[key] : null;
+                const deviationText = Number.isFinite(deviation) ? `${formatNumber(deviation, 1)}%` : '-';
+                const penaltyText = Number.isFinite(penalty) ? formatNumber(penalty, 2) : '-';
+                return {
+                    label: NUTRITION_METRIC_LABELS[key],
+                    col2: deviationText,
+                    col3: penaltyText
+                };
+            });
+
+            const scoreText = Number.isFinite(payload.score) ? formatNumber(payload.score, 1) : '-';
+            const statusClass = NutritionScore.getStatusClass(payload.score);
+
+            UI.showModal({
+                id: 'nutrition-score-modal',
+                titleHtml: `<h3 class="text-primary modal-title">Score nutricional</h3>`,
+                bodyHtml: `
+                    <div class="table-scroller">
+                        <table class="adjustments-table">
+                            <thead>
+                                <tr>
+                                    <th>Métrica</th>
+                                    <th class="text-right">Desviación</th>
+                                    <th class="text-right">Penalización</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows.map(row => `
+                                    <tr>
+                                        <td>${escapeHtml(row.label)}</td>
+                                        <td class="text-right">${escapeHtml(row.col2)}</td>
+                                        <td class="text-right">${escapeHtml(row.col3)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="stats-pills stats-pills--center mt-lg">
+                        <div class="stat-pill stat-pill--nutritional-score nutritional-score-modal-score-pill">
+                            Puntuación: <span class="${statusClass}">${scoreText}</span>
+                        </div>
+                    </div>
+                `
+            });
+            return;
+        }
+
+        const kcalTrigger = e.target.closest('.kcal-info-trigger');
+        if (!kcalTrigger) return;
+
+        const payload = decodePayload(kcalTrigger.dataset.kcalDebug);
+        if (!payload) return;
+
+        const actuals = payload.actuals || {};
+        const targets = payload.targets || {};
+        const kcalFromMacros = Number.isFinite(payload.kcalFromMacros) ? payload.kcalFromMacros : 0;
+
+        const formatMacro = (value) => `${Math.round(Number.parseFloat(value) || 0)} g`;
+        const formatMacroOneDecimal = (value) => `${formatNumber(Number.parseFloat(value) || 0, 1)} g`;
+        const formatSalt = (value) => `${formatNumber(Number.parseFloat(value) || 0, 2)} g`;
+        const formatProcessing = (value) => `${formatNumber(Number.parseFloat(value) || 0, 1)}/10`;
+        const formatKcal = (value) => `${Math.round(Number.parseFloat(value) || 0)} kcal`;
+
+        UI.showModal({
+            id: 'kcal-debug-modal',
+            titleHtml: `<h3 class="text-primary modal-title">Cálculo de kcal y macros</h3>`,
+            bodyHtml: `
+                <div class="table-scroller">
+                    <table class="adjustments-table">
+                        <thead>
+                            <tr>
+                                <th>Métrica</th>
+                                <th class="text-right">Actual</th>
+                                <th class="text-right">Objetivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Kcal</td>
+                                <td class="text-right">${formatKcal(actuals.kcal)}</td>
+                                <td class="text-right">${formatKcal(targets.kcal)}</td>
+                            </tr>
+                            <tr>
+                                <td>Proteína</td>
+                                <td class="text-right">${formatMacro(actuals.protein)}</td>
+                                <td class="text-right">${formatMacro(targets.protein)}</td>
+                            </tr>
+                            <tr>
+                                <td>Carbohidratos</td>
+                                <td class="text-right">${formatMacro(actuals.carbs)}</td>
+                                <td class="text-right">${formatMacro(targets.carbs)}</td>
+                            </tr>
+                            <tr>
+                                <td>Grasas</td>
+                                <td class="text-right">${formatMacro(actuals.fat)}</td>
+                                <td class="text-right">${formatMacro(targets.fat)}</td>
+                            </tr>
+                            <tr>
+                                <td>Fibra</td>
+                                <td class="text-right">${formatMacroOneDecimal(actuals.fiber)}</td>
+                                <td class="text-right">${formatMacroOneDecimal(targets.fiber)}</td>
+                            </tr>
+                            <tr>
+                                <td>Azúcar</td>
+                                <td class="text-right">${formatMacroOneDecimal(actuals.sugar)}</td>
+                                <td class="text-right">${formatMacroOneDecimal(targets.sugar)}</td>
+                            </tr>
+                            <tr>
+                                <td>Grasa sat.</td>
+                                <td class="text-right">${formatMacroOneDecimal(actuals.saturatedFat)}</td>
+                                <td class="text-right">${formatMacroOneDecimal(targets.saturatedFat)}</td>
+                            </tr>
+                            <tr>
+                                <td>Sal</td>
+                                <td class="text-right">${formatSalt(actuals.salt)}</td>
+                                <td class="text-right">${formatSalt(targets.salt)}</td>
+                            </tr>
+                            <tr>
+                                <td>Procesamiento</td>
+                                <td class="text-right">${formatProcessing(actuals.processing)}</td>
+                                <td class="text-right">${formatProcessing(targets.processing)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="stats-pills stats-pills--center mt-lg">
+                    <div class="stat-pill stat-pill--kcal">
+                        ${formatKcal(kcalFromMacros)}
+                    </div>
+                </div>
+            `
+        });
     });
 
     tableBody.addEventListener('input', (e) => {
@@ -589,7 +722,7 @@ function renderMenuPage() {
                 const dayTotals = calculateDayTotals(dayData);
 
                 const storedTargets = DB.get('daily_nutrition_targets', {});
-                const target = storedTargets[dayData.dia];
+                const target = storedTargets[dayData.day];
                 const totalsCell = document.getElementById(`day-totals-${dayIndex}`);
                 if (totalsCell) {
                     totalsCell.innerHTML = generateTotalsHtml(dayTotals, target);
@@ -630,6 +763,7 @@ function renderMenuPage() {
         UI.loadDependencies([
             { when: () => typeof Formulas === 'undefined', path: 'js/core/formulas.js' },
             { when: () => typeof Targets === 'undefined', path: 'js/core/targets.js' },
+            { when: () => typeof NutritionScore === 'undefined', path: 'js/core/nutrition-score.js' },
             { when: () => typeof FOODS === 'undefined', path: 'js/data/foods.js' },
             { when: () => typeof Routines === 'undefined', path: 'js/core/routines.js' },
             { when: () => typeof EXERCISES === 'undefined', path: 'js/data/ejercicios.js' },

@@ -24,6 +24,7 @@ function renderShoppingListPage() {
     }
 
     UI.loadDependencies([
+        { when: () => typeof Formulas === 'undefined', path: 'js/core/formulas.js', id: 'core-formulas' },
         { when: () => typeof FOODS === 'undefined', path: 'js/data/foods.js', id: 'static-foods-data' },
         { when: true, path: 'js/data/' + menuFile, id: 'dynamic-menu-list' }
     ])
@@ -38,22 +39,16 @@ function renderShoppingListPage() {
 }
 
 function calculateAndRenderList(container) {
-    if (typeof MENU_DATA === 'undefined' || typeof FOODS === 'undefined') {
+    if (typeof MENU_DATA === 'undefined' || typeof FOODS === 'undefined' || typeof Formulas === 'undefined') {
         container.innerHTML = `<div class="glass-card card"><p>Faltan datos (Menú o Alimentos).</p></div>`;
         return;
     }
 
-    const totals = {};
-
-    MENU_DATA.forEach(day => {
-        ['desayuno', 'comida', 'cena'].forEach(meal => {
-            if (day[meal] && day[meal].items) {
-                day[meal].items.forEach(item => {
-                    totals[item.foodId] = (totals[item.foodId] || 0) + item.amount;
-                });
-            }
-        });
-    });
+    const formatNumber = UI.formatNumber;
+    const mealKeys = (typeof MEAL_KEYS !== 'undefined' && Array.isArray(MEAL_KEYS) && MEAL_KEYS.length)
+        ? MEAL_KEYS
+        : ['breakfast', 'lunch', 'dinner'];
+    const totals = Formulas.calculateShoppingTotals(MENU_DATA, mealKeys);
 
     const listByCategory = {};
 
@@ -127,11 +122,11 @@ function calculateAndRenderList(container) {
             let displayUnit = item.unit || '';
 
             if (displayUnit === 'g' && displayAmount >= 1000) {
-                displayAmount = (displayAmount / 1000).toFixed(1).replace('.0', '');
+                displayAmount = formatNumber(displayAmount / 1000, 1);
                 displayUnit = 'kg';
             }
             if (displayUnit === 'ml' && displayAmount >= 1000) {
-                displayAmount = (displayAmount / 1000).toFixed(1).replace('.0', '');
+                displayAmount = formatNumber(displayAmount / 1000, 1);
                 displayUnit = 'L';
             }
 

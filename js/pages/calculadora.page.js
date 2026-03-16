@@ -1,4 +1,4 @@
-﻿/* =========================================
+/* =========================================
    pages/calculadora.page.js - CALCULADORA
    ========================================= */
 
@@ -54,9 +54,9 @@ function initCalculator(container) {
     const formatActivity = (key) => {
         if (typeof Routines !== 'undefined') {
             const r = Routines.getById(key);
-            if (r && r.nombre) return r.nombre;
+            if (r && r.name) return r.name;
         }
-        return (key || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return UI.formatLabel(key || '');
     };
 
     // 1. Cargar datos (o defaults)
@@ -124,19 +124,11 @@ function initCalculator(container) {
         }).join('');
     };
 
-    const formatRuleValue = (value, decimals = 1) => {
-        const safe = Number.isFinite(value) ? value : 0;
-        const rounded = Math.round(safe * (10 ** decimals)) / (10 ** decimals);
-        return `${rounded}`;
-    };
-    const formatRuleFactor = (value) => {
-        const safe = Number.isFinite(value) ? value : 0;
-        return safe.toFixed(2).replace('.', ',');
-    };
-    const getReposoMacroRatios = () => {
-        const reposoContext = getMacroContextForRoutine(fallbackId);
-        const source = reposoContext && reposoContext.macroRatios
-            ? reposoContext.macroRatios
+    const formatRuleValue = (value, decimals = 1) => UI.formatNumber(value, decimals);
+    const getRestMacroRatios = () => {
+        const restContext = getMacroContextForRoutine(fallbackId);
+        const source = restContext && restContext.macroRatios
+            ? restContext.macroRatios
             : Formulas.DEFAULT_MACRO_RATIOS;
         return {
             p: Number.isFinite(source.p) ? source.p : Formulas.DEFAULT_MACRO_RATIOS.p,
@@ -144,11 +136,12 @@ function initCalculator(container) {
             f: Number.isFinite(source.f) ? source.f : Formulas.DEFAULT_MACRO_RATIOS.f
         };
     };
-    const reposoMacroRatios = getReposoMacroRatios();
+    const restMacroRatios = getRestMacroRatios();
+    const GRAM_KEYS = new Set(['p', 'c', 'f', 'saturatedFat', 'fiber', 'sugar']);
     const formatMetricValue = (key, value) => {
         const safe = Number.isFinite(value) ? value : 0;
         if (key === 'kcal') return `${Math.round(safe)} kcal`;
-        if (key === 'p' || key === 'c' || key === 'f' || key === 'saturatedFat' || key === 'fiber' || key === 'sugar') return `${Math.round(safe)} g`;
+        if (GRAM_KEYS.has(key)) return `${Math.round(safe)} g`;
         if (key === 'salt') return `${formatRuleValue(safe, 2)} g`;
         if (key === 'processing') return `${formatRuleValue(safe, 1)} /10`;
         return `${formatRuleValue(safe, 1)} g`;
@@ -161,9 +154,9 @@ function initCalculator(container) {
 
     const ADJUSTMENT_ROWS = [
         { key: 'kcal', icon: '🔥', label: 'Energía', rule: () => 'Objetivo: 1,2 x BMR', description: getObjectiveDescription('kcal'), adjustmentSource: 'macro', adjustmentKey: 'kcal' },
-        { key: 'p', icon: '🥩', label: 'Proteína', rule: () => `Objetivo: ${formatRuleValue(reposoMacroRatios.p * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('p'), adjustmentSource: 'macro', adjustmentKey: 'p' },
-        { key: 'c', icon: '🍚', label: 'Carbo H', rule: () => `Objetivo: ${formatRuleValue(reposoMacroRatios.c * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('c'), adjustmentSource: 'macro', adjustmentKey: 'c' },
-        { key: 'f', icon: '🥑', label: 'Grasas', rule: () => `Objetivo: ${formatRuleValue(reposoMacroRatios.f * 100, 1)}% de kcals (g = (kcals x %)/9)`, description: getObjectiveDescription('f'), adjustmentSource: 'macro', adjustmentKey: 'f' },
+        { key: 'p', icon: '🥩', label: 'Proteína', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.p * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('p'), adjustmentSource: 'macro', adjustmentKey: 'p' },
+        { key: 'c', icon: '🍚', label: 'Carbohidratos', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.c * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('c'), adjustmentSource: 'macro', adjustmentKey: 'c' },
+        { key: 'f', icon: '🥑', label: 'Grasas', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.f * 100, 1)}% de kcals (g = (kcals x %)/9)`, description: getObjectiveDescription('f'), adjustmentSource: 'macro', adjustmentKey: 'f' },
         {
             key: 'salt',
             icon: '🧂',
@@ -402,13 +395,24 @@ function initCalculator(container) {
         tableBody.innerHTML = '';
         const exercises = (typeof EXERCISES !== 'undefined') ? EXERCISES : null;
         const dailyTargets = Targets.recalculateDailyTargets(weeklyPlan, profile, adjustments, exercises) || {};
-        const normalizeSecondary = (vals) => ({
-            salt: Number.isFinite(parseFloat(vals && vals.salt)) ? (Math.round(parseFloat(vals.salt) * 100) / 100) : 0,
-            fiber: Number.isFinite(parseFloat(vals && vals.fiber)) ? (Math.round(parseFloat(vals.fiber) * 10) / 10) : 0,
-            sugar: Number.isFinite(parseFloat(vals && vals.sugar)) ? (Math.round(parseFloat(vals.sugar) * 10) / 10) : 0,
-            saturatedFat: Number.isFinite(parseFloat(vals && vals.saturatedFat)) ? (Math.round(parseFloat(vals.saturatedFat) * 10) / 10) : 0,
-            processing: Number.isFinite(parseFloat(vals && vals.processing)) ? (Math.round(parseFloat(vals.processing) * 10) / 10) : 0
-        });
+        const roundTo = (value, decimals) => {
+            const factor = 10 ** decimals;
+            return Math.round(value * factor) / factor;
+        };
+        const normalizeSecondary = (vals) => {
+            const salt = parseFloat(vals && vals.salt);
+            const fiber = parseFloat(vals && vals.fiber);
+            const sugar = parseFloat(vals && vals.sugar);
+            const saturatedFat = parseFloat(vals && vals.saturatedFat);
+            const processing = parseFloat(vals && vals.processing);
+            return {
+                salt: Number.isFinite(salt) ? roundTo(salt, 2) : 0,
+                fiber: Number.isFinite(fiber) ? roundTo(fiber, 1) : 0,
+                sugar: Number.isFinite(sugar) ? roundTo(sugar, 1) : 0,
+                saturatedFat: Number.isFinite(saturatedFat) ? roundTo(saturatedFat, 1) : 0,
+                processing: Number.isFinite(processing) ? roundTo(processing, 1) : 0
+            };
+        };
         const formatGoalCell = (row, dayData) => {
             const dayMetricValue = dayData[DAY_METRIC_KEY[row.key]];
             return renderMetricPill(row.key, row.icon, formatMetricValue(row.key, dayMetricValue));
@@ -417,12 +421,16 @@ function initCalculator(container) {
         const baseRest = Formulas.calcBMR(profile.weight, profile.height, profile.age, profile.sex) * restBmrFactor;
         const savedStepsCfg = DB.get('activity_steps_config', {});
         const stepRoutine = (typeof STEP_ROUTINE !== 'undefined' && STEP_ROUTINE) ? STEP_ROUTINE : null;
-        const walkItem = (stepRoutine && Array.isArray(stepRoutine.ejercicios))
-            ? stepRoutine.ejercicios.find(e => e && e.ejercicioId === 'caminar')
+        const walkItem = (stepRoutine && Array.isArray(stepRoutine.exercises))
+            ? stepRoutine.exercises.find(e => e && e.exerciseId === 'caminar')
             : null;
-        const defaultSteps = parseInt(savedStepsCfg.objetivo, 10)
+        const defaultSteps = parseInt(savedStepsCfg.targetSteps, 10)
+            || parseInt(savedStepsCfg.objetivo, 10)
+            || parseInt(walkItem && walkItem.totalSteps, 10)
             || parseInt(walkItem && walkItem.totalPasos, 10)
+            || parseInt(stepRoutine && stepRoutine.totalSteps, 10)
             || parseInt(stepRoutine && stepRoutine.totalPasos, 10)
+            || parseInt(stepRoutine && stepRoutine.goal, 10)
             || parseInt(stepRoutine && stepRoutine.objetivo, 10)
             || defaultStepsCfg.target;
         const dailySteps = ActivityStore.getDailySteps(defaultSteps);
@@ -510,4 +518,3 @@ function initCalculator(container) {
 
     updateAndCalculate();
 }
-

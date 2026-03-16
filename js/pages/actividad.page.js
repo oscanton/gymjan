@@ -23,7 +23,48 @@ function renderActivityPage() {
 
     const getWeights = () => DB.get(WEIGHT_KEY, {});
     const saveWeights = (weights) => DB.save(WEIGHT_KEY, weights);
-    const getOverrides = () => DB.get(OVERRIDE_KEY, {});
+    const normalizeOverrides = (overrides) => {
+        if (!overrides || typeof overrides !== 'object') return overrides;
+        let migrated = false;
+        const normalized = {};
+        Object.entries(overrides).forEach(([routineId, routineOverrides]) => {
+            if (!routineOverrides || typeof routineOverrides !== 'object') return;
+            const nextRoutineOverrides = {};
+            Object.entries(routineOverrides).forEach(([exerciseId, entry]) => {
+                if (!entry || typeof entry !== 'object') return;
+                const nextEntry = { ...entry };
+                if (Object.prototype.hasOwnProperty.call(entry, 'series')) {
+                    nextEntry.sets = entry.series;
+                    delete nextEntry.series;
+                    migrated = true;
+                }
+                if (Object.prototype.hasOwnProperty.call(entry, 'pesoKg')) {
+                    nextEntry.weightKg = entry.pesoKg;
+                    delete nextEntry.pesoKg;
+                    migrated = true;
+                }
+                if (Object.prototype.hasOwnProperty.call(entry, 'descansoSeg')) {
+                    nextEntry.restSec = entry.descansoSeg;
+                    delete nextEntry.descansoSeg;
+                    migrated = true;
+                }
+                if (Object.prototype.hasOwnProperty.call(entry, 'segPorRep')) {
+                    nextEntry.secPerRep = entry.segPorRep;
+                    delete nextEntry.segPorRep;
+                    migrated = true;
+                }
+                nextRoutineOverrides[exerciseId] = nextEntry;
+            });
+            normalized[routineId] = nextRoutineOverrides;
+        });
+        return { data: normalized, migrated };
+    };
+    const getOverrides = () => {
+        const raw = DB.get(OVERRIDE_KEY, {});
+        const { data, migrated } = normalizeOverrides(raw);
+        if (migrated) DB.save(OVERRIDE_KEY, data);
+        return data;
+    };
     const saveOverrides = (overrides) => DB.save(OVERRIDE_KEY, overrides);
     const getSavedStepsConfig = () => DB.get(STEPS_CFG_KEY, {});
     const saveStepsConfig = (cfg) => DB.save(STEPS_CFG_KEY, cfg);
@@ -47,36 +88,56 @@ function renderActivityPage() {
         if (typeof EXERCISES !== 'undefined' && EXERCISES.caminar) return EXERCISES.caminar;
         return {
             name: 'Caminar',
-            tipo: 'cardio',
-            enfoque: 'full_body',
-            musculos: 'piernas, core',
-            equipo: 'ninguno',
+            type: 'cardio',
+            focus: 'full_body',
+            muscles: 'piernas, core',
+            equipment: 'ninguno',
             met: defaultStepsCfg.met,
-            descripcion: 'Actividad base de baja intensidad.',
-            tecnica: 'Actividad diaria basada en pasos.'
+            description: 'Actividad base de baja intensidad.',
+            technique: 'Actividad diaria basada en pasos.'
         };
     };
     const getStepsRoutine = () => {
         if (typeof STEP_ROUTINE !== 'undefined' && STEP_ROUTINE) return STEP_ROUTINE;
         return {
-            objetivo: 'Movimiento diario',
-            ejercicios: [{ ejercicioId: 'caminar', pasosPorMin: defaultStepsCfg.perMinute, totalPasos: defaultStepsCfg.target }]
+            goal: 'Movimiento diario',
+            exercises: [{ exerciseId: 'caminar', stepsPerMin: defaultStepsCfg.perMinute, totalSteps: defaultStepsCfg.target }]
         };
     };
     const getStepsConfig = () => {
         const routine = getStepsRoutine();
-        const walkItem = (routine.ejercicios || []).find(e => e && e.ejercicioId === 'caminar') || {};
+        const walkItem = (routine.exercises || []).find(e => e && e.exerciseId === 'caminar') || {};
         const walking = getWalkingExercise();
         const saved = getSavedStepsConfig();
-        const baseStepTarget = parseInt(walkItem.totalPasos, 10) || parseInt(routine.totalPasos, 10) || parseInt(routine.objetivo, 10) || defaultStepsCfg.target;
-        const baseStepsPerMin = parseInt(walkItem.pasosPorMin, 10) || parseInt(routine.pasosPorMin, 10) || defaultStepsCfg.perMinute;
-        return {
-            objetivo: parseInt(saved.objetivo, 10) || baseStepTarget,
-            pasosPorMin: parseInt(saved.pasosPorMin, 10) || baseStepsPerMin,
+        const baseStepTarget = parseInt(walkItem.totalSteps, 10)
+            || parseInt(walkItem.totalPasos, 10)
+            || parseInt(routine.totalSteps, 10)
+            || parseInt(routine.totalPasos, 10)
+            || parseInt(routine.goal, 10)
+            || parseInt(routine.objetivo, 10)
+            || defaultStepsCfg.target;
+        const baseStepsPerMin = parseInt(walkItem.stepsPerMin, 10)
+            || parseInt(walkItem.pasosPorMin, 10)
+            || parseInt(routine.stepsPerMin, 10)
+            || parseInt(routine.pasosPorMin, 10)
+            || defaultStepsCfg.perMinute;
+        const targetSteps = parseInt(saved.targetSteps, 10)
+            || parseInt(saved.objetivo, 10)
+            || baseStepTarget;
+        const stepsPerMin = parseInt(saved.stepsPerMin, 10)
+            || parseInt(saved.pasosPorMin, 10)
+            || baseStepsPerMin;
+        const normalized = {
+            targetSteps,
+            stepsPerMin,
             met: walking.met || defaultStepsCfg.met
         };
+        if (saved.objetivo || saved.pasosPorMin) {
+            saveStepsConfig({ targetSteps, stepsPerMin });
+        }
+        return normalized;
     };
-    const getDefaultSteps = () => getStepsConfig().objetivo;
+    const getDefaultSteps = () => getStepsConfig().targetSteps;
     const generateActivityTotalsHtml = ({ totalKcal, routineKcal, stepsKcal, min, exerciseCount }) => {
         return `
             <div class="totals-stack">
@@ -131,7 +192,7 @@ function renderActivityPage() {
         const fallbackId = (typeof Routines !== 'undefined') ? Routines.getDefaultId() : 'recuperacion';
         const walkingExercise = getWalkingExercise();
         const stepsConfig = getStepsConfig();
-        const defaultSteps = stepsConfig.objetivo;
+        const defaultSteps = stepsConfig.targetSteps;
         const dailySteps = ActivityStore.getDailySteps(defaultSteps);
         const weights = getWeights();
         const overrides = getOverrides();
@@ -163,18 +224,18 @@ function renderActivityPage() {
         dailySteps.forEach((steps, dayIndex) => {
             const safeSteps = Math.max(0, parseInt(steps, 10) || 0);
             const stepsKcal = UI.calculateStepsKcal(safeSteps, { stepsConfig });
-            const totalMin = safeSteps / stepsConfig.pasosPorMin;
+            const totalMin = safeSteps / stepsConfig.stepsPerMin;
 
             movementHtml += `
                 <td>
                     <div class="activity-exercise"
                         data-ex-name="${walkingExercise.name || 'Movimiento diario'}"
-                        data-ex-tech="${walkingExercise.tecnica || ''}"
+                        data-ex-tech="${walkingExercise.technique || ''}"
                         data-ex-kcal="${stepsKcal}"
-                        data-ex-tipo="${walkingExercise.tipo || ''}"
-                        data-ex-enfoque="${walkingExercise.enfoque || ''}"
-                        data-ex-musculos="${walkingExercise.musculos || ''}"
-                        data-ex-equipo="${walkingExercise.equipo || ''}">
+                        data-ex-type="${walkingExercise.type || ''}"
+                        data-ex-focus="${walkingExercise.focus || ''}"
+                        data-ex-muscles="${walkingExercise.muscles || ''}"
+                        data-ex-equipment="${walkingExercise.equipment || ''}">
                         <div class="activity-exercise__name modal-trigger">${walkingExercise.name || 'Movimiento diario'}</div>
                         <div class="activity-exercise__row">
                             ${isEditMode ? `
@@ -187,19 +248,19 @@ function renderActivityPage() {
                                 <div class="activity-exercise__weight">
                                     <span>&#128099;</span>
                                     <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
-                                        data-steps-cfg-field="pasosPorMin" value="${stepsConfig.pasosPorMin}">
+                                        data-steps-cfg-field="stepsPerMin" value="${stepsConfig.stepsPerMin}">
                                     <span>pasos/min</span>
                                 </div>
                             ` : `
                                 <div class="activity-exercise__pill">&#127919; ${safeSteps} pasos</div>
-                                <div class="activity-exercise__pill">&#128099; ${stepsConfig.pasosPorMin} pasos/min</div>
+                                <div class="activity-exercise__pill">&#128099; ${stepsConfig.stepsPerMin} pasos/min</div>
                             `}
                         </div>
                         <div class="activity-exercise__row">
                             <div class="activity-exercise__pill">&#128293; ${Math.round(stepsKcal)} kcal</div>
                             <div class="activity-exercise__pill">&#9201;&#65039; ${UI.formatMinutes(totalMin)} min</div>
                         </div>
-                        <div class="meal-description">${walkingExercise.descripcion || ''}</div>
+                        <div class="meal-description">${walkingExercise.description || ''}</div>
                     </div>
                 </td>`;
         });
@@ -214,10 +275,10 @@ function renderActivityPage() {
             const routine = getRoutineById(routineId, fallbackId);
             const selectedId = routineId || fallbackId;
             const options = Routines.getOptionsHtml({ selectedId });
-            const meta = routine ? `${routine.objetivo || ''}` : '';
-            const routineTimes = routine && routine.tiempos ? routine.tiempos : null;
+            const meta = routine ? `${routine.goal || ''}` : '';
+            const routineTimes = routine && routine.timings ? routine.timings : null;
 
-            const exercisesHtml = (routine && routine.ejercicios && routine.ejercicios.length)
+            const exercisesHtml = (routine && routine.exercises && routine.exercises.length)
                 ? UI.groupExercisesByTypeFocus(routine, EXERCISES).map(group => {
                     const groupHeader = `
                         <div class="activity-exercise-group">
@@ -226,29 +287,29 @@ function renderActivityPage() {
                     `;
 
                     const groupItems = group.items.map(item => {
-                    const override = (overrides[routine.id] && overrides[routine.id][item.ejercicioId]) || {};
+                    const override = (overrides[routine.id] && overrides[routine.id][item.exerciseId]) || {};
                     const effectiveItem = { ...item, ...override };
-                    const ex = EXERCISES[item.ejercicioId];
+                    const ex = EXERCISES[item.exerciseId];
                     if (!ex) {
-                        return `<div class="activity-exercise">Ejercicio no encontrado: ${item.ejercicioId}</div>`;
+                        return `<div class="activity-exercise">Ejercicio no encontrado: ${item.exerciseId}</div>`;
                     }
 
                     const dayWeights = weights[dayIndex] || {};
-                    const defaultWeight = effectiveItem.pesoKg ?? '';
-                    const currentWeight = (dayWeights[item.ejercicioId] ?? defaultWeight);
+                    const defaultWeight = effectiveItem.weightKg ?? '';
+                    const currentWeight = (dayWeights[item.exerciseId] ?? defaultWeight);
                     const isTimeBased = UI.isTimedItem(effectiveItem);
                     const numericWeight = parseFloat(currentWeight);
-                    const showWeight = ex.tipo === 'fuerza' && !isTimeBased && Number.isFinite(numericWeight) && numericWeight > 0;
+                    const showWeight = ex.type === 'fuerza' && !isTimeBased && Number.isFinite(numericWeight) && numericWeight > 0;
                     const kcal = UI.calculateExerciseKcal(effectiveItem, ex, { routineTimes });
                     const estimatedMin = UI.estimateExerciseMinutes(effectiveItem, ex, { routineTimes });
-                    const routineRest = routineTimes && Number.isFinite(routineTimes.descansoSeg)
-                        ? routineTimes.descansoSeg
-                        : (typeof ROUTINE_TIME_DEFAULTS !== 'undefined' && Number.isFinite(ROUTINE_TIME_DEFAULTS.descansoSeg))
-                            ? ROUTINE_TIME_DEFAULTS.descansoSeg
+                    const routineRest = routineTimes && Number.isFinite(routineTimes.restSec)
+                        ? routineTimes.restSec
+                        : (typeof ROUTINE_TIME_DEFAULTS !== 'undefined' && Number.isFinite(ROUTINE_TIME_DEFAULTS.restSec))
+                            ? ROUTINE_TIME_DEFAULTS.restSec
                             : '';
 
                     return `
-                        <div class="activity-exercise" data-ex-name="${ex.name}" data-ex-tech="${ex.tecnica || ''}" data-ex-kcal="${kcal}" data-ex-tipo="${ex.tipo || ''}" data-ex-enfoque="${ex.enfoque || ''}" data-ex-musculos="${ex.musculos || ''}" data-ex-equipo="${ex.equipo || ''}" data-ex-descanso="${effectiveItem.descansoSeg || routineRest || ''}">
+                        <div class="activity-exercise" data-ex-name="${ex.name}" data-ex-tech="${ex.technique || ''}" data-ex-kcal="${kcal}" data-ex-type="${ex.type || ''}" data-ex-focus="${ex.focus || ''}" data-ex-muscles="${ex.muscles || ''}" data-ex-equipment="${ex.equipment || ''}" data-ex-rest="${effectiveItem.restSec || routineRest || ''}">
                             <div class="activity-exercise__name modal-trigger">${ex.name}</div>
                             <div class="activity-exercise__row">
                                 ${showWeight ? (
@@ -256,7 +317,7 @@ function renderActivityPage() {
                                         ? `
                                             <div class="activity-exercise__weight">
                                                 <span>&#127947;&#65039;</span>
-                                                <input type="text" inputmode="decimal" class="input-base input-base--table-edit" data-day-index="${dayIndex}" data-exercise-id="${item.ejercicioId}" value="${currentWeight}">
+                                                <input type="text" inputmode="decimal" class="input-base input-base--table-edit" data-day-index="${dayIndex}" data-exercise-id="${item.exerciseId}" value="${currentWeight}">
                                                 <span>kg</span>
                                             </div>
                                         `
@@ -266,12 +327,12 @@ function renderActivityPage() {
                                     <div class="activity-exercise__weight">
                                         <span>&#128290;</span>
                                         <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
-                                            data-routine-id="${routine.id}" data-exercise-id="${item.ejercicioId}" data-field="series" value="${effectiveItem.series || ''}">
+                                            data-routine-id="${routine.id}" data-exercise-id="${item.exerciseId}" data-field="sets" value="${effectiveItem.sets || ''}">
                                     </div>
                                     <div class="activity-exercise__weight">
                                         <span>&#128257;</span>
                                         <input type="text" class="input-base input-base--table-edit"
-                                            data-routine-id="${routine.id}" data-exercise-id="${item.ejercicioId}" data-field="reps" value="${effectiveItem.reps || ''}">
+                                            data-routine-id="${routine.id}" data-exercise-id="${item.exerciseId}" data-field="reps" value="${effectiveItem.reps || ''}">
                                     </div>
                                 ` : (isEditMode
                                     ? ''
@@ -281,7 +342,7 @@ function renderActivityPage() {
                                 <div class="activity-exercise__pill">&#128293; ${Math.round(kcal)} kcal</div>
                                 ${estimatedMin > 0 ? `<div class="activity-exercise__pill">&#9201;&#65039; ${UI.formatMinutes(estimatedMin)} min</div>` : ''}
                             </div>
-                            <div class="meal-description">${ex.descripcion || ''}</div>
+                            <div class="meal-description">${ex.description || ''}</div>
                         </div>`;
                     }).join('');
 
@@ -295,9 +356,9 @@ function renderActivityPage() {
                         <select class="input-base input-select input-select--sm" data-day-index="${dayIndex}">
                             ${options}
                         </select>
-                        <div class="activity-routine__title">${routine ? routine.nombre : 'Rutina'}</div>
+                        <div class="activity-routine__title">${routine ? routine.name : 'Rutina'}</div>
                         <div class="activity-routine__meta">${meta}</div>
-                        <div class="activity-routine__meta">${routine ? routine.estructura : ''}</div>
+                        <div class="activity-routine__meta">${routine ? routine.structure : ''}</div>
                         ${exercisesHtml}
                     </div>
                 </td>`;
@@ -398,7 +459,7 @@ function renderActivityPage() {
             if (!overrides[routineId]) overrides[routineId] = {};
             if (!overrides[routineId][exerciseId]) overrides[routineId][exerciseId] = {};
 
-            if (field === 'series') {
+            if (field === 'sets') {
                 const val = parseInt(rawVal, 10);
                 overrides[routineId][exerciseId][field] = Number.isNaN(val) ? '' : val;
             } else {
@@ -437,11 +498,11 @@ function renderActivityPage() {
         if (!exercise) return;
         showTechniqueModal({
             name: exercise.dataset.exName || 'Actividad',
-            type: exercise.dataset.exTipo || '',
-            focus: exercise.dataset.exEnfoque || '',
-            muscles: exercise.dataset.exMusculos || '',
-            equipment: exercise.dataset.exEquipo || '',
-            restSeconds: exercise.dataset.exDescanso || '',
+            type: exercise.dataset.exType || '',
+            focus: exercise.dataset.exFocus || '',
+            muscles: exercise.dataset.exMuscles || '',
+            equipment: exercise.dataset.exEquipment || '',
+            restSeconds: exercise.dataset.exRest || '',
             technique: exercise.dataset.exTech || '',
             kcal: parseFloat(exercise.dataset.exKcal || '0') || 0
         });

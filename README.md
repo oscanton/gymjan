@@ -1,4 +1,4 @@
-﻿# gymjan
+# gymjan
 
 Prueba de concepto de una PWA con **LocalStorage** para persistir datos del usuario. Se puede usar e instalar directamente desde la URL de GitHub Pages:
 

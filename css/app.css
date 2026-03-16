@@ -85,7 +85,7 @@
     --page-gap: var(--space-lg);
 
     /* --- 6. Tipografía --- */
-    --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
     --font-size-2xs: 0.7rem;
     --font-size-caption: 0.8rem;
     --font-size-xs: 0.75rem;

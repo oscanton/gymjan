@@ -90,7 +90,7 @@ const UI = {
         container.innerHTML = `<div class="glass-card card"><p class="text-status--danger">${message}</p></div>`;
     },
 
-    // Clase de estado para totales (Visualizacin de cumplimiento de objetivos)
+    // Status class for totals (target compliance indicator)
     getStatusClass: (current, target) => {
         if (!target || target === 0) return '';
         const pct = (current / target) * 100;
@@ -165,6 +165,25 @@ const UI = {
             .replace(/_/g, ' ')
             .replace(/\b\w/g, l => l.toUpperCase());
     },
+    formatNumber: (value, decimals = 1) => {
+        const numeric = Number.isFinite(value) ? value : 0;
+        return numeric.toFixed(decimals).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+    },
+    escapeHtml: (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;'),
+    encodePayload: (payload) => encodeURIComponent(JSON.stringify(payload || {})),
+    decodePayload: (encodedPayload) => {
+        try {
+            return JSON.parse(decodeURIComponent(encodedPayload || ''));
+        } catch (err) {
+            console.error('Error parseando payload:', err);
+            return null;
+        }
+    },
 
     formatMinutes: (minutes) => {
         const val = Math.round(minutes * 10) / 10;
@@ -186,26 +205,26 @@ const UI = {
     },
     isTimedItem: (item) => {
         if (!item) return false;
-        const series = parseFloat(item.series);
+        const sets = parseFloat(item.sets);
         const reps = parseFloat(item.reps);
-        const segPorRep = parseFloat(item.segPorRep);
-        return Number.isFinite(series)
-            && series > 0
+        const secPerRep = parseFloat(item.secPerRep);
+        return Number.isFinite(sets)
+            && sets > 0
             && Number.isFinite(reps)
             && reps === 1
-            && Number.isFinite(segPorRep)
-            && segPorRep >= 30;
+            && Number.isFinite(secPerRep)
+            && secPerRep >= 30;
     },
 
     formatTrabajo: (item) => {
         if (item && UI.isTimedItem(item)) {
-            const series = Math.round(item.series || 0);
-            const segPorRep = Math.round(item.segPorRep || 0);
-            if (series > 1) return `⏱️ ${series} x ${segPorRep}s`;
-            const totalMin = segPorRep / 60;
+            const sets = Math.round(item.sets || 0);
+            const secPerRep = Math.round(item.secPerRep || 0);
+            if (sets > 1) return `⏱️ ${sets} x ${secPerRep}s`;
+            const totalMin = secPerRep / 60;
             if (Number.isFinite(totalMin)) return `⏱️ ${UI.formatMinutes(totalMin)} min`;
         }
-        if (item && item.series && item.reps) return `🔁 ${item.series} x ${item.reps}`;
+        if (item && item.sets && item.reps) return `🔁 ${item.sets} x ${item.reps}`;
         return '-';
     },
 
@@ -213,8 +232,8 @@ const UI = {
         if (!ex || !item) return { workMin: 0, restMin: 0, totalMin: 0 };
 
         const defaults = (typeof ROUTINE_TIME_DEFAULTS !== 'undefined') ? ROUTINE_TIME_DEFAULTS : {
-            segPorRep: 4,
-            descansoSeg: 90
+            secPerRep: 4,
+            restSec: 90
         };
         const safeRoutineTimes = routineTimes || {};
         const pickTime = (...values) => {
@@ -226,14 +245,14 @@ const UI = {
         };
 
         const repsAvg = UI.parseReps(item.reps);
-        const series = item.series || 0;
-        if (!series || !repsAvg) return { workMin: 0, restMin: 0, totalMin: 0 };
-        const secPerRep = pickTime(item.segPorRep, safeRoutineTimes.segPorRep, defaults.segPorRep) || 4;
-        const restSeconds = pickTime(item.descansoSeg, safeRoutineTimes.descansoSeg, defaults.descansoSeg) || 60;
-        const workSeg = repsAvg * series * secPerRep;
-        const restSeg = series > 1 ? (series - 1) * restSeconds : 0;
-        const workMin = workSeg / 60;
-        const restMin = restSeg / 60;
+        const sets = item.sets || 0;
+        if (!sets || !repsAvg) return { workMin: 0, restMin: 0, totalMin: 0 };
+        const secPerRep = pickTime(item.secPerRep, safeRoutineTimes.secPerRep, defaults.secPerRep) || 4;
+        const restSeconds = pickTime(item.restSec, safeRoutineTimes.restSec, defaults.restSec) || 60;
+        const workSec = repsAvg * sets * secPerRep;
+        const restSec = sets > 1 ? (sets - 1) * restSeconds : 0;
+        const workMin = workSec / 60;
+        const restMin = restSec / 60;
         return { workMin, restMin, totalMin: workMin + restMin };
     },
 
@@ -266,9 +285,9 @@ const UI = {
         const restMet = 1.5;
         const workCoef = (met / 60) * workMin;
         const restCoef = (restMet / 60) * restMin;
-        if (ex.tipo === 'fuerza') {
+        if (ex.type === 'fuerza') {
             const repsAvg = UI.parseReps(item.reps);
-            const intensityFactor = UI.getIntensityFactorFromEpley(item.pesoKg, repsAvg);
+            const intensityFactor = UI.getIntensityFactorFromEpley(item.weightKg, repsAvg);
             return (workCoef * intensityFactor) + restCoef;
         }
         return workCoef + restCoef;
@@ -295,7 +314,7 @@ const UI = {
         if (!safeSteps) return 0;
         const cfg = stepsConfig || {};
         const effectiveWeight = UI.getEffectiveWeightKg(weightKg);
-        const stepsPerMin = cfg.pasosPorMin || 100;
+        const stepsPerMin = cfg.stepsPerMin || 100;
         const met = cfg.met || ((typeof EXERCISES !== 'undefined' && EXERCISES.caminar) ? EXERCISES.caminar.met : 3.5) || 3.5;
         const minutes = safeSteps / stepsPerMin;
         return (met * effectiveWeight / 60) * minutes;
@@ -308,12 +327,12 @@ const UI = {
 
         if (!routine) return { kcal: 0, min: 0, exerciseCount: 0 };
         const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : {});
-        const routineTimes = routine.tiempos || null;
+        const routineTimes = routine.timings || null;
 
-        routine.ejercicios.forEach(item => {
-            const override = (routineOverrides && routineOverrides[item.ejercicioId]) || {};
+        routine.exercises.forEach(item => {
+            const override = (routineOverrides && routineOverrides[item.exerciseId]) || {};
             const effectiveItem = { ...item, ...override };
-            const ex = exercises[item.ejercicioId];
+            const ex = exercises[item.exerciseId];
             if (!ex) return;
             totalEj += 1;
             totalMin += UI.estimateExerciseMinutes(effectiveItem, ex, { routineTimes });
@@ -323,30 +342,30 @@ const UI = {
         return { kcal: totalKcal, min: totalMin, exerciseCount: totalEj };
     },
 
-    groupExercisesByTypeFocus: (routine, exercisesMap, { tipoOrder = null, enfoqueOrder = null } = {}) => {
-        if (!routine || !routine.ejercicios) return [];
+    groupExercisesByTypeFocus: (routine, exercisesMap, { typeOrder = null, focusOrder = null } = {}) => {
+        if (!routine || !routine.exercises) return [];
         const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : {});
         const groups = new Map();
 
-        routine.ejercicios.forEach(item => {
-            const ex = exercises[item.ejercicioId];
+        routine.exercises.forEach(item => {
+            const ex = exercises[item.exerciseId];
             if (!ex) return;
-            const exerciseType = ex.tipo || 'otros';
-            const exerciseFocus = ex.enfoque || 'general';
+            const exerciseType = ex.type || 'otros';
+            const exerciseFocus = ex.focus || 'general';
             const key = `${exerciseType}__${exerciseFocus}`;
             if (!groups.has(key)) groups.set(key, { type: exerciseType, focus: exerciseFocus, items: [] });
             groups.get(key).items.push(item);
         });
 
-        const typeOrder = tipoOrder || ['fuerza', 'cardio', 'recuperacion', 'otros'];
-        const focusOrder = enfoqueOrder || ['tren_superior', 'tren_inferior', 'core', 'full_body', 'movilidad', 'recuperacion', 'general'];
+        const resolvedTypeOrder = typeOrder || ['fuerza', 'cardio', 'recuperacion', 'otros'];
+        const resolvedFocusOrder = focusOrder || ['tren_superior', 'tren_inferior', 'core', 'full_body', 'movilidad', 'recuperacion', 'general'];
 
         return Array.from(groups.values()).sort((a, b) => {
-            const ta = typeOrder.indexOf(a.type);
-            const tb = typeOrder.indexOf(b.type);
+            const ta = resolvedTypeOrder.indexOf(a.type);
+            const tb = resolvedTypeOrder.indexOf(b.type);
             if (ta !== tb) return (ta === -1 ? 999 : ta) - (tb === -1 ? 999 : tb);
-            const ea = focusOrder.indexOf(a.focus);
-            const eb = focusOrder.indexOf(b.focus);
+            const ea = resolvedFocusOrder.indexOf(a.focus);
+            const eb = resolvedFocusOrder.indexOf(b.focus);
             if (ea !== eb) return (ea === -1 ? 999 : ea) - (eb === -1 ? 999 : eb);
             return a.focus.localeCompare(b.focus);
         });

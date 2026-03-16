@@ -1,16 +1,18 @@
-/* =========================================
+﻿/* =========================================
    data/rutina_pasos.js - CONFIG MOVIMIENTO
    ========================================= */
 
 window.STEP_ROUTINE = {
   id: "pasos",
-  nombre: "Movimiento por pasos",
-  tipo: "cardio",
+  name: "Movimiento por pasos",
+  type: "cardio",
   macroRatios: { p: 0.35, c: 0.40, f: 0.25 },
-  objetivo: "Movimiento diario",
-  estructura: "Actividad base diaria",
-  ejercicios: [
-    { ejercicioId: "caminar", pasosPorMin: 100, totalPasos: 8000 }
+  goal: "Movimiento diario",
+  structure: "Actividad base diaria",
+  exercises: [
+    { exerciseId: "caminar", stepsPerMin: 100, totalSteps: 8000 }
   ]
 };
+
+
 

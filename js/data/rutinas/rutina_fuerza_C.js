@@ -3,31 +3,33 @@
    ========================================= */
 
 // Convenciones:
-// - tipo: fuerza
+// - type: strength
 // - ejercicios: usa ids de EXERCISES (js/data/ejercicios.js)
 
 window.WORKOUT_ROUTINES = window.WORKOUT_ROUTINES || [];
 
 window.WORKOUT_ROUTINES.push({
   id: "fuerza_c",
-  nombre: "Fuerza C (50-60 min)",
-  tipo: "fuerza",
+  name: "Fuerza C (50-60 min)",
+  type: "fuerza",
   activityKey: "fuerza_1h",
   macroRatios: { p: 0.35, c: 0.40, f: 0.25 },
-  objetivo: "Tren inferior + full body con énfasis en bisagra.",
-  estructura: "Calentamiento 8-10 min + Bloque principal + Accesorios + Core + Vuelta a la calma",
-  tiempos: { segPorRep: 4, descansoSeg: 90 },
-  ejercicios: [
-    { ejercicioId: "movilidad_articular", series: 1, reps: 1, segPorRep: 360 },
-    { ejercicioId: "sentadilla_goblet", series: 4, reps: "8-12", pesoKg: 20, descansoSeg: 90, segPorRep: 4 },
-    { ejercicioId: "peso_muerto", series: 4, reps: "6-8", pesoKg: 50, descansoSeg: 150, segPorRep: 5 },
-    { ejercicioId: "zancadas", series: 3, reps: "10-12", pesoKg: 12, descansoSeg: 90, segPorRep: 4 },
-    { ejercicioId: "hip_thrust", series: 3, reps: "8-12", pesoKg: 40, descansoSeg: 120, segPorRep: 4 },
-    { ejercicioId: "prensa_piernas", series: 3, reps: "10-12", pesoKg: 80, descansoSeg: 120, segPorRep: 4 },
-    { ejercicioId: "elevacion_gemelos", series: 3, reps: "12-15", pesoKg: 30, descansoSeg: 60, segPorRep: 3 },
-    { ejercicioId: "plancha", series: 1, reps: 1, segPorRep: 180 },
-    { ejercicioId: "elevaciones_piernas", series: 3, reps: "10-15", pesoKg: 0, descansoSeg: 45, segPorRep: 2 },
-    { ejercicioId: "estiramientos", series: 1, reps: 1, segPorRep: 240 }
+  goal: "Tren inferior + full body con énfasis en bisagra.",
+  structure: "Calentamiento 8-10 min + Bloque principal + Accesorios + Core + Vuelta a la calma",
+  timings: { secPerRep: 4, restSec: 90 },
+  exercises: [
+    { exerciseId: "movilidad_articular", sets: 1, reps: 1, secPerRep: 360 },
+    { exerciseId: "sentadilla_goblet", sets: 4, reps: "8-12", weightKg: 20, restSec: 90, secPerRep: 4 },
+    { exerciseId: "peso_muerto", sets: 4, reps: "6-8", weightKg: 50, restSec: 150, secPerRep: 5 },
+    { exerciseId: "zancadas", sets: 3, reps: "10-12", weightKg: 12, restSec: 90, secPerRep: 4 },
+    { exerciseId: "hip_thrust", sets: 3, reps: "8-12", weightKg: 40, restSec: 120, secPerRep: 4 },
+    { exerciseId: "prensa_piernas", sets: 3, reps: "10-12", weightKg: 80, restSec: 120, secPerRep: 4 },
+    { exerciseId: "elevacion_gemelos", sets: 3, reps: "12-15", weightKg: 30, restSec: 60, secPerRep: 3 },
+    { exerciseId: "plancha", sets: 1, reps: 1, secPerRep: 180 },
+    { exerciseId: "elevaciones_piernas", sets: 3, reps: "10-15", weightKg: 0, restSec: 45, secPerRep: 2 },
+    { exerciseId: "estiramientos", sets: 1, reps: 1, secPerRep: 240 }
   ]
 });
+
+
 

@@ -4,8 +4,8 @@
 
 window.MENU_DATA = [
     {
-        dia: "Lunes",
-        desayuno: {
+        day: "Lunes",
+        breakfast: {
             items: [
                 { foodId: "cafe", amount: 1 },
                 { foodId: "avena", amount: 60 },
@@ -14,7 +14,7 @@ window.MENU_DATA = [
             ],
             description: "Desayuno completo y saciante, con hidratos complejos y proteína para arrancar el día con energía estable."
         },
-        comida: {
+        lunch: {
             items: [
                 { foodId: "lomo_cerdo", amount: 220 },
                 { foodId: "arroz", amount: 120 },
@@ -24,7 +24,7 @@ window.MENU_DATA = [
             ],
             description: "Plato principal equilibrado, rico en proteína y carbohidratos complejos, ideal para sostener el entrenamiento de la tarde."
         },
-        cena: {
+        dinner: {
             items: [
                 { foodId: "merluza", amount: 220 },
                 { foodId: "coliflor", amount: 220 },
@@ -36,8 +36,8 @@ window.MENU_DATA = [
         }
     },
     {
-        dia: "Martes",
-        desayuno: {
+        day: "Martes",
+        breakfast: {
             items: [
                 { foodId: "cafe", amount: 1 },
                 { foodId: "pan_integral", amount: 80 },
@@ -46,7 +46,7 @@ window.MENU_DATA = [
             ],
             description: "Desayuno sencillo y proteico, con hidratos integrales que aportan saciedad sin exceso calórico."
         },
-        comida: {
+        lunch: {
             items: [
                 { foodId: "pollo", amount: 220 },
                 { foodId: "patata", amount: 100 },
@@ -57,7 +57,7 @@ window.MENU_DATA = [
             ],
             description: "Comida rica en fibra y proteína vegetal, muy beneficiosa para la salud intestinal y la saciedad."
         },
-        cena: {
+        dinner: {
             items: [
                 { foodId: "salmon", amount: 160 },
                 { foodId: "espinacas", amount: 250 },
@@ -67,8 +67,8 @@ window.MENU_DATA = [
         }
     },
     {
-        dia: "Miércoles",
-        desayuno: {
+        day: "Miércoles",
+        breakfast: {
             items: [
                 { foodId: "cafe", amount: 1 },
                 { foodId: "huevo", amount: 2 },
@@ -78,7 +78,7 @@ window.MENU_DATA = [
             ],
             description: "Desayuno equilibrado con proteína y carbohidratos, ideal para mantener energía constante durante la mañana."
         },
-        comida: {
+        lunch: {
             items: [
                 { foodId: "ternera", amount: 200 },
                 { foodId: "quinoa", amount: 150 },
@@ -89,7 +89,7 @@ window.MENU_DATA = [
             ],
             description: "Comida completa y variada, con buen aporte de proteína y carbohidratos complejos para el entrenamiento."
         },
-        cena: {
+        dinner: {
             items: [
                 { foodId: "pavo", amount: 250 },
                 { foodId: "alcachofa", amount: 150 },
@@ -99,8 +99,8 @@ window.MENU_DATA = [
         }
     },
     {
-        dia: "Jueves",
-        desayuno: {
+        day: "Jueves",
+        breakfast: {
             items: [
                 { foodId: "cafe", amount: 1 },
                 { foodId: "proteina", amount: 30 },
@@ -110,7 +110,7 @@ window.MENU_DATA = [
             ],
             description: "Desayuno rápido y proteico, ideal si hay poco tiempo por la mañana."
         },
-        comida: {
+        lunch: {
             items: [
                 { foodId: "atun", amount: 250 },
                 { foodId: "patata", amount: 100 },
@@ -122,7 +122,7 @@ window.MENU_DATA = [
             ],
             description: "Comida equilibrada con proteína magra, hidratos moderados y verduras variadas."
         },
-        cena: {
+        dinner: {
             items: [
                 { foodId: "calamar", amount: 250 },
                 { foodId: "cebolla", amount: 50 },
@@ -133,8 +133,8 @@ window.MENU_DATA = [
         }
     },
     {
-        dia: "Viernes",
-        desayuno: {
+        day: "Viernes",
+        breakfast: {
             items: [
                 { foodId: "cafe", amount: 1 },
                 { foodId: "yogur_natural", amount: 170 },
@@ -144,7 +144,7 @@ window.MENU_DATA = [
             ],
             description: "Desayuno ligero pero saciante, con hidratos complejos y proteína para un día activo."
         },
-        comida: {
+        lunch: {
             items: [
                 { foodId: "pavo", amount: 250 },
                 { foodId: "cuscus", amount: 100 },
@@ -155,7 +155,7 @@ window.MENU_DATA = [
             ],
             description: "Comida completa con buen aporte energético, ideal para rendir en el entrenamiento posterior."
         },
-        cena: {
+        dinner: {
             items: [
                 { foodId: "huevo", amount: 3 },
                 { foodId: "champinones", amount: 250 },
@@ -166,8 +166,8 @@ window.MENU_DATA = [
         }
     },
     {
-        dia: "Sábado",
-        desayuno: {
+        day: "Sábado",
+        breakfast: {
             items: [
                 { foodId: "cafe", amount: 1 },
                 { foodId: "pan_integral", amount: 80 },
@@ -177,7 +177,7 @@ window.MENU_DATA = [
             ],
             description: "Desayuno equilibrado, con proteína y fruta, pensado para un día más relajado."
         },
-        comida: {
+        lunch: {
             items: [
                 { foodId: "salmon", amount: 200 },
                 { foodId: "brocoli", amount: 200 },
@@ -187,7 +187,7 @@ window.MENU_DATA = [
             ],
             description: "Comida rica en grasas saludables y verduras, muy saciante y nutritiva."
         },
-        cena: {
+        dinner: {
             items: [
                 { foodId: "pollo", amount: 200 },
                 { foodId: "coliflor", amount: 250 },
@@ -197,8 +197,8 @@ window.MENU_DATA = [
         }
     },
     {
-        dia: "Domingo",
-        desayuno: {
+        day: "Domingo",
+        breakfast: {
             items: [
                 { foodId: "cafe", amount: 1 },
                 { foodId: "huevo", amount: 2 },
@@ -207,7 +207,7 @@ window.MENU_DATA = [
             ],
             description: "Desayuno completo y saciante, con grasas saludables y proteína."
         },
-        comida: {
+        lunch: {
             items: [
                 { foodId: "lentejas", amount: 250 },
                 { foodId: "zanahoria", amount: 100 },
@@ -217,7 +217,7 @@ window.MENU_DATA = [
             ],
             description: "Comida equilibrada y tradicional, con buena combinación de proteína, hidratos y verduras."
         },
-        cena: {
+        dinner: {
             items: [
                 { foodId: "merluza", amount: 220 },
                 { foodId: "esparragos", amount: 200 },
@@ -228,3 +228,4 @@ window.MENU_DATA = [
         }
     }
 ];
+

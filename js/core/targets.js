@@ -98,7 +98,7 @@ const Targets = {
     getRoutineActivityKcal: (routineId, exercisesMap, profile) => {
         if (!routineId || typeof Routines === 'undefined' || typeof UI === 'undefined') return null;
         const routine = Routines.getById(routineId);
-        if (!routine || !routine.ejercicios) return null;
+        if (!routine || !routine.exercises) return null;
         const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : null);
         if (!exercises) return null;
         const weightKg = profile && profile.weight ? profile.weight : null;
@@ -151,14 +151,33 @@ const Targets = {
         const defaultStepsCfg = APP_STEPS_DEFAULTS;
         const walkingExercise = exercises && exercises.caminar ? exercises.caminar : { met: defaultStepsCfg.met };
         const stepsRoutine = (typeof STEP_ROUTINE !== 'undefined' && STEP_ROUTINE) ? STEP_ROUTINE : null;
-        const walkItem = (stepsRoutine && stepsRoutine.ejercicios || []).find(e => e && e.ejercicioId === 'caminar') || null;
+        const walkItem = (stepsRoutine && stepsRoutine.exercises || []).find(e => e && e.exerciseId === 'caminar') || null;
         const savedStepsCfg = DB.get('activity_steps_config', {});
+        const savedTarget = parseInt(savedStepsCfg.targetSteps, 10) || parseInt(savedStepsCfg.objetivo, 10);
+        const savedStepsPerMin = parseInt(savedStepsCfg.stepsPerMin, 10) || parseInt(savedStepsCfg.pasosPorMin, 10);
+        const routineTarget = parseInt(walkItem && walkItem.totalSteps, 10)
+            || parseInt(walkItem && walkItem.totalPasos, 10)
+            || parseInt(stepsRoutine && stepsRoutine.totalSteps, 10)
+            || parseInt(stepsRoutine && stepsRoutine.totalPasos, 10)
+            || parseInt(stepsRoutine && stepsRoutine.goal, 10)
+            || parseInt(stepsRoutine && stepsRoutine.objetivo, 10);
+        const routineStepsPerMin = parseInt(walkItem && walkItem.stepsPerMin, 10)
+            || parseInt(walkItem && walkItem.pasosPorMin, 10)
+            || parseInt(stepsRoutine && stepsRoutine.stepsPerMin, 10)
+            || parseInt(stepsRoutine && stepsRoutine.pasosPorMin, 10);
         const stepsConfig = {
-            objetivo: parseInt(savedStepsCfg.objetivo, 10) || parseInt(walkItem && walkItem.totalPasos, 10) || parseInt(stepsRoutine && stepsRoutine.totalPasos, 10) || parseInt(stepsRoutine && stepsRoutine.objetivo, 10) || defaultStepsCfg.target,
-            pasosPorMin: parseInt(savedStepsCfg.pasosPorMin, 10) || parseInt(walkItem && walkItem.pasosPorMin, 10) || parseInt(stepsRoutine && stepsRoutine.pasosPorMin, 10) || defaultStepsCfg.perMinute,
+            targetSteps: savedTarget || routineTarget || defaultStepsCfg.target,
+            stepsPerMin: savedStepsPerMin || routineStepsPerMin || defaultStepsCfg.perMinute,
             met: walkingExercise.met || defaultStepsCfg.met
         };
-        const defaultSteps = stepsConfig.objetivo;
+        if (savedStepsCfg.objetivo || savedStepsCfg.pasosPorMin) {
+            DB.save('activity_steps_config', {
+                targetSteps: stepsConfig.targetSteps,
+                stepsPerMin: stepsConfig.stepsPerMin,
+                met: stepsConfig.met
+            });
+        }
+        const defaultSteps = stepsConfig.targetSteps;
         const dailySteps = (typeof ActivityStore !== 'undefined')
             ? ActivityStore.getDailySteps(defaultSteps)
             : [];

@@ -17,8 +17,8 @@ const Routines = {
     getAll: () => window.WORKOUT_ROUTINES || [],
 
     compareByName: (a, b) => (
-        (a && a.nombre ? a.nombre : '').localeCompare(
-            (b && b.nombre ? b.nombre : ''),
+        (a && a.name ? a.name : '').localeCompare(
+            (b && b.name ? b.name : ''),
             'es',
             { sensitivity: 'base', numeric: true }
         )
@@ -29,7 +29,7 @@ const Routines = {
     getOptionsHtml: ({ selectedId = null } = {}) => {
         const list = Routines.getSortedByName();
         return list.map(r =>
-            `<option value="${r.id}" ${r.id === selectedId ? 'selected' : ''}>${r.nombre}</option>`
+            `<option value="${r.id}" ${r.id === selectedId ? 'selected' : ''}>${r.name}</option>`
         ).join('');
     },
 
@@ -44,7 +44,7 @@ const Routines = {
     getActivityKey: (id) => {
         const routine = Routines.getById(id);
         if (routine && routine.activityKey) return routine.activityKey;
-        if (routine && routine.tipo === 'fuerza') return 'fuerza_1h';
+        if (routine && routine.type === 'fuerza') return 'fuerza_1h';
         return Routines.getDefaultId();
     }
 };

@@ -153,17 +153,17 @@ function getActivityOptions(defaultActivity) {
         return `<option value="${defaultActivity}">${defaultActivity}</option>`;
     }
     const routinesSorted = [...routines].sort((a, b) =>
-        (a.nombre || '').localeCompare((b.nombre || ''), 'es', { sensitivity: 'base', numeric: true })
+        (a.name || '').localeCompare((b.name || ''), 'es', { sensitivity: 'base', numeric: true })
     );
     return routinesSorted.map(opt =>
-        `<option value="${opt.id}" ${opt.id === defaultActivity ? 'selected' : ''}>${opt.nombre}</option>`
+        `<option value="${opt.id}" ${opt.id === defaultActivity ? 'selected' : ''}>${opt.name}</option>`
     ).join('');
 }
 
 function getActivityLabel(activityKey) {
     const activity = (typeof Routines !== 'undefined' ? Routines.getAll() : [])
         .find(t => t.id === activityKey);
-    return activity ? activity.nombre : (activityKey || '-');
+    return activity ? activity.name : (activityKey || '-');
 }
 
 function renderHistoryTable(history) {

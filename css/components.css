@@ -101,6 +101,12 @@
     border-color: var(--color-primary);
 }
 
+.btn-back--full {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+
 /* --- 3. FORMS & INPUTS --- */
 .input-base {
     background: var(--glass-dark);

@@ -3,21 +3,6 @@
    ========================================= */
 
 const NutritionScore = (() => {
-    const primaryKeys = (typeof APP_NUTRITION_KEYS !== 'undefined'
-        && APP_NUTRITION_KEYS
-        && Array.isArray(APP_NUTRITION_KEYS.primary))
-        ? APP_NUTRITION_KEYS.primary
-        : ['kcal', 'protein', 'carbs', 'fat'];
-    const secondaryKeys = (typeof APP_NUTRITION_KEYS !== 'undefined'
-        && APP_NUTRITION_KEYS
-        && Array.isArray(APP_NUTRITION_KEYS.secondary))
-        ? APP_NUTRITION_KEYS.secondary
-        : ['salt', 'fiber', 'sugar', 'saturatedFat', 'processing'];
-    const METRIC_TARGET_KEYS = Object.freeze(primaryKeys.concat(secondaryKeys).reduce((acc, key) => {
-        acc[key] = key;
-        return acc;
-    }, {}));
-
     const DEFAULT_METRICS = Object.freeze({
         kcal: { mode: 'target_asymmetric', belowRatePer10: 0.5, aboveRatePer10: 1.2, cap: 3.0 },
         protein: { mode: 'target_asymmetric', belowRatePer10: 0.8, aboveRatePer10: 0.2, cap: 2.0 },
@@ -30,30 +15,14 @@ const NutritionScore = (() => {
         processing: { mode: 'max_only', aboveRatePer10: 0.6, cap: 1.5 }
     });
 
-    const DEFAULT_CURVE = Object.freeze({
+    const CURVE = Object.freeze({
         c: 5.3,
         k: 1.5
     });
-    const appNutritionCfg = (typeof APP_DEFAULTS !== 'undefined' && APP_DEFAULTS && APP_DEFAULTS.nutritionScore)
-        ? APP_DEFAULTS.nutritionScore
-        : {};
-    const curveSource = appNutritionCfg.curve || {};
-    const CURVE = Object.freeze({
-        c: Number.isFinite(parseFloat(curveSource.c)) ? parseFloat(curveSource.c) : DEFAULT_CURVE.c,
-        k: Number.isFinite(parseFloat(curveSource.k)) ? parseFloat(curveSource.k) : DEFAULT_CURVE.k
-    });
-    const metricsSource = appNutritionCfg.metrics || {};
+
     const METRICS = Object.freeze(Object.keys(DEFAULT_METRICS).reduce((acc, key) => {
         const base = DEFAULT_METRICS[key];
-        const override = metricsSource[key] || {};
-        acc[key] = {
-            targetKey: METRIC_TARGET_KEYS[key],
-            mode: override.mode || base.mode,
-            belowRatePer10: Number.isFinite(parseFloat(override.belowRatePer10)) ? parseFloat(override.belowRatePer10) : base.belowRatePer10,
-            aboveRatePer10: Number.isFinite(parseFloat(override.aboveRatePer10)) ? parseFloat(override.aboveRatePer10) : base.aboveRatePer10,
-            ratePer10: Number.isFinite(parseFloat(override.ratePer10)) ? parseFloat(override.ratePer10) : base.ratePer10,
-            cap: Number.isFinite(parseFloat(override.cap)) ? parseFloat(override.cap) : base.cap
-        };
+        acc[key] = { targetKey: key, ...base };
         return acc;
     }, {}));
 
@@ -136,9 +105,7 @@ const NutritionScore = (() => {
 
     return {
         calculate,
-        getStatusClass,
-        METRICS,
-        CURVE
+        getStatusClass
     };
 })();
 
