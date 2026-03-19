@@ -407,6 +407,7 @@ input[type=number]::-webkit-outer-spin-button {
 .nutrition-stack { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
 .totals-row,
 .nutrition-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: space-between; width: 100%; }
+.totals-row--nowrap { flex-wrap: nowrap; }
 .totals-pill,
 .nutrition-pill { flex: 1; text-align: center; display: flex; flex-direction: column; gap: 2px; border-radius: var(--ui-radius-pill); }
 .totals-pill__label,
@@ -462,6 +463,21 @@ input[type=number]::-webkit-outer-spin-button {
     align-items: center;
     font-size: var(--font-size-xs);
 }
+.activity-exercise__row--split { justify-content: stretch; }
+.activity-exercise__row--split .activity-exercise__pill {
+    flex: 1 1 0;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+}
+.activity-exercise__kv { display: flex; flex-direction: column; gap: 4px; }
+.activity-exercise__kv-row { display: flex; justify-content: space-between; align-items: center; gap: var(--space-sm); font-size: var(--font-size-xs); }
+.activity-exercise__kv-label { opacity: 0.75; }
+.activity-exercise__kv-value { font-weight: 600; white-space: nowrap; }
+.activity-exercise__kv-value--edit { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.activity-exercise__kv-value--inputs .input-base--table-edit { width: 55px; }
+.activity-exercise__kv-sep { opacity: 0.7; }
+.activity-exercise__kv-suffix { opacity: 0.7; font-size: var(--font-size-2xs); }
 
 .activity-exercise-group {
     margin-top: var(--space-sm);
@@ -484,23 +500,6 @@ input[type=number]::-webkit-outer-spin-button {
     font-weight: 600;
     color: var(--color-text-main);
     white-space: nowrap;
-}
-
-.activity-exercise__weight {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-}
-
-.activity-exercise__weight input {
-    width: 60px;
-    padding: 4px 10px;
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    line-height: 1;
-    border-radius: var(--ui-radius-pill);
-    text-align: right;
 }
 
 .stat-pill {

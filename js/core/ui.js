@@ -220,11 +220,11 @@ const UI = {
         if (item && UI.isTimedItem(item)) {
             const sets = Math.round(item.sets || 0);
             const secPerRep = Math.round(item.secPerRep || 0);
-            if (sets > 1) return `⏱️ ${sets} x ${secPerRep}s`;
+            if (sets > 1) return `&#9201;&#65039; ${sets} x ${secPerRep}s`;
             const totalMin = secPerRep / 60;
-            if (Number.isFinite(totalMin)) return `⏱️ ${UI.formatMinutes(totalMin)} min`;
+            if (Number.isFinite(totalMin)) return `&#9201;&#65039; ${UI.formatMinutes(totalMin)} min`;
         }
-        if (item && item.sets && item.reps) return `🔁 ${item.sets} x ${item.reps}`;
+        if (item && item.sets && item.reps) return `&#128257; ${item.sets} x ${item.reps}`;
         return '-';
     },
 
@@ -269,10 +269,11 @@ const UI = {
     },
 
     getIntensityFactorFromEpley: (weightKg, reps) => {
-        const weight = parseFloat(weightKg);
-        const oneRm = UI.getEstimatedOneRmEpley(weight, reps);
-        if (!oneRm || !Number.isFinite(weight) || weight <= 0) return 1;
-        const intensity = Math.min(Math.max(weight / oneRm, 0), 1);
+        const repsVal = parseFloat(reps);
+        if (!Number.isFinite(repsVal) || repsVal <= 0) return 1;
+
+        // Epley: 1RM = w * (1 + reps/30)  =>  w/1RM = 1/(1 + reps/30)
+        const intensity = Math.min(Math.max(1 / (1 + (repsVal / 30)), 0), 1);
         return 0.7 + (0.8 * intensity);
     },
     getExerciseKcalCoef: (item, ex, { routineTimes = null } = {}) => {
@@ -285,7 +286,7 @@ const UI = {
         const restMet = 1.5;
         const workCoef = (met / 60) * workMin;
         const restCoef = (restMet / 60) * restMin;
-        if (ex.type === 'fuerza') {
+        if (ex.type === 'fuerza' && !UI.isTimedItem(item)) {
             const repsAvg = UI.parseReps(item.reps);
             const intensityFactor = UI.getIntensityFactorFromEpley(item.weightKg, repsAvg);
             return (workCoef * intensityFactor) + restCoef;
@@ -309,6 +310,31 @@ const UI = {
         return val > 0 ? val : 70;
     },
 
+    getUserHeightCm: (heightCm = null) => {
+        const direct = parseFloat(heightCm);
+        if (Number.isFinite(direct) && direct > 0) return direct;
+        if (typeof DB === 'undefined') return 0;
+        const profile = DB.get('user_profile', {});
+        const val = parseFloat(profile.height);
+        return (Number.isFinite(val) && val > 0) ? val : 0;
+    },
+
+    calculateStepsDistanceKm: (steps = 0, { heightCm = null } = {}) => {
+        const safeSteps = Math.max(0, parseInt(steps, 10) || 0);
+        if (!safeSteps) return 0;
+        const h = UI.getUserHeightCm(heightCm);
+        if (!h) return 0;
+        const stepLengthM = (h / 100) * 0.415;
+        return (safeSteps * stepLengthM) / 1000;
+    },
+
+    formatKm: (km) => {
+        const n = parseFloat(km);
+        if (!Number.isFinite(n) || n <= 0) return '-';
+        const rounded = Math.round(n * 10) / 10;
+        return (rounded % 1 === 0) ? rounded.toFixed(0) : rounded.toFixed(1);
+    },
+
     calculateStepsKcal: (steps = 0, { weightKg = null, stepsConfig = null } = {}) => {
         const safeSteps = Math.max(0, parseInt(steps, 10) || 0);
         if (!safeSteps) return 0;
@@ -324,8 +350,11 @@ const UI = {
         let totalKcal = 0;
         let totalMin = 0;
         let totalEj = 0;
+        let metMinSum = 0;
+        let intensityWorkMinSum = 0;
+        let intensityWorkMin = 0;
 
-        if (!routine) return { kcal: 0, min: 0, exerciseCount: 0 };
+        if (!routine) return { kcal: 0, min: 0, exerciseCount: 0, metAvg: 0, metMinSum: 0, intensityAvg: 0 };
         const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : {});
         const routineTimes = routine.timings || null;
 
@@ -335,11 +364,28 @@ const UI = {
             const ex = exercises[item.exerciseId];
             if (!ex) return;
             totalEj += 1;
-            totalMin += UI.estimateExerciseMinutes(effectiveItem, ex, { routineTimes });
+            const breakdown = UI.getExerciseTimeBreakdown(effectiveItem, ex, { routineTimes });
+            totalMin += breakdown.totalMin;
             totalKcal += UI.calculateExerciseKcal(effectiveItem, ex, { weightKg, routineTimes });
+
+            const met = parseFloat(ex.met);
+            if (Number.isFinite(met) && met > 0 && breakdown.totalMin > 0) {
+                metMinSum += met * breakdown.totalMin;
+            }
+
+            if (ex.type === 'fuerza' && !UI.isTimedItem(effectiveItem) && breakdown.workMin > 0) {
+                const repsAvg = UI.parseReps(effectiveItem.reps);
+                const intensityFactor = UI.getIntensityFactorFromEpley(effectiveItem.weightKg, repsAvg);
+                if (Number.isFinite(intensityFactor) && intensityFactor > 0) {
+                    intensityWorkMinSum += intensityFactor * breakdown.workMin;
+                    intensityWorkMin += breakdown.workMin;
+                }
+            }
         });
 
-        return { kcal: totalKcal, min: totalMin, exerciseCount: totalEj };
+        const metAvg = totalMin > 0 ? (metMinSum / totalMin) : 0;
+        const intensityAvg = intensityWorkMin > 0 ? (intensityWorkMinSum / intensityWorkMin) : 0;
+        return { kcal: totalKcal, min: totalMin, exerciseCount: totalEj, metAvg, metMinSum, intensityAvg, intensityWorkMinSum, intensityWorkMin };
     },
 
     groupExercisesByTypeFocus: (routine, exercisesMap, { typeOrder = null, focusOrder = null } = {}) => {

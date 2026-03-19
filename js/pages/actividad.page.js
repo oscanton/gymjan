@@ -138,23 +138,43 @@ function renderActivityPage() {
         return normalized;
     };
     const getDefaultSteps = () => getStepsConfig().targetSteps;
-    const generateActivityTotalsHtml = ({ totalKcal, routineKcal, stepsKcal, min, exerciseCount }) => {
+    const formatMet = (value) => {
+        const n = parseFloat(value);
+        if (!Number.isFinite(n) || n <= 0) return '-';
+        const rounded = Math.round(n * 10) / 10;
+        return (rounded % 1 === 0) ? rounded.toFixed(0) : rounded.toFixed(1);
+    };
+    const formatFactor = (value) => {
+        const n = parseFloat(value);
+        if (!Number.isFinite(n) || n <= 0) return '-';
+        return (Math.round(n * 100) / 100).toFixed(2);
+    };
+    const generateActivityTotalsHtml = ({ totalKcal, routineKcal, stepsKcal, min, metAvg, intensityAvg }) => {
         return `
             <div class="totals-stack">
                 <div class="stat-pill stat-pill--kcal stat-pill--sm stat-pill--block">
                     &#128293; ${Math.round(totalKcal)} kcal
                 </div>
+                <div class="totals-row totals-row--nowrap">
+                    <div class="stat-pill totals-pill stat-pill--sm">
+                        <div>&#128099; Pasos &middot; ${Math.round(stepsKcal)} kcal</div>
+                    </div>
+                    <div class="stat-pill totals-pill stat-pill--sm">
+                        <div>&#127947;&#65039; Rutina &middot; ${Math.round(routineKcal)} kcal</div>
+                    </div>
+                </div>
                 <div class="totals-row">
                     <div class="stat-pill totals-pill stat-pill--sm">
-                        <div class="totals-pill__label">&#127947;&#65039; Rutina</div>
-                        <div>${Math.round(routineKcal)} kcal</div>
+                        <div class="totals-pill__label">&#9889; MET</div>
+                        <div>${(Number.isFinite(metAvg) && metAvg > 0) ? `${formatMet(metAvg)} MET` : '-'}</div>
                     </div>
                     <div class="stat-pill totals-pill stat-pill--sm">
-                        <div class="totals-pill__label">&#128099; Movimiento</div>
-                        <div>${Math.round(stepsKcal)} kcal</div>
+                        <div class="totals-pill__label">&#9878; Intensidad</div>
+                        <div>${(Number.isFinite(intensityAvg) && intensityAvg > 0) ? `x${formatFactor(intensityAvg)}` : '-'}</div>
                     </div>
                     <div class="stat-pill totals-pill stat-pill--sm">
-                        <div>&#128202; ${Math.round(min)} min &middot; ${exerciseCount} ej</div>
+                        <div class="totals-pill__label">&#9201;&#65039; Tiempo</div>
+                        <div>${(Number.isFinite(min) && min > 0) ? `${UI.formatMinutes(min)} min` : '-'}</div>
                     </div>
                 </div>
             </div>
@@ -221,10 +241,13 @@ function renderActivityPage() {
         const movementRow = document.createElement('tr');
         let movementHtml = `<td class="activity-row-header">Movimiento</td>`;
 
+        const userHeightCm = (typeof UI !== 'undefined' && UI.getUserHeightCm) ? UI.getUserHeightCm() : 0;
         dailySteps.forEach((steps, dayIndex) => {
             const safeSteps = Math.max(0, parseInt(steps, 10) || 0);
             const stepsKcal = UI.calculateStepsKcal(safeSteps, { stepsConfig });
-            const totalMin = safeSteps / stepsConfig.stepsPerMin;
+            const stepsPerMin = parseFloat(stepsConfig.stepsPerMin) || 0;
+            const totalMin = stepsPerMin > 0 ? (safeSteps / stepsPerMin) : 0;
+            const distanceKm = UI.calculateStepsDistanceKm(safeSteps, { heightCm: userHeightCm });
 
             movementHtml += `
                 <td>
@@ -237,27 +260,36 @@ function renderActivityPage() {
                         data-ex-muscles="${walkingExercise.muscles || ''}"
                         data-ex-equipment="${walkingExercise.equipment || ''}">
                         <div class="activity-exercise__name modal-trigger">${walkingExercise.name || 'Movimiento diario'}</div>
-                        <div class="activity-exercise__row">
-                            ${isEditMode ? `
-                                <div class="activity-exercise__weight">
-                                    <span>&#127919;</span>
-                                    <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
-                                        data-steps-day-index="${dayIndex}" value="${safeSteps}">
-                                    <span>pasos</span>
-                                </div>
-                                <div class="activity-exercise__weight">
-                                    <span>&#128099;</span>
-                                    <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
-                                        data-steps-cfg-field="stepsPerMin" value="${stepsConfig.stepsPerMin}">
-                                    <span>pasos/min</span>
-                                </div>
-                            ` : `
-                                <div class="activity-exercise__pill">&#127919; ${safeSteps} pasos</div>
-                                <div class="activity-exercise__pill">&#128099; ${stepsConfig.stepsPerMin} pasos/min</div>
-                            `}
+                        <div class="activity-exercise__kv">
+                            <div class="activity-exercise__kv-row">
+                                <div class="activity-exercise__kv-label">Pasos</div>
+                                ${isEditMode ? `
+                                    <div class="activity-exercise__kv-value activity-exercise__kv-value--edit">
+                                        <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
+                                            data-steps-day-index="${dayIndex}" value="${safeSteps}">
+                                    </div>
+                                ` : `
+                                    <div class="activity-exercise__kv-value">${safeSteps}</div>
+                                `}
+                            </div>
+                            <div class="activity-exercise__kv-row">
+                                <div class="activity-exercise__kv-label">Ritmo (pasos/min)</div>
+                                ${isEditMode ? `
+                                    <div class="activity-exercise__kv-value activity-exercise__kv-value--edit">
+                                        <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
+                                            data-steps-cfg-field="stepsPerMin" value="${stepsConfig.stepsPerMin}">
+                                    </div>
+                                ` : `
+                                    <div class="activity-exercise__kv-value">${stepsPerMin > 0 ? `${stepsPerMin}` : '-'}</div>
+                                `}
+                            </div>
                         </div>
-                        <div class="activity-exercise__row">
+                        <div class="activity-exercise__row activity-exercise__row--split">
                             <div class="activity-exercise__pill">&#128293; ${Math.round(stepsKcal)} kcal</div>
+                            ${(parseFloat(stepsConfig.met) > 0) ? `<div class="activity-exercise__pill">&#9889; ${formatMet(stepsConfig.met)} MET</div>` : '<div class="activity-exercise__pill">&#9889; - MET</div>'}
+                        </div>
+                        <div class="activity-exercise__row activity-exercise__row--split">
+                            <div class="activity-exercise__pill">&#128207; ${(distanceKm > 0) ? `${UI.formatKm(distanceKm)} km` : '-'}</div>
                             <div class="activity-exercise__pill">&#9201;&#65039; ${UI.formatMinutes(totalMin)} min</div>
                         </div>
                         <div class="meal-description">${walkingExercise.description || ''}</div>
@@ -269,7 +301,7 @@ function renderActivityPage() {
         tableBody.appendChild(movementRow);
 
         const routineRow = document.createElement('tr');
-        let routineHtml = `<td class="activity-row-header">Gym</td>`;
+        let routineHtml = `<td class="activity-row-header">Rutina</td>`;
 
         weeklyPlan.forEach((routineId, dayIndex) => {
             const routine = getRoutineById(routineId, fallbackId);
@@ -300,8 +332,26 @@ function renderActivityPage() {
                     const isTimeBased = UI.isTimedItem(effectiveItem);
                     const numericWeight = parseFloat(currentWeight);
                     const showWeight = ex.type === 'fuerza' && !isTimeBased && Number.isFinite(numericWeight) && numericWeight > 0;
+                    const canEditWeight = ex.type === 'fuerza' && !isTimeBased;
+                    const effectiveSecPerRep = isTimeBased
+                        ? (parseFloat(effectiveItem.secPerRep)
+                            || parseFloat(routineTimes && routineTimes.secPerRep)
+                            || (typeof ROUTINE_TIME_DEFAULTS !== 'undefined' ? parseFloat(ROUTINE_TIME_DEFAULTS.secPerRep) : 0)
+                            || 0)
+                        : 0;
+                    const setsDisplay = Math.round(parseFloat(effectiveItem.sets) || 0);
+                    const repetitionsDisplay = isTimeBased
+                        ? ((setsDisplay > 0 && effectiveSecPerRep > 0) ? `${setsDisplay} x ${Math.round(effectiveSecPerRep)}s` : '-')
+                        : ((effectiveItem.sets && effectiveItem.reps) ? `${effectiveItem.sets} x ${effectiveItem.reps}` : '-');
                     const kcal = UI.calculateExerciseKcal(effectiveItem, ex, { routineTimes });
                     const estimatedMin = UI.estimateExerciseMinutes(effectiveItem, ex, { routineTimes });
+                    const met = parseFloat(ex.met);
+                    const showMet = Number.isFinite(met) && met > 0;
+                    const repsAvg = UI.parseReps(effectiveItem.reps);
+                    const intensityFactor = (ex.type === 'fuerza' && !isTimeBased && repsAvg > 0)
+                        ? UI.getIntensityFactorFromEpley(effectiveItem.weightKg, repsAvg)
+                        : 0;
+                    const showIntensity = Number.isFinite(intensityFactor) && intensityFactor > 0 && ex.type === 'fuerza' && !isTimeBased;
                     const routineRest = routineTimes && Number.isFinite(routineTimes.restSec)
                         ? routineTimes.restSec
                         : (typeof ROUTINE_TIME_DEFAULTS !== 'undefined' && Number.isFinite(ROUTINE_TIME_DEFAULTS.restSec))
@@ -311,36 +361,45 @@ function renderActivityPage() {
                     return `
                         <div class="activity-exercise" data-ex-name="${ex.name}" data-ex-tech="${ex.technique || ''}" data-ex-kcal="${kcal}" data-ex-type="${ex.type || ''}" data-ex-focus="${ex.focus || ''}" data-ex-muscles="${ex.muscles || ''}" data-ex-equipment="${ex.equipment || ''}" data-ex-rest="${effectiveItem.restSec || routineRest || ''}">
                             <div class="activity-exercise__name modal-trigger">${ex.name}</div>
-                            <div class="activity-exercise__row">
-                                ${showWeight ? (
-                                    isEditMode
-                                        ? `
-                                            <div class="activity-exercise__weight">
-                                                <span>&#127947;&#65039;</span>
-                                                <input type="text" inputmode="decimal" class="input-base input-base--table-edit" data-day-index="${dayIndex}" data-exercise-id="${item.exerciseId}" value="${currentWeight}">
-                                                <span>kg</span>
-                                            </div>
-                                        `
-                                        : `<span class="activity-exercise__pill">&#127947;&#65039; ${currentWeight || 0} kg</span>`
-                                ) : '<span class="activity-exercise__pill">Sin carga</span>'}
-                                ${isEditMode && !isTimeBased ? `
-                                    <div class="activity-exercise__weight">
-                                        <span>&#128290;</span>
-                                        <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
-                                            data-routine-id="${routine.id}" data-exercise-id="${item.exerciseId}" data-field="sets" value="${effectiveItem.sets || ''}">
-                                    </div>
-                                    <div class="activity-exercise__weight">
-                                        <span>&#128257;</span>
-                                        <input type="text" class="input-base input-base--table-edit"
-                                            data-routine-id="${routine.id}" data-exercise-id="${item.exerciseId}" data-field="reps" value="${effectiveItem.reps || ''}">
-                                    </div>
-                                ` : (isEditMode
-                                    ? ''
-                                    : `<div class="activity-exercise__pill">${UI.formatTrabajo(effectiveItem)}</div>`)}
+                            <div class="activity-exercise__kv">
+                                <div class="activity-exercise__kv-row">
+                                    <div class="activity-exercise__kv-label">Repeticiones</div>
+                                    ${isEditMode ? `
+                                        <div class="activity-exercise__kv-value activity-exercise__kv-value--edit activity-exercise__kv-value--inputs">
+                                            <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
+                                                data-routine-id="${routine.id}" data-exercise-id="${item.exerciseId}" data-field="sets" value="${effectiveItem.sets || ''}">
+                                            <span class="activity-exercise__kv-sep">&times;</span>
+                                            ${isTimeBased ? `
+                                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
+                                                    data-routine-id="${routine.id}" data-exercise-id="${item.exerciseId}" data-field="secPerRep" value="${effectiveSecPerRep || ''}">
+                                                <span class="activity-exercise__kv-suffix">s</span>
+                                            ` : `
+                                                <input type="text" class="input-base input-base--table-edit"
+                                                    data-routine-id="${routine.id}" data-exercise-id="${item.exerciseId}" data-field="reps" value="${effectiveItem.reps || ''}">
+                                            `}
+                                        </div>
+                                    ` : `
+                                        <div class="activity-exercise__kv-value">${repetitionsDisplay}</div>
+                                    `}
+                                </div>
+                                <div class="activity-exercise__kv-row">
+                                    <div class="activity-exercise__kv-label">Carga (kg)</div>
+                                    ${isEditMode && canEditWeight ? `
+                                        <div class="activity-exercise__kv-value activity-exercise__kv-value--edit">
+                                            <input type="text" inputmode="decimal" class="input-base input-base--table-edit" data-day-index="${dayIndex}" data-exercise-id="${item.exerciseId}" value="${currentWeight}">
+                                        </div>
+                                    ` : `
+                                        <div class="activity-exercise__kv-value">${showWeight ? `${currentWeight}` : '-'}</div>
+                                    `}
+                                </div>
                             </div>
-                            <div class="activity-exercise__row">
+                            <div class="activity-exercise__row activity-exercise__row--split">
                                 <div class="activity-exercise__pill">&#128293; ${Math.round(kcal)} kcal</div>
-                                ${estimatedMin > 0 ? `<div class="activity-exercise__pill">&#9201;&#65039; ${UI.formatMinutes(estimatedMin)} min</div>` : ''}
+                                <div class="activity-exercise__pill">&#9889; ${showMet ? `${formatMet(met)} MET` : '-'}</div>
+                            </div>
+                            <div class="activity-exercise__row activity-exercise__row--split">
+                                <div class="activity-exercise__pill">&#9878; ${showIntensity ? `x${formatFactor(intensityFactor)}` : '-'}</div>
+                                <div class="activity-exercise__pill">&#9201;&#65039; ${(estimatedMin > 0) ? `${UI.formatMinutes(estimatedMin)} min` : '-'}</div>
                             </div>
                             <div class="meal-description">${ex.description || ''}</div>
                         </div>`;
@@ -377,15 +436,25 @@ function renderActivityPage() {
             const routineTotals = UI.calcRoutineTotals(routine, routineOverrides, EXERCISES);
             const stepsKcal = UI.calculateStepsKcal(dailySteps[dayIndex], { stepsConfig });
             const totalKcal = routineTotals.kcal + stepsKcal;
+            const daySteps = Math.max(0, parseInt(dailySteps[dayIndex], 10) || 0);
+            const stepsMin = stepsConfig.stepsPerMin > 0 ? (daySteps / stepsConfig.stepsPerMin) : 0;
+            const stepsMet = parseFloat(stepsConfig.met);
+            const stepsMetMin = (Number.isFinite(stepsMet) && stepsMet > 0 && stepsMin > 0) ? (stepsMet * stepsMin) : 0;
+            const totalMinForMet = (routineTotals.min || 0) + stepsMin;
+            const metAvg = totalMinForMet > 0
+                ? (((routineTotals.metMinSum || 0) + stepsMetMin) / totalMinForMet)
+                : 0;
+            const intensityAvg = routineTotals.intensityAvg || 0;
 
-            totalsHtml += `
+                    totalsHtml += `
                 <td class="day-total">
                     ${generateActivityTotalsHtml({
                         totalKcal,
                         routineKcal: routineTotals.kcal,
                         stepsKcal,
                         min: routineTotals.min,
-                        exerciseCount: routineTotals.exerciseCount
+                        metAvg,
+                        intensityAvg
                     })}
                 </td>`;
         });
