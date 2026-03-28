@@ -1,4 +1,4 @@
-/* =========================================
+﻿/* =========================================
    pages/menu.page.js - MENÚ SEMANAL
    ========================================= */
 
@@ -110,9 +110,9 @@ function renderMenuPage() {
         }).join('');
     };
     const renderMealMacroPills = (nut) => `
-        <div class="stat-pill stat-pill--kcal stat-pill--xs">🔥 ${Math.round(nut.kcal)} kcal</div>
+        <div class="stat-pill stat-pill--kcal stat-pill--xs">🔥</div>
         <div class="stat-pill stat-pill--xs">🥩 ${Math.round(nut.protein)}g</div>
-        <div class="stat-pill stat-pill--xs">🍚 ${Math.round(nut.carbs)}g</div>
+        <div class="stat-pill stat-pill--xs">🍞 ${Math.round(nut.carbs)}g</div>
         <div class="stat-pill stat-pill--xs">🥑 ${Math.round(nut.fat)}g</div>
     `;
 
@@ -158,14 +158,12 @@ function renderMenuPage() {
 
         const kcalPillHtml = kcalDebugPayload
             ? `
-                <button type="button" class="stat-pill stat-pill--kcal ${kcalSizeClass} stat-pill--block pill-trigger kcal-info-trigger" data-kcal-debug="${kcalDebugPayload}">
-                    🔥 <span class="${statusClasses.kcal || ''}">${Math.round(kcal)} kcal</span>
+                <button type="button" class="stat-pill stat-pill--kcal ${kcalSizeClass} stat-pill--block pill-trigger kcal-info-trigger" data-kcal-debug="${kcalDebugPayload}">🔥 <span class="${statusClasses.kcal || ''}">${Math.round(kcal)} kcal</span>
                     ${Number.isFinite(targetKcal) ? `<span class="text-muted">/ ${targetKcal} kcal</span>` : ''}
                 </button>
             `
             : `
-                <div class="stat-pill stat-pill--kcal ${kcalSizeClass} stat-pill--block">
-                    🔥 <span class="${statusClasses.kcal || ''}">${Math.round(kcal)} kcal</span>
+                <div class="stat-pill stat-pill--kcal ${kcalSizeClass} stat-pill--block">🔥 <span class="${statusClasses.kcal || ''}">${Math.round(kcal)} kcal</span>
                     ${Number.isFinite(targetKcal) ? `<span class="text-muted">/ ${targetKcal} kcal</span>` : ''}
                 </div>
             `;
@@ -178,7 +176,7 @@ function renderMenuPage() {
                     <div><span class="${statusClasses.protein || ''}">${Math.round(protein)}g</span>${Number.isFinite(targetProtein) ? ` <span class="text-muted">/ ${targetProtein}g</span>` : ''}</div>
                 </div>
                 <div class="stat-pill nutrition-pill">
-                    <div class="nutrition-pill__label">🍚 Carbohidratos</div>
+                    <div class="nutrition-pill__label">🍞 Carbohidratos</div>
                     <div><span class="${statusClasses.carbs || ''}">${Math.round(carbs)}g</span>${Number.isFinite(targetCarbs) ? ` <span class="text-muted">/ ${targetCarbs}g</span>` : ''}</div>
                 </div>
                 <div class="stat-pill nutrition-pill">
@@ -765,7 +763,7 @@ function renderMenuPage() {
             { when: () => typeof Targets === 'undefined', path: 'js/core/targets.js' },
             { when: () => typeof NutritionScore === 'undefined', path: 'js/core/nutrition-score.js' },
             { when: () => typeof FOODS === 'undefined', path: 'js/data/foods.js' },
-            { when: () => typeof EXERCISES === 'undefined', path: 'js/data/ejercicios.js' }
+            { when: () => typeof EXERCISES === 'undefined', path: 'js/data/exercises.js' }
         ])
             .then(() => loadMenuData(currentFile))
             .catch(err => {
@@ -776,3 +774,6 @@ function renderMenuPage() {
 
     loadDependencies();
 }
+
+
+

@@ -1,5 +1,5 @@
 ﻿/* =========================================
-   data/ejercicios.js - DATOS
+   data/exercises.js - DATOS
    ========================================= */
 
 // Conventions:
@@ -236,7 +236,7 @@ const EXERCISES = {
     relativeLoad: 0.4,
     met: 6.0,
     restSec: 90,
-    description: "Variante segura para tecnica.",
+    description: "Variante segura para técnica.",
     technique: "El movimiento se realiza sujetando la carga al pecho, con codos hacia abajo, descendiendo en sentadilla profunda sin perder la postura y subiendo de forma controlada."
   },
   peso_muerto: {
@@ -370,7 +370,7 @@ const EXERCISES = {
     relativeLoad: 0.18,
     met: 3.0,
     restSec: 45,
-    description: "Flexion de tronco controlada.",
+    description: "Flexión de tronco controlada.",
     technique: "El movimiento se realiza tumbado, con rodillas flexionadas, elevando la parte alta del tronco pocos centímetros sin tirar del cuello, y bajando controlado."
   },
   elevaciones_piernas: {
@@ -396,7 +396,7 @@ const EXERCISES = {
     relativeLoad: 0.2,
     met: 4.0,
     restSec: 45,
-    description: "Rotacion controlada del tronco.",
+    description: "Rotación controlada del tronco.",
     technique: "El movimiento se realiza sentado con el tronco ligeramente inclinado, girando el torso de lado a lado de forma controlada sin encorvar la espalda."
   },
 
@@ -646,7 +646,7 @@ const EXERCISES = {
     cadenceBase: 24,
     met: 8.5,
     restSec: 0,
-    description: "Cardio completo con tecnica.",
+    description: "Cardio completo con técnica.",
     technique: "El movimiento se realiza con la secuencia piernas-tronco-brazos en la tracción, y brazos-tronco-piernas en el retorno, manteniendo ritmo constante."
   },
   boxeo_saco: {
@@ -702,7 +702,7 @@ const EXERCISES = {
     cadenceBase: 50,
     met: 2.5,
     restSec: 0,
-    description: "Respiracion y control postural.",
+    description: "Respiración y control postural.",
     technique: "El trabajo se realiza con respiración lenta, transiciones suaves y posturas alineadas sin forzar el rango."
   },
   movilidad_articular: {
@@ -734,6 +734,7 @@ const EXERCISES = {
 };
 
 window.EXERCISES = EXERCISES;
+
 
 
 

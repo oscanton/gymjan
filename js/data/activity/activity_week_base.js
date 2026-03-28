@@ -1,5 +1,5 @@
 ﻿/* =========================================
-   data/actividad/actividad_semana_base.js - PLAN SEMANAL
+   data/activity/activity_week_base.js - PLAN SEMANAL
    ========================================= */
 
 window.ACTIVITY_DATA = [
@@ -24,7 +24,7 @@ window.ACTIVITY_DATA = [
         { exerciseId: "crunch", sets: 3, reps: "12-20", secPerRep: 2 },
         { exerciseId: "estiramientos", sets: 1, reps: 1, secPerRep: 240 }
       ],
-      description: "Recorrido completo con enfasis en basicos."
+      description: "Recorrido completo con énfasis en básicos."
     }
   },
   {
@@ -101,7 +101,7 @@ window.ACTIVITY_DATA = [
         { exerciseId: "elevaciones_piernas", sets: 3, reps: "10-15", weightKg: 0, secPerRep: 2 },
         { exerciseId: "estiramientos", sets: 1, reps: 1, secPerRep: 240 }
       ],
-      description: "Tren inferior + full body con enfasis en bisagra."
+      description: "Tren inferior + full body con énfasis en bisagra."
     }
   },
   {
@@ -137,3 +137,4 @@ window.ACTIVITY_DATA = [
     }
   }
 ];
+

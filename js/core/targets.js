@@ -9,7 +9,7 @@ const Targets = {
         c: 'Los carbohidratos son combustible principal para entrenar y recuperar glucogeno. Un aporte muy bajo puede reducir energia, rendimiento e intensidad.',
         f: 'Las grasas son clave para funcion hormonal, absorcion de vitaminas y salud celular. Un aporte muy bajo puede afectar hormonas y bienestar general.',
         salt: 'Controla el sodio total aproximado (expresado como sal). Exceso mantenido puede empeorar retencion de liquidos y tension arterial en personas sensibles.',
-        fiber: 'La fibra mejora salud digestiva, saciedad y control glucemico. Un aporte bajo suele empeorar transito intestinal y calidad global de la dieta.',
+        fiber: 'La fibra mejora salud digestiva, saciedad y control glucémico. Un aporte bajo suele empeorar tránsito intestinal y calidad global de la dieta.',
         sugar: 'Limita azucares libres para mejorar calidad nutricional y estabilidad energetica. Regla base: maximo % de kcal y conversion a gramos con (kcal x %)/4. Un exceso sostenido facilita picos de apetito y desplazamiento de alimentos de calidad.',
         saturatedFat: 'Limita grasas saturadas para proteger perfil lipidico y salud cardiovascular. Un exceso habitual puede empeorar marcadores cardiometabolicos.',
         processing: 'Refleja el grado medio de procesado de la dieta. Cuanto mas alto, mayor riesgo de baja densidad nutricional y peor adherencia a largo plazo.'

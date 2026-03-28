@@ -1,4 +1,4 @@
-/* =========================================
+﻿/* =========================================
    app.js - BOOTSTRAP (Inicializacin)
    ========================================= */
 
@@ -33,6 +33,24 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById(rootId)) return;
         if (typeof render === 'function') render();
     });
+    const buildIndexContent = ({ basePrefix = '', title = 'Índice' } = {}) => `
+            <div class="index-modal__header">
+                <div class="index-modal__title">${title}</div>
+            </div>
+            <nav class="stack-vertical">
+                <a class="btn btn--primary" href="${basePrefix}views/calculator.html">🧮 Calculadora</a>
+                <a class="btn btn--primary" href="${basePrefix}views/activity.html">💪 Actividad</a>
+                <a class="btn btn--primary" href="${basePrefix}views/menu.html">🍽️ Menú</a>
+                <a class="btn btn--primary" href="${basePrefix}views/list.html">🛒 Lista</a>
+                <a class="btn btn--primary" href="${basePrefix}views/tracking.html">📈 Control</a>
+            </nav>
+        `;
+
+    const renderIndexCard = () => {
+        const card = document.getElementById('index-card');
+        if (!card) return;
+        card.innerHTML = buildIndexContent({ basePrefix: '', title: 'Índice' });
+    };
 
     const buildIndexModal = () => {
         if (document.getElementById('global-index-modal')) return;
@@ -42,16 +60,7 @@ window.addEventListener('DOMContentLoaded', () => {
         modal.className = 'index-modal-backdrop';
         modal.innerHTML = `
             <div class="index-modal" role="dialog" aria-modal="true" aria-label="Navegación">
-                <div class="index-modal__header">
-                    <div class="index-modal__title">Índice</div>
-                </div>
-                <nav class="stack-vertical">
-                    <a class="btn btn--primary" href="${basePrefix}views/calculadora.html">🧮 Calculadora</a>
-                    <a class="btn btn--primary" href="${basePrefix}views/actividad.html">💪 Actividad</a>
-                    <a class="btn btn--primary" href="${basePrefix}views/menu.html">🍽️ Menú</a>
-                    <a class="btn btn--primary" href="${basePrefix}views/lista.html">🛒 Lista</a>
-                    <a class="btn btn--primary" href="${basePrefix}views/control.html">📈 Control</a>
-                </nav>
+                ${buildIndexContent({ basePrefix, title: 'Índice' })}
             </div>
         `;
         document.body.appendChild(modal);
@@ -64,13 +73,33 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    renderIndexCard();
+
     const headerTitle = document.querySelector('.page-header h1');
     if (headerTitle) {
-        headerTitle.classList.add('page-title--clickable');
-        headerTitle.addEventListener('click', () => {
+        let titleSpan = headerTitle.querySelector('.page-title-text');
+        if (!titleSpan) {
+            const textNodes = Array.from(headerTitle.childNodes).filter(
+                (node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== ''
+            );
+            const titleText = textNodes.map(node => node.textContent.trim()).join(' ');
+            textNodes.forEach(node => node.remove());
+            titleSpan = document.createElement('span');
+            titleSpan.className = 'page-title-text';
+            titleSpan.textContent = titleText || headerTitle.textContent.trim();
+            headerTitle.insertBefore(titleSpan, headerTitle.firstChild);
+        }
+        titleSpan.classList.add('page-title--clickable');
+        titleSpan.addEventListener('click', () => {
             buildIndexModal();
             const modal = document.getElementById('global-index-modal');
             if (modal) modal.classList.add('is-open');
         });
     }
 });
+
+
+
+
+
+

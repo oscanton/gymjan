@@ -1,5 +1,5 @@
 /* =========================================
-   pages/lista.page.js - LISTA DE LA COMPRA
+   pages/list.page.js - LISTA DE LA COMPRA
    ========================================= */
 
 function renderShoppingListPage() {

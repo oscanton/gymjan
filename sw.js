@@ -1,13 +1,13 @@
-const CACHE_NAME = "app-cache-v15";
+﻿const CACHE_NAME = "app-cache-v15";
 
 const FILES_TO_CACHE = [
   "index.html",
   "manifest.json",
 
-  "views/actividad.html",
-  "views/calculadora.html",
-  "views/control.html",
-  "views/lista.html",
+  "views/activity.html",
+  "views/calculator.html",
+  "views/tracking.html",
+  "views/list.html",
   "views/menu.html",
 
   "css/app.css",
@@ -25,15 +25,15 @@ const FILES_TO_CACHE = [
   "js/core/targets.js",
   "js/core/ui.js",
   "js/data/foods.js",
-  "js/data/ejercicios.js",
+  "js/data/exercises.js",
   "js/data/menus/menu.js",
   "js/data/menus/menu_1.js",
-  "js/data/actividad/actividad_semana_base.js",
+  "js/data/activity/activity_week_base.js",
 
-  "js/pages/actividad.page.js",
-  "js/pages/calculadora.page.js",
-  "js/pages/control.page.js",
-  "js/pages/lista.page.js",
+  "js/pages/activity.page.js",
+  "js/pages/calculator.page.js",
+  "js/pages/tracking.page.js",
+  "js/pages/list.page.js",
   "js/pages/menu.page.js",
 
   "assets/icon-192.png"
@@ -62,3 +62,4 @@ self.addEventListener("fetch", event => {
     })
   );
 });
+

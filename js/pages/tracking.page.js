@@ -1,5 +1,5 @@
 /* =========================================
-   pages/control.page.js - CONTROL DE PESO
+   pages/tracking.page.js - CONTROL DE PESO
    ========================================= */
 
 function renderControlPage() {

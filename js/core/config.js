@@ -1,4 +1,4 @@
-/* =========================================
+﻿/* =========================================
    core/config.js - GLOBAL CONFIGURATION
    ========================================= */
 
@@ -17,10 +17,10 @@ const AVAILABLE_MENUS = [
 
 // Available activity plan files (weekly).
 const AVAILABLE_ACTIVITY_PLAN_FILES = [
-    { label: 'semana_base', file: 'actividad/actividad_semana_base.js' }
+    { label: 'semana_base', file: 'activity/activity_week_base.js' }
 ];
 
-const DEFAULT_ACTIVITY_PLAN_FILE = 'actividad/actividad_semana_base.js';
+const DEFAULT_ACTIVITY_PLAN_FILE = 'activity/activity_week_base.js';
 
 // App-level defaults (business rules and baseline targets).
 const APP_DEFAULTS = {
@@ -57,4 +57,5 @@ const APP_SECONDARY_DEFAULTS = (APP_DEFAULTS.secondaryTargets
     && Number.isFinite(APP_DEFAULTS.secondaryTargets.processingMaxScore))
     ? APP_DEFAULTS.secondaryTargets
     : { saltMaxG: 5, fiberPer1000Kcal: 14, sugarMaxPctKcal: 0.10, satFatMaxPctKcal: 0.10, processingMaxScore: 3.5 };
+
 

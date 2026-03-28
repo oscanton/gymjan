@@ -1,5 +1,5 @@
-/* =========================================
-   pages/calculadora.page.js - CALCULADORA
+﻿/* =========================================
+   pages/calculator.page.js - CALCULADORA
    ========================================= */
 
 function renderCalculatorPage() {
@@ -12,7 +12,7 @@ function renderCalculatorPage() {
     }
 
     const optionalLoads = [
-        { when: () => typeof EXERCISES === 'undefined', path: 'js/data/ejercicios.js' }
+        { when: () => typeof EXERCISES === 'undefined', path: 'js/data/exercises.js' }
     ];
 
     const loadActivityPlan = () => {
@@ -91,7 +91,7 @@ function initCalculator(container) {
         ? Targets.getUserMacroRatios()
         : Formulas.DEFAULT_MACRO_RATIOS;
 
-    // --- SECCIÓN 1: DATOS PERSONALES ---
+    // --- SECCIÓN: DATOS PERSONALES ---
     const profileCard = document.createElement('div');
     profileCard.className = 'glass-card card';
     profileCard.innerHTML = `
@@ -120,12 +120,12 @@ function initCalculator(container) {
     `;
     container.appendChild(profileCard);
 
-    // --- SECCIÓN 2: RESULTADOS BASE ---
+    // --- SECCIÓN: RESULTADOS BASE ---
     const baseResultsCard = document.createElement('div');
     baseResultsCard.className = 'glass-card card mt-lg';
     container.appendChild(baseResultsCard);
 
-    // --- SECCIÓN 4: AJUSTES GENERALES ---
+    // --- SECCIÓN: AJUSTES GENERALES ---
     const adjustmentsCard = document.createElement('div');
     adjustmentsCard.className = 'glass-card card mt-lg';
     const generateOpts = (val) => {
@@ -160,12 +160,10 @@ function initCalculator(container) {
         <div class="stats-pills">
             <div class="stat-pill stat-pill--xs ${key === 'kcal' ? 'stat-pill--kcal' : ''}">${icon} ${value}</div>
         </div>
-    `;
-
-    const ADJUSTMENT_ROWS = [
+    `;    const ADJUSTMENT_ROWS = [
         { key: 'kcal', icon: '🔥', label: 'Energía', rule: () => 'Objetivo: 1,2 x BMR', description: getObjectiveDescription('kcal'), adjustmentSource: 'macro', adjustmentKey: 'kcal' },
         { key: 'p', icon: '🥩', label: 'Proteína', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.p * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('p'), adjustmentSource: 'macro', adjustmentKey: 'p' },
-        { key: 'c', icon: '🍚', label: 'Carbohidratos', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.c * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('c'), adjustmentSource: 'macro', adjustmentKey: 'c' },
+        { key: 'c', icon: '🍞', label: 'Carbohidratos', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.c * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('c'), adjustmentSource: 'macro', adjustmentKey: 'c' },
         { key: 'f', icon: '🥑', label: 'Grasas', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.f * 100, 1)}% de kcals (g = (kcals x %)/9)`, description: getObjectiveDescription('f'), adjustmentSource: 'macro', adjustmentKey: 'f' },
         {
             key: 'salt',
@@ -271,7 +269,7 @@ function initCalculator(container) {
     `;
     container.appendChild(adjustmentsCard);
 
-    // --- SECCIÓN 5: OBJETIVOS SEMANALES ---
+    // --- SECCIÓN: OBJETIVOS SEMANALES ---
     const weeklyGoalsCard = document.createElement('div');
     weeklyGoalsCard.className = 'glass-card card mt-lg';
     weeklyGoalsCard.innerHTML = `
@@ -361,7 +359,7 @@ function initCalculator(container) {
                 <div class="card-panel">
                     <div class="text-label">BMR</div>
                     <div class="stats-pills stats-pills--center my-sm">
-                        <div class="stat-pill stat-pill--kcal">🔥 ${bmr} kcal</div>
+                        <div class="stat-pill stat-pill--kcal">🔥</div>
                     </div>
                     <div class="text-sm text-muted mt-auto">Basal</div>
                 </div>
@@ -575,7 +573,7 @@ function initCalculator(container) {
             }
         } catch (err) {
             console.error('Error en updateAndCalculate (Calculadora):', err);
-            UI.showError(container, 'Error actualizando cálculos de la Calculadora.');
+            UI.showError(container, 'Error actualizando Cálculos de la Calculadora.');
         }
     };
 
@@ -594,3 +592,7 @@ function initCalculator(container) {
 
     updateAndCalculate();
 }
+
+
+
+

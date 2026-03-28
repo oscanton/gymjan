@@ -1,6 +1,6 @@
 ﻿
 /* =========================================
-   pages/actividad.page.js - ACTIVIDAD SEMANAL
+   pages/activity.page.js - ACTIVIDAD SEMANAL
    ========================================= */
 
 function renderActivityPage() {
@@ -808,7 +808,7 @@ function renderActivityPage() {
             { global: 'Formulas', path: 'js/core/formulas.js' },
             { global: 'Targets', path: 'js/core/targets.js' },
             { global: 'ActivityScore', path: 'js/core/activity-score.js' },
-            { global: 'EXERCISES', path: 'js/data/ejercicios.js' }
+            { global: 'EXERCISES', path: 'js/data/exercises.js' }
         ],
         afterRequired: () => {
             const plans = getPlanFiles();
@@ -826,3 +826,4 @@ function renderActivityPage() {
         }
     });
 }
+
