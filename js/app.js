@@ -33,4 +33,44 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById(rootId)) return;
         if (typeof render === 'function') render();
     });
+
+    const buildIndexModal = () => {
+        if (document.getElementById('global-index-modal')) return;
+        const basePrefix = viewMatch ? '../' : '';
+        const modal = document.createElement('div');
+        modal.id = 'global-index-modal';
+        modal.className = 'index-modal-backdrop';
+        modal.innerHTML = `
+            <div class="index-modal" role="dialog" aria-modal="true" aria-label="Navegación">
+                <div class="index-modal__header">
+                    <div class="index-modal__title">Índice</div>
+                </div>
+                <nav class="stack-vertical">
+                    <a class="btn btn--primary" href="${basePrefix}views/calculadora.html">🧮 Calculadora</a>
+                    <a class="btn btn--primary" href="${basePrefix}views/actividad.html">💪 Actividad</a>
+                    <a class="btn btn--primary" href="${basePrefix}views/menu.html">🍽️ Menú</a>
+                    <a class="btn btn--primary" href="${basePrefix}views/lista.html">🛒 Lista</a>
+                    <a class="btn btn--primary" href="${basePrefix}views/control.html">📈 Control</a>
+                </nav>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        const closeModal = () => modal.classList.remove('is-open');
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    };
+
+    const headerTitle = document.querySelector('.page-header h1');
+    if (headerTitle) {
+        headerTitle.classList.add('page-title--clickable');
+        headerTitle.addEventListener('click', () => {
+            buildIndexModal();
+            const modal = document.getElementById('global-index-modal');
+            if (modal) modal.classList.add('is-open');
+        });
+    }
 });

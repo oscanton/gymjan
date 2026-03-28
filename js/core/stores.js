@@ -3,36 +3,63 @@
    ========================================= */
 
 const ActivityStore = {
-    getWeeklyPlan: () => {
-        const daysCount = DAYS_COUNT;
-        const fallbackId = (typeof Routines !== 'undefined') ? Routines.getDefaultId() : 'recuperacion';
-        const raw = DB.get('user_activity_plan', Array(daysCount).fill(fallbackId));
-        const plan = Array.isArray(raw) ? raw.slice(0, daysCount) : Array(daysCount).fill(fallbackId);
-        while (plan.length < daysCount) plan.push(fallbackId);
-        return plan.map(v => v || fallbackId);
+    getSelectedFile: () => DB.get('selected_activity_plan_file', DEFAULT_ACTIVITY_PLAN_FILE),
+    setSelectedFile: (file) => DB.save('selected_activity_plan_file', file),
+    getSavedPlanData: (file) => DB.get(`activity_data_${file}`, null),
+    savePlanData: (file, data) => DB.save(`activity_data_${file}`, ActivityStore.normalizeActivityData(data)),
+    clearSavedPlanData: (file) => localStorage.removeItem(APP_PREFIX + `activity_data_${file}`),
+    getActivePlanData: (file = null) => {
+        const selected = file || ActivityStore.getSelectedFile();
+        const saved = ActivityStore.getSavedPlanData(selected);
+        if (Array.isArray(saved)) return ActivityStore.normalizeActivityData(saved);
+        if (Array.isArray(window.ACTIVITY_DATA)) return ActivityStore.normalizeActivityData(window.ACTIVITY_DATA);
+        return null;
     },
-    saveWeeklyPlan: (plan) => DB.save('user_activity_plan', plan),
-    getDailySteps: (defaultSteps = null) => {
-        const daysCount = DAYS_COUNT;
-        const fallbackSteps = Number.isFinite(defaultSteps)
-            ? defaultSteps
-            : APP_STEPS_DEFAULTS.target;
-        const raw = DB.get('user_activity_steps', null);
-        const parsed = Array.isArray(raw) ? raw.slice(0, daysCount) : [];
-        while (parsed.length < daysCount) parsed.push(fallbackSteps);
-        return parsed.map(v => {
-            const num = parseInt(v, 10);
-            return Number.isNaN(num) || num < 0 ? fallbackSteps : num;
+    normalizeActivityData: (data) => {
+        if (!Array.isArray(data)) return data;
+        const normalized = data.map((day) => {
+            if (!day || typeof day !== 'object') return day;
+            const normalized = {
+                day: day.day || ''
+            };
+            const normalizeSection = (section) => {
+                if (!section || typeof section !== 'object') return null;
+                if (section.type === 'rest') {
+                    return { type: 'rest', description: section.description || '' };
+                }
+                const exercises = Array.isArray(section.exercises) ? section.exercises : [];
+                return {
+                    exercises,
+                    description: section.description || ''
+                };
+            };
+            normalized.walk = normalizeSection(day.walk);
+            normalized.gym = normalizeSection(day.gym);
+            normalized.extra_activity = normalizeSection(day.extra_activity);
+            return normalized;
         });
+        const filled = normalized.slice(0, DAYS_COUNT);
+        while (filled.length < DAYS_COUNT) {
+            const dayName = (typeof WEEK_DAYS !== 'undefined' && WEEK_DAYS[filled.length]) ? WEEK_DAYS[filled.length] : '';
+            filled.push({ day: dayName, walk: null, gym: null, extra_activity: null });
+        }
+        return filled;
     },
-    saveDailySteps: (steps) => {
-        const daysCount = DAYS_COUNT;
-        const arr = Array.isArray(steps) ? steps.slice(0, daysCount) : [];
-        while (arr.length < daysCount) arr.push(0);
-        DB.save('user_activity_steps', arr.map(v => {
-            const num = parseInt(v, 10);
-            return Number.isNaN(num) || num < 0 ? 0 : num;
-        }));
+    getWalkInfo: (dayData, { defaultStepsCfg = null, walkingExercise = null } = {}) => {
+        const defaults = defaultStepsCfg || APP_STEPS_DEFAULTS;
+        const cadenceBase = (walkingExercise && Number.isFinite(parseFloat(walkingExercise.cadenceBase)))
+            ? parseFloat(walkingExercise.cadenceBase)
+            : defaults.perMinute;
+        const walkItem = (dayData && dayData.walk && Array.isArray(dayData.walk.exercises))
+            ? (dayData.walk.exercises.find(e => e && e.exerciseId === 'caminar') || dayData.walk.exercises[0])
+            : null;
+        const stepsPerMin = parseFloat(walkItem && walkItem.stepsPerMin) || cadenceBase;
+        const secPerRep = parseFloat(walkItem && walkItem.secPerRep);
+        const safeSec = Number.isFinite(secPerRep) && secPerRep > 0
+            ? secPerRep
+            : Math.round((defaults.target / stepsPerMin) * 60);
+        const steps = Math.max(0, Math.round((safeSec / 60) * stepsPerMin));
+        return { steps, stepsPerMin, secPerRep: safeSec, cadenceBase };
     }
 };
 

@@ -12,18 +12,20 @@ function renderCalculatorPage() {
     }
 
     const optionalLoads = [
-        { when: () => typeof Routines === 'undefined', path: 'js/core/routines.js' },
-        { when: () => typeof EXERCISES === 'undefined', path: 'js/data/ejercicios.js' },
-        { when: () => typeof STEP_ROUTINE === 'undefined', path: 'js/data/rutinas/rutina_pasos.js' }
+        { when: () => typeof EXERCISES === 'undefined', path: 'js/data/ejercicios.js' }
     ];
 
+    const loadActivityPlan = () => {
+        const available = Array.isArray(AVAILABLE_ACTIVITY_PLAN_FILES) ? AVAILABLE_ACTIVITY_PLAN_FILES : [];
+        if (!available.length || typeof UI === 'undefined') return Promise.resolve();
+        const selected = ActivityStore.getSelectedFile();
+        if (!selected) return Promise.resolve();
+        const safeId = String(selected).replace(/[^a-z0-9_-]/gi, '_');
+        return UI.loadScript(`js/data/${selected}`, `activity-plan-${safeId}`);
+    };
+
     UI.loadDependencies(optionalLoads, { settled: true })
-        .then(() => (typeof Routines !== 'undefined'
-            ? Routines.ensureLoaded().catch((err) => {
-                console.error('Routines.ensureLoaded() falló en calculadora:', err);
-                return null;
-            })
-            : Promise.resolve()))
+        .then(() => loadActivityPlan())
         .then(() => {
             try {
                 initCalculator(container);
@@ -44,30 +46,37 @@ function renderCalculatorPage() {
 }
 
 function initCalculator(container) {
-    const getMacroContextForRoutine = (routineId) => Targets.getMacroContext(routineId);
+    const getMacroContext = () => Targets.getMacroContext();
     const getObjectiveDescription = (key) => (
         (typeof Targets.getObjectiveDescription === 'function')
             ? Targets.getObjectiveDescription(key)
             : ''
     );
 
-    const formatActivity = (key) => {
-        if (typeof Routines !== 'undefined') {
-            const r = Routines.getById(key);
-            if (r && r.name) return r.name;
-        }
-        return UI.formatLabel(key || '');
+    const getDayActivityLabel = (dayData) => {
+        const gym = dayData && dayData.gym;
+        if (gym && gym.type === 'rest') return 'Descanso';
+        if (gym && Array.isArray(gym.exercises) && gym.exercises.length) return 'Gimnasio';
+        return 'Sin actividad';
     };
+    const getDayWalkInfo = (dayData) => {
+        if (typeof ActivityStore !== 'undefined' && ActivityStore.getWalkInfo) {
+            return ActivityStore.getWalkInfo(dayData, { defaultStepsCfg: APP_STEPS_DEFAULTS });
+        }
+        return { steps: 0, stepsPerMin: APP_STEPS_DEFAULTS.perMinute };
+    };
+    const getActivityPlan = () => (
+        (typeof ActivityStore !== 'undefined') ? ActivityStore.getActivePlanData() : null
+    );
 
     // 1. Cargar datos (o defaults)
     const userProfile = DB.get('user_profile', {
         sex: 'hombre', age: 30, height: 175, weight: 75
     });
 
-    const fallbackId = (typeof Routines !== 'undefined') ? Routines.getDefaultId() : 'recuperacion';
     const restBmrFactor = APP_REST_BMR_FACTOR;
     const defaultStepsCfg = APP_STEPS_DEFAULTS;
-    const weeklyPlan = ActivityStore.getWeeklyPlan();
+    const weeklyPlan = getActivityPlan();
 
     let adjustments = DB.get('user_adjustments', { kcal: 0, p: 0, c: 0, f: 0 });
     const defaultSecondaryTargets = Targets.getSecondaryDefaults();
@@ -78,6 +87,9 @@ function initCalculator(container) {
         satFatMaxPctKcal: 0,
         processingMaxScore: 0
     });
+    let macroRatios = (typeof Targets.getUserMacroRatios === 'function')
+        ? Targets.getUserMacroRatios()
+        : Formulas.DEFAULT_MACRO_RATIOS;
 
     // --- SECCIÓN 1: DATOS PERSONALES ---
     const profileCard = document.createElement('div');
@@ -125,18 +137,16 @@ function initCalculator(container) {
     };
 
     const formatRuleValue = (value, decimals = 1) => UI.formatNumber(value, decimals);
-    const getRestMacroRatios = () => {
-        const restContext = getMacroContextForRoutine(fallbackId);
-        const source = restContext && restContext.macroRatios
-            ? restContext.macroRatios
-            : Formulas.DEFAULT_MACRO_RATIOS;
-        return {
-            p: Number.isFinite(source.p) ? source.p : Formulas.DEFAULT_MACRO_RATIOS.p,
-            c: Number.isFinite(source.c) ? source.c : Formulas.DEFAULT_MACRO_RATIOS.c,
-            f: Number.isFinite(source.f) ? source.f : Formulas.DEFAULT_MACRO_RATIOS.f
-        };
+    const formatMacroPct = (ratio) => {
+        const safe = Number.isFinite(ratio) ? ratio : 0;
+        return Math.round(safe * 100);
     };
-    const restMacroRatios = getRestMacroRatios();
+    const getRestMacroRatios = () => ({
+        p: Number.isFinite(macroRatios.p) ? macroRatios.p : Formulas.DEFAULT_MACRO_RATIOS.p,
+        c: Number.isFinite(macroRatios.c) ? macroRatios.c : Formulas.DEFAULT_MACRO_RATIOS.c,
+        f: Number.isFinite(macroRatios.f) ? macroRatios.f : Formulas.DEFAULT_MACRO_RATIOS.f
+    });
+    let restMacroRatios = getRestMacroRatios();
     const GRAM_KEYS = new Set(['p', 'c', 'f', 'saturatedFat', 'fiber', 'sugar']);
     const formatMetricValue = (key, value) => {
         const safe = Number.isFinite(value) ? value : 0;
@@ -297,6 +307,41 @@ function initCalculator(container) {
         DB.save('user_adjustments', adjustments);
         DB.save('user_secondary_adjustments', secondaryAdjustments);
 
+        const macroInputs = document.querySelectorAll('input[data-macro-day-index][data-macro-key]');
+        if (macroInputs && macroInputs.length) {
+            const baseDaily = (typeof Targets.getDailyMacroRatios === 'function')
+                ? Targets.getDailyMacroRatios()
+                : Array(DAYS_COUNT).fill(Formulas.DEFAULT_MACRO_RATIOS);
+            const dayData = Array.from({ length: DAYS_COUNT }, (_, i) => ({
+                p: baseDaily[i] ? baseDaily[i].p * 100 : 30,
+                c: baseDaily[i] ? baseDaily[i].c * 100 : 40,
+                f: baseDaily[i] ? baseDaily[i].f * 100 : 30
+            }));
+            macroInputs.forEach((input) => {
+                const dayIndex = parseInt(input.dataset.macroDayIndex, 10);
+                const key = input.dataset.macroKey;
+                const val = parseFloat(input.value);
+                if (!Number.isNaN(dayIndex) && dayIndex >= 0 && dayIndex < dayData.length && key && Number.isFinite(val)) {
+                    dayData[dayIndex][key] = val;
+                }
+            });
+
+            const normalizedDaily = dayData.map((entry, idx) => {
+                const sum = entry.p + entry.c + entry.f;
+                if (sum <= 0) return baseDaily[idx] || Formulas.DEFAULT_MACRO_RATIOS;
+                return {
+                    p: entry.p / sum,
+                    c: entry.c / sum,
+                    f: entry.f / sum
+                };
+            });
+            DB.save('user_macro_ratios_by_day', normalizedDaily);
+            macroRatios = (typeof Targets.getUserMacroRatios === 'function')
+                ? Targets.getUserMacroRatios()
+                : Formulas.DEFAULT_MACRO_RATIOS;
+            restMacroRatios = getRestMacroRatios();
+        }
+
         return { profile, adjustments };
     };
 
@@ -328,7 +373,7 @@ function initCalculator(container) {
     const renderAdjustmentsTable = (bmr, adjustments) => {
         const baseKcal = Math.round(bmr * restBmrFactor);
         const zeroAdj = { kcal: 0, p: 0, c: 0, f: 0 };
-        const baseContext = getMacroContextForRoutine(fallbackId);
+        const baseContext = getMacroContext();
         const baseVals = Targets.getAdjustedValues(baseKcal, baseContext, zeroAdj);
         const objectiveVals = Targets.getAdjustedValues(baseKcal, baseContext, adjustments);
 
@@ -419,21 +464,10 @@ function initCalculator(container) {
         };
 
         const baseRest = Formulas.calcBMR(profile.weight, profile.height, profile.age, profile.sex) * restBmrFactor;
-        const savedStepsCfg = DB.get('activity_steps_config', {});
-        const stepRoutine = (typeof STEP_ROUTINE !== 'undefined' && STEP_ROUTINE) ? STEP_ROUTINE : null;
-        const walkItem = (stepRoutine && Array.isArray(stepRoutine.exercises))
-            ? stepRoutine.exercises.find(e => e && e.exerciseId === 'caminar')
-            : null;
-        const defaultSteps = parseInt(savedStepsCfg.targetSteps, 10)
-            || parseInt(savedStepsCfg.objetivo, 10)
-            || parseInt(walkItem && walkItem.totalSteps, 10)
-            || parseInt(walkItem && walkItem.totalPasos, 10)
-            || parseInt(stepRoutine && stepRoutine.totalSteps, 10)
-            || parseInt(stepRoutine && stepRoutine.totalPasos, 10)
-            || parseInt(stepRoutine && stepRoutine.goal, 10)
-            || parseInt(stepRoutine && stepRoutine.objetivo, 10)
-            || defaultStepsCfg.target;
-        const dailySteps = ActivityStore.getDailySteps(defaultSteps);
+        const dailyMacroRatios = (typeof Targets.getDailyMacroRatios === 'function')
+            ? Targets.getDailyMacroRatios()
+            : Array(DAYS_COUNT).fill(Formulas.DEFAULT_MACRO_RATIOS);
+        const activityPlan = Array.isArray(weeklyPlan) ? weeklyPlan : [];
 
         const todayIndex = UI.getTodayIndex();
         tableHead.innerHTML = `
@@ -445,9 +479,12 @@ function initCalculator(container) {
 
         const weekRows = [];
         WEEK_DAYS.forEach((day, index) => {
-            const routineId = weeklyPlan[index];
-            const macroContext = getMacroContextForRoutine(routineId);
-            const rawDayVals = dailyTargets[day] || Targets.getAdjustedValues(baseRest, macroContext, adjustments);
+            const dayData = activityPlan[index] || {};
+            const walkInfo = getDayWalkInfo(dayData);
+            const macroContext = getMacroContext();
+            const dayMacroRatios = dailyMacroRatios[index] || (Formulas.DEFAULT_MACRO_RATIOS || { p: 0.30, c: 0.40, f: 0.30 });
+            const macroContextWithRatios = { ...macroContext, macroRatios: dayMacroRatios };
+            const rawDayVals = dailyTargets[day] || Targets.getAdjustedValues(baseRest, macroContextWithRatios, adjustments);
             const dayVals = {
                 kcal: Number.isFinite(parseFloat(rawDayVals.kcal)) ? Math.round(parseFloat(rawDayVals.kcal)) : 0,
                 p: Number.isFinite(parseFloat(rawDayVals.p)) ? Math.round(parseFloat(rawDayVals.p)) : Math.round(parseFloat(rawDayVals.protein) || 0),
@@ -462,12 +499,46 @@ function initCalculator(container) {
                         : {}
                 );
             weekRows.push({
-                routineId,
-                steps: dailySteps[index] || 0,
+                activityLabel: getDayActivityLabel(dayData),
+                steps: walkInfo.steps || 0,
+                macroRatios: dayMacroRatios,
                 ...dayVals,
                 ...secondaryVals
             });
         });
+
+        const macroRowHtml = `
+            <tr>
+                <td class="goals-row-header">Macros (%)</td>
+                ${weekRows.map((row, index) => {
+                    const ratios = row.macroRatios || Formulas.DEFAULT_MACRO_RATIOS;
+                    const p = formatMacroPct(ratios.p);
+                    const c = formatMacroPct(ratios.c);
+                    const f = formatMacroPct(ratios.f);
+                    return `
+                        <td class="goals-table__cell">
+                            <div class="macro-inputs">
+                                <div class="macro-inputs__row">
+                                    <span class="text-muted">P</span>
+                                    <input type="number" class="input-base input-base--table-edit"
+                                        data-macro-day-index="${index}" data-macro-key="p" value="${p}" min="0" max="100" step="1">
+                                </div>
+                                <div class="macro-inputs__row">
+                                    <span class="text-muted">C</span>
+                                    <input type="number" class="input-base input-base--table-edit"
+                                        data-macro-day-index="${index}" data-macro-key="c" value="${c}" min="0" max="100" step="1">
+                                </div>
+                                <div class="macro-inputs__row">
+                                    <span class="text-muted">F</span>
+                                    <input type="number" class="input-base input-base--table-edit"
+                                        data-macro-day-index="${index}" data-macro-key="f" value="${f}" min="0" max="100" step="1">
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                }).join('')}
+            </tr>
+        `;
 
         const activityRowHtml = `
             <tr>
@@ -475,7 +546,7 @@ function initCalculator(container) {
                 ${weekRows.map((row) => `
                     <td class="goals-table__cell">
                         <div class="stats-pills">
-                            <div class="stat-pill stat-pill--xs">🏋️ ${formatActivity(row.routineId)}</div>
+                            <div class="stat-pill stat-pill--xs">🏋️ ${row.activityLabel || 'Actividad'}</div>
                             <div class="stat-pill stat-pill--xs">👣 ${Math.max(0, parseInt(row.steps, 10) || 0)} pasos</div>
                         </div>
                     </td>
@@ -490,7 +561,7 @@ function initCalculator(container) {
             </tr>
         `).join('');
 
-        tableBody.innerHTML = activityRowHtml + goalsRowsHtml;
+        tableBody.innerHTML = macroRowHtml + activityRowHtml + goalsRowsHtml;
         setTimeout(() => UI.scrollToTodayColumn(table, todayIndex), 100);
     };
 
@@ -510,6 +581,11 @@ function initCalculator(container) {
 
     profileCard.querySelectorAll('input, select').forEach(el => el.addEventListener('change', updateAndCalculate));
     adjustmentsCard.querySelectorAll('select').forEach(el => el.addEventListener('change', updateAndCalculate));
+    weeklyGoalsCard.addEventListener('change', (event) => {
+        if (event.target && event.target.matches('input[data-macro-day-index][data-macro-key]')) {
+            updateAndCalculate();
+        }
+    });
     adjustmentsCard.addEventListener('click', (event) => {
         const trigger = event.target.closest('[data-rule-key]');
         if (!trigger) return;

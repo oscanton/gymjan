@@ -765,11 +765,8 @@ function renderMenuPage() {
             { when: () => typeof Targets === 'undefined', path: 'js/core/targets.js' },
             { when: () => typeof NutritionScore === 'undefined', path: 'js/core/nutrition-score.js' },
             { when: () => typeof FOODS === 'undefined', path: 'js/data/foods.js' },
-            { when: () => typeof Routines === 'undefined', path: 'js/core/routines.js' },
-            { when: () => typeof EXERCISES === 'undefined', path: 'js/data/ejercicios.js' },
-            { when: () => typeof STEP_ROUTINE === 'undefined', path: 'js/data/rutinas/rutina_pasos.js' }
+            { when: () => typeof EXERCISES === 'undefined', path: 'js/data/ejercicios.js' }
         ])
-            .then(() => (typeof Routines !== 'undefined' ? Routines.ensureLoaded().catch(() => null) : Promise.resolve()))
             .then(() => loadMenuData(currentFile))
             .catch(err => {
                 console.error("Error loading dependencies:", err);

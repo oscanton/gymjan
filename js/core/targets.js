@@ -20,6 +20,37 @@ const Targets = {
         return all[key] || '';
     },
 
+    normalizeMacroRatios: (ratios, fallback = null) => {
+        const fb = fallback || ((typeof Formulas !== 'undefined' && Formulas.DEFAULT_MACRO_RATIOS)
+            ? Formulas.DEFAULT_MACRO_RATIOS
+            : { p: 0.30, c: 0.40, f: 0.30 });
+        const p = parseFloat(ratios && ratios.p);
+        const c = parseFloat(ratios && ratios.c);
+        const f = parseFloat(ratios && ratios.f);
+        const hasAll = Number.isFinite(p) && Number.isFinite(c) && Number.isFinite(f);
+        const sum = hasAll ? (p + c + f) : 0;
+        if (!hasAll || sum <= 0) return fb;
+        return { p: p / sum, c: c / sum, f: f / sum };
+    },
+
+    getDailyMacroRatios: () => {
+        const fallback = Targets.normalizeMacroRatios(null);
+        const raw = DB.get('user_macro_ratios_by_day', null);
+        const list = Array.isArray(raw) ? raw.slice(0, DAYS_COUNT) : [];
+        while (list.length < DAYS_COUNT) list.push(null);
+        return list.map(entry => Targets.normalizeMacroRatios(entry, fallback));
+    },
+
+    getUserMacroRatios: () => {
+        const daily = DB.get('user_macro_ratios_by_day', null);
+        if (Array.isArray(daily) && daily.length) {
+            const first = daily.find(v => v && typeof v === 'object') || daily[0];
+            return Targets.normalizeMacroRatios(first);
+        }
+        const saved = DB.get('user_macro_ratios', null);
+        return Targets.normalizeMacroRatios(saved);
+    },
+
     getSecondaryDefaults: () => {
         const secondaryDefaults = APP_SECONDARY_DEFAULTS;
         const savedRules = DB.get('user_secondary_rules', null);
@@ -78,39 +109,16 @@ const Targets = {
         };
     },
 
-    getMacroContext: (routineId) => {
-        let normalizedId = routineId;
-        if (routineId === 'descanso' && typeof Routines !== 'undefined' && !Routines.getById('descanso')) {
-            normalizedId = 'recuperacion';
-        }
-        const fallbackId = (typeof Routines !== 'undefined') ? Routines.getDefaultId() : 'recuperacion';
-        if (!normalizedId || typeof Routines === 'undefined') {
-            return { activityKey: fallbackId, macroRatios: null };
-        }
-        const routine = Routines.getById(normalizedId);
-        if (!routine) return { activityKey: fallbackId, macroRatios: null };
-        return {
-            activityKey: routine.activityKey || Routines.getActivityKey(normalizedId),
-            macroRatios: routine.macroRatios || null
-        };
-    },
-
-    getRoutineActivityKcal: (routineId, exercisesMap, profile) => {
-        if (!routineId || typeof Routines === 'undefined' || typeof UI === 'undefined') return null;
-        const routine = Routines.getById(routineId);
-        if (!routine || !routine.exercises) return null;
-        const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : null);
-        if (!exercises) return null;
-        const weightKg = profile && profile.weight ? profile.weight : null;
-        const totals = UI.calcRoutineTotals(routine, null, exercises, { weightKg });
-        return totals && totals.kcal ? totals.kcal : 0;
-    },
+    getMacroContext: () => ({
+        activityKey: 'actividad',
+        macroRatios: Targets.getUserMacroRatios()
+    }),
 
     getAdjustedValues: (baseKcal, macroContext, customAdj) => {
         const safeAdj = customAdj || { kcal: 0, p: 0, c: 0, f: 0 };
         const targetKcal = baseKcal * (1 + safeAdj.kcal);
         const context = (typeof macroContext === 'string')
-            ? { activityKey: macroContext, macroRatios: null }
+            ? { activityKey: macroContext, macroRatios: Targets.getUserMacroRatios() }
             : (macroContext || {});
         const m = Formulas.calcMacros(targetKcal, context);
 
@@ -127,12 +135,6 @@ const Targets = {
 
         const daysCount = DAYS_COUNT;
         const userProfile = profile || DB.get('user_profile', {});
-        const fallbackId = (typeof Routines !== 'undefined') ? Routines.getDefaultId() : 'recuperacion';
-        const weekly = Array.isArray(weeklyPlan)
-            ? weeklyPlan.slice(0, daysCount)
-            : ((typeof ActivityStore !== 'undefined')
-                ? ActivityStore.getWeeklyPlan()
-                : Array(daysCount).fill(fallbackId));
         const adj = adjustments || DB.get('user_adjustments', { kcal: 0, p: 0, c: 0, f: 0 });
 
         if (!userProfile.weight || !userProfile.height || !userProfile.age) return null;
@@ -149,54 +151,68 @@ const Targets = {
         const restKcal = bmr * restFactor;
         const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : null);
         const defaultStepsCfg = APP_STEPS_DEFAULTS;
-        const walkingExercise = exercises && exercises.caminar ? exercises.caminar : { met: defaultStepsCfg.met };
-        const stepsRoutine = (typeof STEP_ROUTINE !== 'undefined' && STEP_ROUTINE) ? STEP_ROUTINE : null;
-        const walkItem = (stepsRoutine && stepsRoutine.exercises || []).find(e => e && e.exerciseId === 'caminar') || null;
-        const savedStepsCfg = DB.get('activity_steps_config', {});
-        const savedTarget = parseInt(savedStepsCfg.targetSteps, 10) || parseInt(savedStepsCfg.objetivo, 10);
-        const savedStepsPerMin = parseInt(savedStepsCfg.stepsPerMin, 10) || parseInt(savedStepsCfg.pasosPorMin, 10);
-        const routineTarget = parseInt(walkItem && walkItem.totalSteps, 10)
-            || parseInt(walkItem && walkItem.totalPasos, 10)
-            || parseInt(stepsRoutine && stepsRoutine.totalSteps, 10)
-            || parseInt(stepsRoutine && stepsRoutine.totalPasos, 10)
-            || parseInt(stepsRoutine && stepsRoutine.goal, 10)
-            || parseInt(stepsRoutine && stepsRoutine.objetivo, 10);
-        const routineStepsPerMin = parseInt(walkItem && walkItem.stepsPerMin, 10)
-            || parseInt(walkItem && walkItem.pasosPorMin, 10)
-            || parseInt(stepsRoutine && stepsRoutine.stepsPerMin, 10)
-            || parseInt(stepsRoutine && stepsRoutine.pasosPorMin, 10);
+        const walkingExercise = exercises && exercises.caminar
+            ? exercises.caminar
+            : { met: defaultStepsCfg.met, cadenceBase: defaultStepsCfg.perMinute };
+        const baseCadence = parseInt(walkingExercise.cadenceBase, 10) || defaultStepsCfg.perMinute;
         const stepsConfig = {
-            targetSteps: savedTarget || routineTarget || defaultStepsCfg.target,
-            stepsPerMin: savedStepsPerMin || routineStepsPerMin || defaultStepsCfg.perMinute,
-            met: walkingExercise.met || defaultStepsCfg.met
+            targetSteps: defaultStepsCfg.target,
+            stepsPerMin: baseCadence,
+            met: walkingExercise.met || defaultStepsCfg.met,
+            baseStepsPerMin: baseCadence
         };
-        if (savedStepsCfg.objetivo || savedStepsCfg.pasosPorMin) {
-            DB.save('activity_steps_config', {
-                targetSteps: stepsConfig.targetSteps,
-                stepsPerMin: stepsConfig.stepsPerMin,
-                met: stepsConfig.met
-            });
-        }
-        const defaultSteps = stepsConfig.targetSteps;
-        const dailySteps = (typeof ActivityStore !== 'undefined')
-            ? ActivityStore.getDailySteps(defaultSteps)
-            : [];
+        const weekly = Array.isArray(weeklyPlan)
+            ? weeklyPlan.slice(0, daysCount)
+            : ((typeof ActivityStore !== 'undefined')
+                ? ActivityStore.getActivePlanData()
+                : null);
+        const dailyMacroRatios = Targets.getDailyMacroRatios();
 
         const secondaryDefaults = Targets.getSecondaryDefaults();
         const secondaryAdjustments = Targets.getSecondaryAdjustments();
         WEEK_DAYS.forEach((day, index) => {
-            let routineId = weekly[index] || fallbackId;
-            if (routineId === 'descanso' && typeof Routines !== 'undefined' && !Routines.getById('descanso')) {
-                routineId = 'recuperacion';
-            }
-            const macroContext = Targets.getMacroContext(routineId);
-            const activityKcal = Targets.getRoutineActivityKcal(routineId, exercises, userProfile);
+            const dayData = Array.isArray(weekly) ? (weekly[index] || {}) : {};
+            const macroContext = Targets.getMacroContext();
+            const dayMacroRatios = dailyMacroRatios[index] || Targets.getUserMacroRatios();
+            const macroContextWithRatios = { ...macroContext, macroRatios: dayMacroRatios };
+
+            const walkInfo = (typeof ActivityStore !== 'undefined' && ActivityStore.getWalkInfo)
+                ? ActivityStore.getWalkInfo(dayData, { defaultStepsCfg, walkingExercise })
+                : { steps: defaultStepsCfg.target, stepsPerMin: stepsConfig.stepsPerMin, secPerRep: 0, cadenceBase: stepsConfig.baseStepsPerMin };
+            const daySteps = walkInfo.steps;
+            const dayStepsPerMin = walkInfo.stepsPerMin;
+            const perDayStepsConfig = {
+                ...stepsConfig,
+                stepsPerMin: dayStepsPerMin,
+                baseStepsPerMin: stepsConfig.baseStepsPerMin
+            };
             const stepsKcal = (typeof UI !== 'undefined')
-                ? UI.calculateStepsKcal(dailySteps[index], { weightKg: userProfile.weight, stepsConfig })
+                ? UI.calculateStepsKcal(daySteps, { weightKg: userProfile.weight, stepsConfig: perDayStepsConfig })
                 : 0;
-            const totalActivityKcal = (activityKcal !== null ? activityKcal : 0) + stepsKcal;
+
+            let gymKcal = 0;
+            const gymSection = dayData.gym;
+            if (gymSection && gymSection.type !== 'rest' && Array.isArray(gymSection.exercises) && typeof UI !== 'undefined') {
+                gymSection.exercises.forEach((item) => {
+                    const ex = exercises && item ? exercises[item.exerciseId] : null;
+                    if (!ex) return;
+                    gymKcal += UI.calculateExerciseKcal(item, ex, { weightKg: userProfile.weight });
+                });
+            }
+
+            let extraKcal = 0;
+            const extraSection = dayData.extra_activity;
+            if (extraSection && extraSection.type !== 'rest' && Array.isArray(extraSection.exercises) && typeof UI !== 'undefined') {
+                extraSection.exercises.forEach((item) => {
+                    const ex = exercises && item ? exercises[item.exerciseId] : null;
+                    if (!ex) return;
+                    extraKcal += UI.calculateExerciseKcal(item, ex, { weightKg: userProfile.weight });
+                });
+            }
+
+            const totalActivityKcal = stepsKcal + gymKcal + extraKcal;
             const tdee = restKcal + totalActivityKcal;
-            const dayVals = Targets.getAdjustedValues(tdee, macroContext, adj);
+            const dayVals = Targets.getAdjustedValues(tdee, macroContextWithRatios, adj);
             const secondaryTargets = Targets.getSecondaryTargetsForKcal(dayVals.kcal, secondaryDefaults, secondaryAdjustments);
 
             dailyTargets[day] = {
@@ -218,4 +234,3 @@ const Targets = {
 };
 
 window.Targets = Targets;
-

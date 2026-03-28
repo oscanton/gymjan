@@ -15,16 +15,12 @@ const AVAILABLE_MENUS = [
     { label: 'menu_1', file: 'menus/menu_1.js' },
 ];
 
-// Available routine data files.
-const AVAILABLE_ROUTINE_FILES = [
-    'rutinas/rutina_recuperacion.js',
-    'rutinas/rutina_descanso.js',
-    'rutinas/rutina_fuerza_A.js',
-    'rutinas/rutina_fuerza_B.js',
-    'rutinas/rutina_fuerza_C.js',
+// Available activity plan files (weekly).
+const AVAILABLE_ACTIVITY_PLAN_FILES = [
+    { label: 'semana_base', file: 'actividad/actividad_semana_base.js' }
 ];
 
-const DEFAULT_ROUTINE_ID = 'recuperacion';
+const DEFAULT_ACTIVITY_PLAN_FILE = 'actividad/actividad_semana_base.js';
 
 // App-level defaults (business rules and baseline targets).
 const APP_DEFAULTS = {
@@ -34,10 +30,6 @@ const APP_DEFAULTS = {
         target: 8000,
         perMinute: 100,
         met: 3.5
-    },
-    routineTimes: {
-        secPerRep: 4,
-        restSec: 90
     },
     secondaryTargets: {
         saltMaxG: 5,
@@ -57,11 +49,6 @@ const APP_MACRO_RATIOS = (APP_DEFAULTS.macroRatios && Number.isFinite(APP_DEFAUL
 const APP_STEPS_DEFAULTS = (APP_DEFAULTS.steps && Number.isFinite(APP_DEFAULTS.steps.target) && Number.isFinite(APP_DEFAULTS.steps.perMinute) && Number.isFinite(APP_DEFAULTS.steps.met))
     ? APP_DEFAULTS.steps
     : { target: 8000, perMinute: 100, met: 3.5 };
-const ROUTINE_TIME_DEFAULTS = (APP_DEFAULTS.routineTimes
-    && Number.isFinite(APP_DEFAULTS.routineTimes.secPerRep)
-    && Number.isFinite(APP_DEFAULTS.routineTimes.restSec))
-    ? APP_DEFAULTS.routineTimes
-    : { secPerRep: 4, restSec: 90 };
 const APP_SECONDARY_DEFAULTS = (APP_DEFAULTS.secondaryTargets
     && Number.isFinite(APP_DEFAULTS.secondaryTargets.saltMaxG)
     && Number.isFinite(APP_DEFAULTS.secondaryTargets.fiberPer1000Kcal)

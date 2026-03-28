@@ -60,6 +60,7 @@ function calculateAndRenderList(container) {
         "🍚 Cereales, legumbres y tubérculos",
         "🥑 Grasas, frutos secos y semillas",
         "🧂 Condimentos y especias",
+        "🍫 Dulces y chocolates",
         "☕ Bebidas",
         "📦 Otros / Procesados",
         "💊 Suplementos"

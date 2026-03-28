@@ -424,21 +424,40 @@ input[type=number]::-webkit-outer-spin-button {
 
 .activity-day-title { font-size: 1rem; }
 
-.activity-routine {
+.activity-training {
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
 }
 
-.activity-routine__meta {
+.activity-training__meta {
     font-size: var(--font-size-xs);
     color: var(--color-text-muted);
     font-style: italic;
 }
 
-.activity-routine__title {
+.activity-training__title {
     font-size: var(--font-size-md);
     font-weight: 600;
+}
+.activity-training__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+}
+.activity-training__add {
+    border: 1px solid rgba(var(--color-primary-rgb), 0.35);
+    background: rgba(var(--color-primary-rgb), 0.2);
+    color: var(--color-primary);
+    font-size: var(--font-size-xs);
+    line-height: 1;
+    padding: 4px 10px;
+    border-radius: var(--ui-radius-pill);
+    cursor: pointer;
+}
+.activity-training__add:hover {
+    background: rgba(var(--color-primary-rgb), 0.3);
 }
 
 .activity-exercise {
@@ -454,6 +473,47 @@ input[type=number]::-webkit-outer-spin-button {
 .activity-exercise__name {
     font-size: var(--font-size-md);
     font-weight: 600;
+}
+.activity-exercise__name-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+.activity-exercise__name--select {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.activity-exercise__name--select select {
+    width: 100%;
+}
+.activity-exercise__delete {
+    border: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    line-height: 1;
+    padding: 2px 4px;
+    cursor: pointer;
+}
+.activity-exercise__delete:hover {
+    color: var(--color-danger);
+}
+.activity-exercise--pending {
+    border-color: rgba(var(--color-primary-rgb), 0.35);
+    background: rgba(var(--color-primary-rgb), 0.12);
+}
+.activity-exercise__add-done {
+    border: 1px solid rgba(var(--color-primary-rgb), 0.35);
+    background: rgba(var(--color-primary-rgb), 0.2);
+    color: var(--color-primary);
+    font-size: var(--font-size-xs);
+    border-radius: var(--ui-radius-pill);
+    padding: 2px 8px;
+    cursor: pointer;
+}
+.activity-exercise__pending-note {
+    font-size: var(--font-size-2xs);
+    color: var(--color-text-muted);
 }
 
 .activity-exercise__row {
@@ -524,6 +584,13 @@ input[type=number]::-webkit-outer-spin-button {
 }
 .nutritional-score-info-trigger { margin-top: 8px; }
 .nutritional-score-modal-score-pill { text-align: center; justify-content: center; display: inline-flex; }
+
+.stat-pill--activity-score {
+    background: var(--surface-black-30);
+    border: 1px solid var(--border-light);
+}
+.activity-score-info-trigger { margin-top: 8px; }
+.activity-score-modal-score-pill { text-align: center; justify-content: center; display: inline-flex; }
 .pill-trigger {
     border: none;
     cursor: pointer;
@@ -650,6 +717,23 @@ input[type=number]::-webkit-outer-spin-button {
 .goals-table tbody tr:last-child td { border-bottom: none; }
 .goals-table th.text-status--ok { font-weight: bold; }
 .goals-table__cell .stats-pills { justify-content: flex-start; }
+
+.macro-inputs {
+    display: grid;
+    gap: 6px;
+}
+
+.macro-inputs__row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.macro-inputs__row .input-base--table-edit {
+    width: 64px;
+    text-align: center;
+}
 
 .adjustments-table-wrap { margin-top: var(--space-sm); overflow-x: auto; }
 .adjustments-table {

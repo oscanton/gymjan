@@ -7,20 +7,7 @@ function renderControlPage() {
     if (!container) return;
 
 
-    ensureRoutines()
-        .then(() => initControlPage(container))
-        .catch(() => {
-            console.warn('No se pudieron cargar rutinas');
-            initControlPage(container);
-        });
-}
-
-function ensureRoutines() {
-    if (typeof Routines === 'undefined') {
-        return UI.loadDependencies([{ when: true, path: 'js/core/routines.js' }])
-            .then(() => Routines.ensureLoaded());
-    }
-    return Routines.ensureLoaded();
+    initControlPage(container);
 }
 
 function initControlPage(container) {
@@ -30,10 +17,7 @@ function initControlPage(container) {
     history = history
         .map((h) => {
             const date = DateUtils.normalizeISODate(h.date || '');
-            let activity = h.activity || 'recuperacion';
-            if (activity === 'descanso' && typeof Routines !== 'undefined' && !Routines.getById('descanso')) {
-                activity = 'recuperacion';
-            }
+            let activity = h.activity || 'rest';
             return { ...h, date, activity };
         })
         .filter((h) => h.date && h.weight);
@@ -49,9 +33,7 @@ function initControlPage(container) {
 
     // Actividad por defecto: La del plan semanal para hoy
     const todayIndex = DateUtils.getTodayIndex();
-    const weeklyPlan = ActivityStore.getWeeklyPlan();
-    const fallbackId = (typeof Routines !== 'undefined') ? Routines.getDefaultId() : 'recuperacion';
-    const defaultActivity = weeklyPlan[todayIndex] || fallbackId;
+    const defaultActivity = getDefaultActivityForDayIndex(todayIndex);
 
     const activityOptions = getActivityOptions(defaultActivity);
 
@@ -147,23 +129,38 @@ function initControlPage(container) {
     });
 }
 
+function getDefaultActivityForDayIndex(dayIndex) {
+    if (typeof ActivityStore === 'undefined') return 'rest';
+    const plan = ActivityStore.getActivePlanData();
+    if (!Array.isArray(plan)) return 'rest';
+    const day = plan[dayIndex] || {};
+    const gym = day.gym;
+    if (gym && gym.type === 'rest') return 'rest';
+    if (gym && Array.isArray(gym.exercises) && gym.exercises.length) return 'gym';
+    if (day.walk) return 'walk';
+    return 'rest';
+}
+
 function getActivityOptions(defaultActivity) {
-    const routines = (typeof Routines !== 'undefined') ? Routines.getAll() : [];
-    if (!routines.length) {
-        return `<option value="${defaultActivity}">${defaultActivity}</option>`;
-    }
-    const routinesSorted = [...routines].sort((a, b) =>
-        (a.name || '').localeCompare((b.name || ''), 'es', { sensitivity: 'base', numeric: true })
-    );
-    return routinesSorted.map(opt =>
-        `<option value="${opt.id}" ${opt.id === defaultActivity ? 'selected' : ''}>${opt.name}</option>`
+    const options = [
+        { value: 'gym', label: 'Gimnasio' },
+        { value: 'walk', label: 'Caminar' },
+        { value: 'rest', label: 'Descanso' },
+        { value: 'extra', label: 'Extra' }
+    ];
+    return options.map(opt =>
+        `<option value="${opt.value}" ${opt.value === defaultActivity ? 'selected' : ''}>${opt.label}</option>`
     ).join('');
 }
 
 function getActivityLabel(activityKey) {
-    const activity = (typeof Routines !== 'undefined' ? Routines.getAll() : [])
-        .find(t => t.id === activityKey);
-    return activity ? activity.name : (activityKey || '-');
+    const map = {
+        gym: 'Gimnasio',
+        walk: 'Caminar',
+        rest: 'Descanso',
+        extra: 'Extra'
+    };
+    return map[activityKey] || (activityKey || '-');
 }
 
 function renderHistoryTable(history) {

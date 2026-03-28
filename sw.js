@@ -1,4 +1,4 @@
-const CACHE_NAME = "app-cache-v14";
+const CACHE_NAME = "app-cache-v15";
 
 const FILES_TO_CACHE = [
   "index.html",
@@ -24,18 +24,11 @@ const FILES_TO_CACHE = [
   "js/core/stores.js",
   "js/core/targets.js",
   "js/core/ui.js",
-  "js/core/routines.js",
-
   "js/data/foods.js",
   "js/data/ejercicios.js",
   "js/data/menus/menu.js",
   "js/data/menus/menu_1.js",
-  "js/data/rutinas/rutina_descanso.js",
-  "js/data/rutinas/rutina_fuerza_A.js",
-  "js/data/rutinas/rutina_fuerza_B.js",
-  "js/data/rutinas/rutina_fuerza_C.js",
-  "js/data/rutinas/rutina_pasos.js",
-  "js/data/rutinas/rutina_recuperacion.js",
+  "js/data/actividad/actividad_semana_base.js",
 
   "js/pages/actividad.page.js",
   "js/pages/calculadora.page.js",

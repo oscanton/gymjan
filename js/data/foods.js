@@ -183,6 +183,24 @@ const FOODS = {
   vinagre: { name: "Vinagre", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 18, protein: 0.0, carbs: 0.04, fat: 0.0, saturatedFat: 0.0, fiber: 0.0, sugar: 0.04, sodiumMg: 2 }, processed: 2 },
   vinagre_balsamico: { name: "Vinagre balsámico", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 88, protein: 0.5, carbs: 17.0, fat: 0.0, saturatedFat: 0.0, fiber: 0.0, sugar: 15.0, sodiumMg: 23 }, processed: 4 },
   miel: { name: "Miel", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 304, protein: 0.3, carbs: 82.4, fat: 0.0, saturatedFat: 0.0, fiber: 0.2, sugar: 82.1, sodiumMg: 4 }, processed: 2 },
+  levadura: { name: "Levadura (seca)", category: "🧂 Condimentos y especias", unit: "g", nutritionPer100: { kcal: 325, protein: 40.4, carbs: 41.2, fat: 7.6, saturatedFat: 1.1, fiber: 26.9, sugar: 0.0, sodiumMg: 30 }, processed: 4 },
+
+  /* =========================
+     DULCES Y CHOCOLATES
+     ========================= */
+  cacao_puro_polvo: { name: "Cacao puro en polvo (desgrasado)", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 228, protein: 19.6, carbs: 57.9, fat: 13.7, saturatedFat: 8.1, fiber: 37.0, sugar: 1.8, sodiumMg: 21 }, processed: 3 },
+  cacao_soluble: { name: "Cacao soluble", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 380, protein: 5.0, carbs: 82.0, fat: 4.0, saturatedFat: 2.4, fiber: 6.0, sugar: 75.0, sodiumMg: 300 }, processed: 8 },
+  chocolate_negro_85: { name: "Chocolate negro 85%", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 597, protein: 12.0, carbs: 20.0, fat: 49.0, saturatedFat: 30.0, fiber: 14.0, sugar: 14.0, sodiumMg: 0 }, processed: 7 },
+  chocolate_negro_70: { name: "Chocolate negro 70%", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 568, protein: 10.0, carbs: 32.0, fat: 42.0, saturatedFat: 26.0, fiber: 11.0, sugar: 27.0, sodiumMg: 12 }, processed: 7 },
+  chocolate_con_leche: { name: "Chocolate con leche", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 534, protein: 6.0, carbs: 59.0, fat: 30.0, saturatedFat: 18.0, fiber: 2.3, sugar: 58.0, sodiumMg: 0 }, processed: 8 },
+  chocolate_blanco: { name: "Chocolate blanco", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 539, protein: 5.9, carbs: 59.0, fat: 32.0, saturatedFat: 20.0, fiber: 0.0, sugar: 59.0, sodiumMg: 100 }, processed: 8 },
+  galletas: { name: "Galletas", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 480, protein: 6.0, carbs: 70.0, fat: 20.0, saturatedFat: 8.0, fiber: 3.0, sugar: 30.0, sodiumMg: 350 }, processed: 8 },
+  magdalena: { name: "Magdalena", category: "🍫 Dulces y chocolates", unit: "ud", nutritionPerUnit: { kcal: 150, protein: 2.5, carbs: 18.0, fat: 7.5, saturatedFat: 2.5, fiber: 0.7, sugar: 10.0, sodiumMg: 120 }, processed: 8 },
+  bizcocho: { name: "Bizcocho", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 350, protein: 6.0, carbs: 50.0, fat: 14.0, saturatedFat: 4.0, fiber: 1.5, sugar: 30.0, sodiumMg: 250 }, processed: 7 },
+  croissant: { name: "Croissant", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 406, protein: 8.0, carbs: 45.0, fat: 21.0, saturatedFat: 12.0, fiber: 2.5, sugar: 9.0, sodiumMg: 430 }, processed: 8 },
+  helado: { name: "Helado", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 207, protein: 3.5, carbs: 24.0, fat: 11.0, saturatedFat: 7.0, fiber: 0.7, sugar: 21.0, sodiumMg: 80 }, processed: 7 },
+  gominolas: { name: "Gominolas", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 340, protein: 5.0, carbs: 80.0, fat: 0.2, saturatedFat: 0.1, fiber: 0.0, sugar: 60.0, sodiumMg: 40 }, processed: 9 },
+  caramelos: { name: "Caramelos", category: "🍫 Dulces y chocolates", unit: "g", nutritionPer100: { kcal: 390, protein: 0.0, carbs: 98.0, fat: 0.2, saturatedFat: 0.1, fiber: 0.0, sugar: 90.0, sodiumMg: 30 }, processed: 9 },
 
   /* =========================
      BEBIDAS E INFUSIONES

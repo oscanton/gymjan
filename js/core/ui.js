@@ -231,24 +231,11 @@ const UI = {
     getExerciseTimeBreakdown: (item, ex, { routineTimes = null } = {}) => {
         if (!ex || !item) return { workMin: 0, restMin: 0, totalMin: 0 };
 
-        const defaults = (typeof ROUTINE_TIME_DEFAULTS !== 'undefined') ? ROUTINE_TIME_DEFAULTS : {
-            secPerRep: 4,
-            restSec: 90
-        };
-        const safeRoutineTimes = routineTimes || {};
-        const pickTime = (...values) => {
-            for (let i = 0; i < values.length; i += 1) {
-                const val = values[i];
-                if (Number.isFinite(val)) return val;
-            }
-            return null;
-        };
-
         const repsAvg = UI.parseReps(item.reps);
         const sets = item.sets || 0;
         if (!sets || !repsAvg) return { workMin: 0, restMin: 0, totalMin: 0 };
-        const secPerRep = pickTime(item.secPerRep, safeRoutineTimes.secPerRep, defaults.secPerRep) || 4;
-        const restSeconds = pickTime(item.restSec, safeRoutineTimes.restSec, defaults.restSec) || 60;
+        const secPerRep = Number.isFinite(parseFloat(item.secPerRep)) ? parseFloat(item.secPerRep) : 0;
+        const restSeconds = Number.isFinite(parseFloat(ex.restSec)) ? parseFloat(ex.restSec) : 0;
         const workSec = repsAvg * sets * secPerRep;
         const restSec = sets > 1 ? (sets - 1) * restSeconds : 0;
         const workMin = workSec / 60;
@@ -268,13 +255,37 @@ const UI = {
         return weight * (1 + (repsVal / 30));
     },
 
-    getIntensityFactorFromEpley: (weightKg, reps) => {
+    calculateEpleyLikeFactor: (value, base, { a = 1, b = 2 } = {}) => {
+        const v = parseFloat(value);
+        const baseVal = Number.isFinite(parseFloat(base)) && base > 0 ? parseFloat(base) : 0;
+        if (!Number.isFinite(v) || v <= 0 || baseVal <= 0) return 1;
+        const ratio = baseVal / v;
+        const intensity = 1 / (1 + ((ratio - 1) / b));
+        return 1 + (a * (intensity - 1));
+    },
+
+    getIntensityFactorFromEpley: (weightKg, reps, bodyWeightKg = null, relativeLoad = null) => {
         const repsVal = parseFloat(reps);
         if (!Number.isFinite(repsVal) || repsVal <= 0) return 1;
 
         // Epley: 1RM = w * (1 + reps/30)  =>  w/1RM = 1/(1 + reps/30)
         const intensity = Math.min(Math.max(1 / (1 + (repsVal / 30)), 0), 1);
-        return 0.7 + (0.8 * intensity);
+        const repsFactor = 0.7 + (0.8 * intensity);
+
+        const weightVal = parseFloat(weightKg);
+        const bw = Number.isFinite(bodyWeightKg) && bodyWeightKg > 0
+            ? bodyWeightKg
+            : UI.getEffectiveWeightKg();
+        if (!Number.isFinite(weightVal) || weightVal <= 0 || !Number.isFinite(bw) || bw <= 0) {
+            return repsFactor;
+        }
+
+        const baseRelative = Number.isFinite(parseFloat(relativeLoad)) && relativeLoad > 0
+            ? parseFloat(relativeLoad)
+            : 0.35;
+        const value = (weightVal / bw) * intensity;
+        const loadFactor = UI.calculateEpleyLikeFactor(value, baseRelative, { a: 1, b: 2 });
+        return repsFactor * loadFactor;
     },
     getExerciseKcalCoef: (item, ex, { routineTimes = null } = {}) => {
         if (!ex || !item) return 0;
@@ -284,12 +295,20 @@ const UI = {
         const { workMin, restMin } = UI.getExerciseTimeBreakdown(item, ex, { routineTimes });
         if (!workMin && !restMin) return 0;
         const restMet = 1.5;
-        const workCoef = (met / 60) * workMin;
+        let workCoef = (met / 60) * workMin;
         const restCoef = (restMet / 60) * restMin;
         if (ex.type === 'fuerza' && !UI.isTimedItem(item)) {
             const repsAvg = UI.parseReps(item.reps);
-            const intensityFactor = UI.getIntensityFactorFromEpley(item.weightKg, repsAvg);
+            const intensityFactor = UI.getIntensityFactorFromEpley(item.weightKg, repsAvg, null, ex.relativeLoad);
             return (workCoef * intensityFactor) + restCoef;
+        }
+        if (ex.type === 'cardio') {
+            const cadence = parseFloat(item.cadencePerMin ?? item.cadence ?? item.rpm);
+            const baseCadence = parseFloat(ex.cadenceBase);
+            if (Number.isFinite(cadence) && cadence > 0 && Number.isFinite(baseCadence) && baseCadence > 0) {
+                const cadenceFactor = UI.calculateEpleyLikeFactor(cadence, baseCadence, { a: 1, b: 2 });
+                workCoef *= cadenceFactor;
+            }
         }
         return workCoef + restCoef;
     },
@@ -335,18 +354,30 @@ const UI = {
         return (rounded % 1 === 0) ? rounded.toFixed(0) : rounded.toFixed(1);
     },
 
+    calculateStepsIntensityFactor: (stepsPerMin = 0, { baseStepsPerMin = 100, a = 1, b = 2 } = {}) => {
+        const spm = parseFloat(stepsPerMin);
+        const base = Number.isFinite(parseFloat(baseStepsPerMin)) && baseStepsPerMin > 0
+            ? parseFloat(baseStepsPerMin)
+            : 100;
+        if (!Number.isFinite(spm) || spm <= 0) return 1;
+        return UI.calculateEpleyLikeFactor(spm, base, { a, b });
+    },
+
     calculateStepsKcal: (steps = 0, { weightKg = null, stepsConfig = null } = {}) => {
         const safeSteps = Math.max(0, parseInt(steps, 10) || 0);
         if (!safeSteps) return 0;
         const cfg = stepsConfig || {};
         const effectiveWeight = UI.getEffectiveWeightKg(weightKg);
         const stepsPerMin = cfg.stepsPerMin || 100;
-        const met = cfg.met || ((typeof EXERCISES !== 'undefined' && EXERCISES.caminar) ? EXERCISES.caminar.met : 3.5) || 3.5;
+        const baseStepsPerMin = cfg.baseStepsPerMin || 100;
+        const baseMet = cfg.met || ((typeof EXERCISES !== 'undefined' && EXERCISES.caminar) ? EXERCISES.caminar.met : 3.5) || 3.5;
+        const intensityFactor = UI.calculateStepsIntensityFactor(stepsPerMin, { baseStepsPerMin, a: 1, b: 2 });
+        const met = baseMet * intensityFactor;
         const minutes = safeSteps / stepsPerMin;
         return (met * effectiveWeight / 60) * minutes;
     },
 
-    calcRoutineTotals: (routine, routineOverrides, exercisesMap, { weightKg = null } = {}) => {
+    calcTrainingTotals: (exerciseBlock, exerciseOverrides, exercisesMap, { weightKg = null } = {}) => {
         let totalKcal = 0;
         let totalMin = 0;
         let totalEj = 0;
@@ -354,19 +385,17 @@ const UI = {
         let intensityWorkMinSum = 0;
         let intensityWorkMin = 0;
 
-        if (!routine) return { kcal: 0, min: 0, exerciseCount: 0, metAvg: 0, metMinSum: 0, intensityAvg: 0 };
+        if (!exerciseBlock) return { kcal: 0, min: 0, exerciseCount: 0, metAvg: 0, metMinSum: 0, intensityAvg: 0 };
         const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : {});
-        const routineTimes = routine.timings || null;
-
-        routine.exercises.forEach(item => {
-            const override = (routineOverrides && routineOverrides[item.exerciseId]) || {};
+        exerciseBlock.exercises.forEach(item => {
+            const override = (exerciseOverrides && exerciseOverrides[item.exerciseId]) || {};
             const effectiveItem = { ...item, ...override };
             const ex = exercises[item.exerciseId];
             if (!ex) return;
             totalEj += 1;
-            const breakdown = UI.getExerciseTimeBreakdown(effectiveItem, ex, { routineTimes });
+            const breakdown = UI.getExerciseTimeBreakdown(effectiveItem, ex);
             totalMin += breakdown.totalMin;
-            totalKcal += UI.calculateExerciseKcal(effectiveItem, ex, { weightKg, routineTimes });
+            totalKcal += UI.calculateExerciseKcal(effectiveItem, ex, { weightKg });
 
             const met = parseFloat(ex.met);
             if (Number.isFinite(met) && met > 0 && breakdown.totalMin > 0) {
@@ -375,7 +404,7 @@ const UI = {
 
             if (ex.type === 'fuerza' && !UI.isTimedItem(effectiveItem) && breakdown.workMin > 0) {
                 const repsAvg = UI.parseReps(effectiveItem.reps);
-                const intensityFactor = UI.getIntensityFactorFromEpley(effectiveItem.weightKg, repsAvg);
+                const intensityFactor = UI.getIntensityFactorFromEpley(effectiveItem.weightKg, repsAvg, null, ex.relativeLoad);
                 if (Number.isFinite(intensityFactor) && intensityFactor > 0) {
                     intensityWorkMinSum += intensityFactor * breakdown.workMin;
                     intensityWorkMin += breakdown.workMin;
@@ -388,12 +417,12 @@ const UI = {
         return { kcal: totalKcal, min: totalMin, exerciseCount: totalEj, metAvg, metMinSum, intensityAvg, intensityWorkMinSum, intensityWorkMin };
     },
 
-    groupExercisesByTypeFocus: (routine, exercisesMap, { typeOrder = null, focusOrder = null } = {}) => {
-        if (!routine || !routine.exercises) return [];
+    groupExercisesByTypeFocus: (exerciseBlock, exercisesMap, { typeOrder = null, focusOrder = null } = {}) => {
+        if (!exerciseBlock || !exerciseBlock.exercises) return [];
         const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : {});
         const groups = new Map();
 
-        routine.exercises.forEach(item => {
+        exerciseBlock.exercises.forEach(item => {
             const ex = exercises[item.exerciseId];
             if (!ex) return;
             const exerciseType = ex.type || 'otros';
