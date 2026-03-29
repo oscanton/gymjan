@@ -72,6 +72,7 @@
     --ui-transition-fast: 0.2s;
     --ui-transition-press: 0.1s;
     --ui-control-height: 31px;
+    --ui-index-width: 520px;
     
     /* Highlight para filas activas o botones principales */
     --ui-highlight-gradient: linear-gradient(135deg, var(--color-primary), var(--color-danger));
@@ -202,7 +203,6 @@ h2 {
     color: var(--color-text-main);
 }
 
-.text-lg { font-size: var(--font-size-text-lg); font-weight: 600; }
 .text-sm { font-size: var(--font-size-sm); }
 .text-xs { font-size: var(--font-size-xs); }
 .text-muted { color: var(--color-text-muted); }
@@ -259,36 +259,11 @@ h2 {
     text-align: center;
     margin: 0 auto;
 }
-.page-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 999px;
-    border: 1px solid rgba(var(--color-danger-rgb), 0.7);
-    color: #fff;
-    text-decoration: none;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    background: linear-gradient(135deg, rgba(var(--color-danger-rgb), 0.95), rgba(var(--color-danger-rgb), 0.65));
-    box-shadow:
-        0 6px 14px rgba(var(--color-danger-rgb), 0.35),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.15);
-    position: absolute;
-    right: var(--space-md);
-}
-.page-close:hover {
-    transform: translateY(-1px);
-    box-shadow:
-        0 10px 18px rgba(var(--color-danger-rgb), 0.45),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-}
 
 .index-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(0, 0, 0, 0.7);
     display: none;
     align-items: center;
     justify-content: center;
@@ -297,11 +272,14 @@ h2 {
 }
 .index-modal-backdrop.is-open { display: flex; }
 .index-modal {
-    width: min(520px, 95vw);
+    width: min(var(--ui-index-width), 95vw);
     background: var(--surface-black-20);
     border: 1px solid var(--border-light);
     border-radius: var(--ui-radius-lg);
     padding: var(--space-lg);
+}
+#index-card {
+    max-width: var(--ui-index-width);
 }
 .index-modal__header {
     display: flex;
@@ -314,6 +292,17 @@ h2 {
     font-size: var(--font-size-lg);
     font-weight: 700;
     text-align: center;
+}
+.index-modal__link.is-active {
+    opacity: 0.55;
+    filter: saturate(0.6);
+    box-shadow: none;
+    cursor: default;
+    transform: none;
+}
+.index-modal__link.is-active:hover,
+.index-modal__link.is-active:focus-visible {
+    filter: saturate(0.6);
 }
 
 .page-content {

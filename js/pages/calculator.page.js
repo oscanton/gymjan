@@ -96,7 +96,7 @@ function initCalculator(container) {
     profileCard.className = 'glass-card card';
     profileCard.innerHTML = `
         <h2>Datos Personales</h2>
-        <div class="section-group__grid">
+        <div class="section-group__grid section-group__grid--center">
             <div class="row-item">
                 <span class="row-item__title">Sexo</span>
                 <select id="calc-sex" class="input-base input-select w-auto">
@@ -162,9 +162,9 @@ function initCalculator(container) {
         </div>
     `;    const ADJUSTMENT_ROWS = [
         { key: 'kcal', icon: '🔥', label: 'Energía', rule: () => 'Objetivo: 1,2 x BMR', description: getObjectiveDescription('kcal'), adjustmentSource: 'macro', adjustmentKey: 'kcal' },
-        { key: 'p', icon: '🥩', label: 'Proteína', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.p * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('p'), adjustmentSource: 'macro', adjustmentKey: 'p' },
-        { key: 'c', icon: '🍞', label: 'Carbohidratos', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.c * 100, 1)}% de kcals (g = (kcals x %)/4)`, description: getObjectiveDescription('c'), adjustmentSource: 'macro', adjustmentKey: 'c' },
-        { key: 'f', icon: '🥑', label: 'Grasas', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.f * 100, 1)}% de kcals (g = (kcals x %)/9)`, description: getObjectiveDescription('f'), adjustmentSource: 'macro', adjustmentKey: 'f' },
+        { key: 'p', icon: '🥩', label: 'Proteína', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.p * 100, 1)}% de kcal (g = (kcal x %)/4)`, description: getObjectiveDescription('p'), adjustmentSource: 'macro', adjustmentKey: 'p' },
+        { key: 'c', icon: '🍞', label: 'Carbohidratos', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.c * 100, 1)}% de kcal (g = (kcal x %)/4)`, description: getObjectiveDescription('c'), adjustmentSource: 'macro', adjustmentKey: 'c' },
+        { key: 'f', icon: '🥑', label: 'Grasas', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.f * 100, 1)}% de kcal (g = (kcal x %)/9)`, description: getObjectiveDescription('f'), adjustmentSource: 'macro', adjustmentKey: 'f' },
         {
             key: 'salt',
             icon: '🧂',
@@ -178,7 +178,7 @@ function initCalculator(container) {
             key: 'fiber',
             icon: '🌾',
             label: 'Fibra',
-            rule: () => `Mín: ${formatRuleValue(defaultSecondaryTargets.fiberPer1000Kcal, 1)}g / 1000kcals`,
+            rule: () => `Mín: ${formatRuleValue(defaultSecondaryTargets.fiberPer1000Kcal, 1)}g / 1000 kcal`,
             description: getObjectiveDescription('fiber'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'fiberPer1000Kcal'
@@ -187,7 +187,7 @@ function initCalculator(container) {
             key: 'sugar',
             icon: '🍬',
             label: 'Azúcar',
-            rule: () => `Máx: ${formatRuleValue(defaultSecondaryTargets.sugarMaxPctKcal * 100, 1)}% de kcals (g = (kcals x %)/4)`,
+            rule: () => `Máx: ${formatRuleValue(defaultSecondaryTargets.sugarMaxPctKcal * 100, 1)}% de kcal (g = (kcal x %)/4)`,
             description: getObjectiveDescription('sugar'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'sugarMaxPctKcal'
@@ -196,7 +196,7 @@ function initCalculator(container) {
             key: 'saturatedFat',
             icon: '🧈',
             label: 'Grasa sat.',
-            rule: () => `Máx: ${formatRuleValue(defaultSecondaryTargets.satFatMaxPctKcal * 100, 1)}% de kcals (g = (kcals x %)/9)`,
+            rule: () => `Máx: ${formatRuleValue(defaultSecondaryTargets.satFatMaxPctKcal * 100, 1)}% de kcal (g = (kcal x %)/9)`,
             description: getObjectiveDescription('saturatedFat'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'satFatMaxPctKcal'
@@ -359,7 +359,7 @@ function initCalculator(container) {
                 <div class="card-panel">
                     <div class="text-label">BMR</div>
                     <div class="stats-pills stats-pills--center my-sm">
-                        <div class="stat-pill stat-pill--kcal">🔥</div>
+                        <div class="stat-pill stat-pill--kcal">🔥 ${Number.isFinite(bmr) ? Math.round(bmr) : 0} kcal</div>
                     </div>
                     <div class="text-sm text-muted mt-auto">Basal</div>
                 </div>

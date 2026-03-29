@@ -4,15 +4,15 @@
 
 const Targets = {
     getObjectiveDescriptions: () => ({
-        kcal: 'Define la energia diaria total. Un exceso sostenido puede favorecer ganancia de grasa; un deficit excesivo puede reducir rendimiento y recuperacion.',
-        p: 'La proteina ayuda a conservar y construir masa muscular, y mejora la saciedad. Un aporte bajo sostenido puede limitar recuperacion y mantenimiento muscular.',
-        c: 'Los carbohidratos son combustible principal para entrenar y recuperar glucogeno. Un aporte muy bajo puede reducir energia, rendimiento e intensidad.',
-        f: 'Las grasas son clave para funcion hormonal, absorcion de vitaminas y salud celular. Un aporte muy bajo puede afectar hormonas y bienestar general.',
-        salt: 'Controla el sodio total aproximado (expresado como sal). Exceso mantenido puede empeorar retencion de liquidos y tension arterial en personas sensibles.',
+        kcal: 'Define la energía diaria total. Un exceso sostenido puede favorecer ganancia de grasa; un déficit excesivo puede reducir rendimiento y recuperación.',
+        p: 'La proteína ayuda a conservar y construir masa muscular, y mejora la saciedad. Un aporte bajo sostenido puede limitar recuperación y mantenimiento muscular.',
+        c: 'Los carbohidratos son el combustible principal para entrenar y recuperar glucógeno. Un aporte muy bajo puede reducir energía, rendimiento e intensidad.',
+        f: 'Las grasas son clave para función hormonal, absorción de vitaminas y salud celular. Un aporte muy bajo puede afectar hormonas y bienestar general.',
+        salt: 'Controla el sodio total aproximado (expresado como sal). Un exceso mantenido puede empeorar retención de líquidos y tensión arterial en personas sensibles.',
         fiber: 'La fibra mejora salud digestiva, saciedad y control glucémico. Un aporte bajo suele empeorar tránsito intestinal y calidad global de la dieta.',
-        sugar: 'Limita azucares libres para mejorar calidad nutricional y estabilidad energetica. Regla base: maximo % de kcal y conversion a gramos con (kcal x %)/4. Un exceso sostenido facilita picos de apetito y desplazamiento de alimentos de calidad.',
-        saturatedFat: 'Limita grasas saturadas para proteger perfil lipidico y salud cardiovascular. Un exceso habitual puede empeorar marcadores cardiometabolicos.',
-        processing: 'Refleja el grado medio de procesado de la dieta. Cuanto mas alto, mayor riesgo de baja densidad nutricional y peor adherencia a largo plazo.'
+        sugar: 'Limita azúcares libres para mejorar calidad nutricional y estabilidad energética. Regla base: máximo % de kcal y conversión a gramos con (kcal x %)/4. Un exceso sostenido facilita picos de apetito y desplazamiento de alimentos de calidad.',
+        saturatedFat: 'Limita grasas saturadas para proteger perfil lipídico y salud cardiovascular. Un exceso habitual puede empeorar marcadores cardiometabólicos.',
+        processing: 'Refleja el grado medio de procesado de la dieta. Cuanto más alto, mayor riesgo de baja densidad nutricional y peor adherencia a largo plazo.'
     }),
 
     getObjectiveDescription: (key) => {

@@ -33,18 +33,32 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById(rootId)) return;
         if (typeof render === 'function') render();
     });
-    const buildIndexContent = ({ basePrefix = '', title = 'Índice' } = {}) => `
+    const currentPageKey = viewMatch
+        ? `views/${viewMatch[1].toLowerCase()}`
+        : (isIndexPath ? 'index.html' : '');
+    const buildIndexContent = ({ basePrefix = '', title = 'Índice' } = {}) => {
+        const items = [
+            { key: 'index.html', href: `${basePrefix}index.html?home=1`, label: 'Inicio', emoji: '🏠' },
+            { key: 'views/calculator.html', href: `${basePrefix}views/calculator.html`, label: 'Calculadora', emoji: '🧮' },
+            { key: 'views/activity.html', href: `${basePrefix}views/activity.html`, label: 'Actividad', emoji: '💪' },
+            { key: 'views/menu.html', href: `${basePrefix}views/menu.html`, label: 'Menú', emoji: '🍽️' },
+            { key: 'views/list.html', href: `${basePrefix}views/list.html`, label: 'Lista', emoji: '🛒' },
+            { key: 'views/tracking.html', href: `${basePrefix}views/tracking.html`, label: 'Control', emoji: '📈' }
+        ];
+        return `
             <div class="index-modal__header">
                 <div class="index-modal__title">${title}</div>
             </div>
             <nav class="stack-vertical">
-                <a class="btn btn--primary" href="${basePrefix}views/calculator.html">🧮 Calculadora</a>
-                <a class="btn btn--primary" href="${basePrefix}views/activity.html">💪 Actividad</a>
-                <a class="btn btn--primary" href="${basePrefix}views/menu.html">🍽️ Menú</a>
-                <a class="btn btn--primary" href="${basePrefix}views/list.html">🛒 Lista</a>
-                <a class="btn btn--primary" href="${basePrefix}views/tracking.html">📈 Control</a>
+                ${items.map((item) => {
+                    const isActive = currentPageKey === item.key;
+                    const activeClass = isActive ? ' is-active' : '';
+                    const activeAttr = isActive ? ' aria-current="page"' : '';
+                    return `<a class="btn btn--primary index-modal__link${activeClass}" href="${item.href}"${activeAttr}>${item.emoji} ${item.label}</a>`;
+                }).join('')}
             </nav>
         `;
+    };
 
     const renderIndexCard = () => {
         const card = document.getElementById('index-card');

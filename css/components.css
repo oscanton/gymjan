@@ -41,6 +41,15 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--space-sm);
 }
+.section-group__grid--center {
+    width: min(900px, 100%);
+    margin: 0 auto;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    justify-content: center;
+}
+.section-group__grid--center .row-item {
+    width: 100%;
+}
 
 /* --- 2. BUTTONS --- */
 .btn {
@@ -101,11 +110,6 @@
     border-color: var(--color-primary);
 }
 
-.btn-back--full {
-    display: flex;
-    width: 100%;
-    justify-content: center;
-}
 
 /* --- 3. FORMS & INPUTS --- */
 .input-base {
@@ -386,7 +390,36 @@ input[type=number]::-webkit-outer-spin-button {
     border-radius: var(--ui-radius-pill);
     box-sizing: border-box;
 }
+.meal-item__food-select.is-placeholder {
+    color: var(--color-text-muted);
+}
 .meal-item__amount { white-space: nowrap; display: flex; align-items: center; }
+.meal-item__delete {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1;
+    padding: 0 4px;
+    opacity: 0.8;
+}
+.meal-item__delete:hover {
+    opacity: 1;
+    color: var(--color-danger);
+}
+.meal-item__add {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1;
+    padding: 0 4px;
+    opacity: 0.9;
+}
+.meal-item__add:hover {
+    opacity: 1;
+    color: var(--color-success);
+}
 .meal-item__unit { margin-left: 4px; opacity: 0.8; font-size: 0.85rem; }
 .meal-list span { opacity: 0.6; font-size: 0.8em; }
 .meal-macros {
@@ -808,7 +841,6 @@ input[type=number]::-webkit-outer-spin-button {
 .modal-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 10px 0 0; width: 100%; }
 .modal-grid-2--compact { margin-top: 4px; }
 .modal-stat-pill-lg { font-size: var(--font-size-lg); padding: 6px 16px; text-align: center; }
-.nutritional-score-modal-note { line-height: 1.35; }
 
 /* --- 9. UTILS & ANIMATIONS --- */
 .menu-controls { display: flex; justify-content: center; gap: var(--space-md); margin-top: var(--space-lg); flex-wrap: wrap; }

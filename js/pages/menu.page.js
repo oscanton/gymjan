@@ -88,6 +88,11 @@ function renderMenuPage() {
         if (!food) return 0;
         return food.nutritionPerUnit ? DEFAULT_UNIT_AMOUNT : DEFAULT_GRAMS_AMOUNT;
     };
+    const getAllFoods = () => {
+        if (typeof FOODS === 'undefined') return [];
+        return Object.entries(FOODS).map(([id, food]) => ({ id, food }))
+            .sort((a, b) => (a.food.name || a.id).localeCompare((b.food.name || b.id), 'es', { sensitivity: 'base' }));
+    };
     const getSimilarFoods = (foodId) => {
         if (typeof FOODS === 'undefined') return [];
 
@@ -108,6 +113,13 @@ function renderMenuPage() {
             const selected = id === currentFoodId ? 'selected' : '';
             return `<option value="${escapeHtml(id)}" ${selected}>${escapeHtml(food.name || id)}</option>`;
         }).join('');
+    };
+    const renderAllFoodOptions = () => {
+        const allFoods = getAllFoods();
+        if (allFoods.length === 0) return '';
+        return allFoods.map(({ id, food }) => (
+            `<option value="${escapeHtml(id)}">${escapeHtml(food.name || id)}</option>`
+        )).join('');
     };
     const renderMealMacroPills = (nut) => `
         <div class="stat-pill stat-pill--kcal stat-pill--xs">🔥</div>
@@ -448,6 +460,7 @@ function renderMenuPage() {
                                     const similarOptions = renderFoodSelectOptions(item.foodId);
                                     let amountHtml;
                                     let nameHtml;
+                                    let deleteHtml = '';
                                     if (isEditMode) {
                                         nameHtml = `
                                             <select class="input-base input-select input-select--sm meal-item__food-select"
@@ -458,6 +471,10 @@ function renderMenuPage() {
                                         amountHtml = `<input type="text" inputmode="decimal" value="${item.amount}" 
                                             class="input-base input-base--table-edit" 
                                             data-day="${dayIndex}" data-meal="${mealKey}" data-item="${itemIndex}">`;
+                                        deleteHtml = `
+                                            <button type="button" class="meal-item__delete" data-role="meal-delete"
+                                                data-day="${dayIndex}" data-meal="${mealKey}" data-item="${itemIndex}" aria-label="Eliminar alimento">🗑️</button>
+                                        `;
                                     } else {
                                         nameHtml = `<span class="meal-item__name food-info-trigger modal-trigger" data-food-id="${item.foodId}">${food ? food.name : item.foodId}</span>`;
                                         amountHtml = `<span>${item.amount}</span>`;
@@ -467,9 +484,27 @@ function renderMenuPage() {
                                         <div class="meal-item__amount">
                                             ${amountHtml}
                                             <span class="meal-item__unit">${food ? food.unit : ''}</span>
+                                            ${deleteHtml}
                                         </div>
                                     </li>`;
                                 }).join('')}
+                                ${isEditMode ? `
+                                    <li class="meal-item meal-item--add">
+                                        <select class="input-base input-select input-select--sm meal-item__food-select is-placeholder"
+                                            data-role="meal-add-select" data-day="${dayIndex}" data-meal="${mealKey}">
+                                            <option value="" selected>Añadir alimento</option>
+                                            ${renderAllFoodOptions()}
+                                        </select>
+                                        <div class="meal-item__amount">
+                                            <input type="text" inputmode="decimal" value=""
+                                                class="input-base input-base--table-edit"
+                                                data-role="meal-add-amount" data-day="${dayIndex}" data-meal="${mealKey}">
+                                            <span class="meal-item__unit" data-role="meal-add-unit"></span>
+                                            <button type="button" class="meal-item__add" data-role="meal-add"
+                                                data-day="${dayIndex}" data-meal="${mealKey}" aria-label="Añadir alimento">➕</button>
+                                        </div>
+                                    </li>
+                                ` : ''}
                             </ul>
                             <div class="meal-macros" id="macros-${dayIndex}-${mealKey}">
                                 ${renderMealMacroPills(nut)}
@@ -507,6 +542,43 @@ function renderMenuPage() {
     };
 
     tableBody.addEventListener('click', (e) => {
+        const addTrigger = e.target.closest('[data-role="meal-add"]');
+        if (addTrigger) {
+            const dayIndex = parseInt(addTrigger.dataset.day, 10);
+            const mealKey = addTrigger.dataset.meal;
+            const row = addTrigger.closest('.meal-item');
+            const select = row ? row.querySelector('[data-role="meal-add-select"]') : null;
+            const amountInput = row ? row.querySelector('[data-role="meal-add-amount"]') : null;
+            if (!select || !amountInput) return;
+            const foodId = select.value;
+            if (!foodId) return;
+            if (!window.MENU_DATA || !window.MENU_DATA[dayIndex] || !window.MENU_DATA[dayIndex][mealKey]) return;
+            const items = window.MENU_DATA[dayIndex][mealKey].items;
+            if (!Array.isArray(items)) return;
+            const food = (typeof FOODS !== 'undefined') ? FOODS[foodId] : null;
+            const defaultAmount = getDefaultAmountForFood(food);
+            const parsedAmount = parseFloat(amountInput.value);
+            const amount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : defaultAmount;
+            items.push({ foodId, amount });
+            MenuStore.saveMenuData(currentFile, window.MENU_DATA);
+            renderTableContent();
+            return;
+        }
+
+        const deleteTrigger = e.target.closest('[data-role="meal-delete"]');
+        if (deleteTrigger) {
+            const dayIndex = parseInt(deleteTrigger.dataset.day, 10);
+            const mealKey = deleteTrigger.dataset.meal;
+            const itemIndex = parseInt(deleteTrigger.dataset.item, 10);
+            if (!window.MENU_DATA || !window.MENU_DATA[dayIndex] || !window.MENU_DATA[dayIndex][mealKey]) return;
+            const items = window.MENU_DATA[dayIndex][mealKey].items;
+            if (!Array.isArray(items) || itemIndex < 0 || itemIndex >= items.length) return;
+            items.splice(itemIndex, 1);
+            MenuStore.saveMenuData(currentFile, window.MENU_DATA);
+            renderTableContent();
+            return;
+        }
+
         const foodTrigger = e.target.closest('.food-info-trigger');
         if (foodTrigger) {
             const foodId = foodTrigger.dataset.foodId;
@@ -730,6 +802,21 @@ function renderMenuPage() {
     });
 
     tableBody.addEventListener('change', (e) => {
+        if (e.target.matches('select[data-role="meal-add-select"][data-day][data-meal]')) {
+            const select = e.target;
+            const row = select.closest('.meal-item');
+            const unitSpan = row ? row.querySelector('[data-role="meal-add-unit"]') : null;
+            const amountInput = row ? row.querySelector('[data-role="meal-add-amount"]') : null;
+            const foodId = select.value;
+            const food = (typeof FOODS !== 'undefined') ? FOODS[foodId] : null;
+            if (unitSpan) unitSpan.textContent = food ? food.unit : '';
+            if (amountInput && (!amountInput.value || parseFloat(amountInput.value) <= 0) && food) {
+                amountInput.value = getDefaultAmountForFood(food);
+            }
+            select.classList.toggle('is-placeholder', !foodId);
+            return;
+        }
+
         if (!e.target.matches('select[data-role="food-select"][data-day][data-meal][data-item]')) return;
 
         const dayIndex = parseInt(e.target.dataset.day, 10);

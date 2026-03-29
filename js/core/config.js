@@ -11,8 +11,8 @@ const MEAL_KEYS = ['breakfast', 'lunch', 'dinner'];
 
 // Available menu data files.
 const AVAILABLE_MENUS = [
-    { label: 'menu', file: 'menus/menu.js' },
-    { label: 'menu_1', file: 'menus/menu_1.js' },
+    { label: 'Menú base', file: 'menus/menu.js' },
+    { label: 'Menú 1', file: 'menus/menu_1.js' },
 ];
 
 // Available activity plan files (weekly).
