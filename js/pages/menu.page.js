@@ -122,7 +122,7 @@ function renderMenuPage() {
         )).join('');
     };
     const renderMealMacroPills = (nut) => `
-        <div class="stat-pill stat-pill--kcal stat-pill--xs">🔥</div>
+        <div class="stat-pill stat-pill--kcal stat-pill--xs">🔥 ${Math.round(nut.kcal)} kcal</div>
         <div class="stat-pill stat-pill--xs">🥩 ${Math.round(nut.protein)}g</div>
         <div class="stat-pill stat-pill--xs">🍞 ${Math.round(nut.carbs)}g</div>
         <div class="stat-pill stat-pill--xs">🥑 ${Math.round(nut.fat)}g</div>
