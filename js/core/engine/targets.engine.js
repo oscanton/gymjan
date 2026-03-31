@@ -1,0 +1,263 @@
+﻿/* =========================================
+   core/engine/targets.engine.js - PURE TARGETS & MACROS
+   ========================================= */
+
+const TargetsEngine = (() => {
+    const getObjectiveDescriptions = () => ({
+        kcal: 'Define la energÃ­a diaria total. Un exceso sostenido puede favorecer ganancia de grasa; un dÃ©ficit excesivo puede reducir rendimiento y recuperaciÃ³n.',
+        p: 'La proteÃ­na ayuda a conservar y construir masa muscular, y mejora la saciedad. Un aporte bajo sostenido puede limitar recuperaciÃ³n y mantenimiento muscular.',
+        c: 'Los carbohidratos son el combustible principal para entrenar y recuperar glucÃ³geno. Un aporte muy bajo puede reducir energÃ­a, rendimiento e intensidad.',
+        f: 'Las grasas son clave para funciÃ³n hormonal, absorciÃ³n de vitaminas y salud celular. Un aporte muy bajo puede afectar hormonas y bienestar general.',
+        salt: 'Controla el sodio total aproximado (expresado como sal). Un exceso mantenido puede empeorar retenciÃ³n de lÃ­quidos y tensiÃ³n arterial en personas sensibles.',
+        fiber: 'La fibra mejora salud digestiva, saciedad y control glucÃ©mico. Un aporte bajo suele empeorar trÃ¡nsito intestinal y calidad global de la dieta.',
+        sugar: 'Limita azÃºcares libres para mejorar calidad nutricional y estabilidad energÃ©tica. Regla base: mÃ¡ximo % de kcal y conversiÃ³n a gramos con (kcal x %)/4. Un exceso sostenido facilita picos de apetito y desplazamiento de alimentos de calidad.',
+        saturatedFat: 'Limita grasas saturadas para proteger perfil lipÃ­dico y salud cardiovascular. Un exceso habitual puede empeorar marcadores cardiometabÃ³licos.',
+        processing: 'Refleja el grado medio de procesado de la dieta. Cuanto mÃ¡s alto, mayor riesgo de baja densidad nutricional y peor adherencia a largo plazo.'
+    });
+
+    const getObjectiveDescription = (key) => {
+        const all = getObjectiveDescriptions();
+        return all[key] || '';
+    };
+
+    const normalizeMacroRatios = (ratios, fallback = null) => {
+        const fb = fallback || { p: 0.30, c: 0.40, f: 0.30 };
+        const p = parseFloat(ratios && ratios.p);
+        const c = parseFloat(ratios && ratios.c);
+        const f = parseFloat(ratios && ratios.f);
+        const hasAll = Number.isFinite(p) && Number.isFinite(c) && Number.isFinite(f);
+        const sum = hasAll ? (p + c + f) : 0;
+        if (!hasAll || sum <= 0) return fb;
+        return { p: p / sum, c: c / sum, f: f / sum };
+    };
+
+    const getSecondaryDefaults = (secondaryDefaults, savedRules, legacyTargets) => {
+        const secondary = secondaryDefaults || { saltMaxG: 5, fiberPer1000Kcal: 14, sugarMaxPctKcal: 0.10, satFatMaxPctKcal: 0.10, processingMaxScore: 3.5 };
+        const source = savedRules || legacyTargets || {};
+        const num = (value, fallback) => {
+            const parsed = parseFloat(value);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+        };
+        return {
+            saltMaxG: num(source.saltMaxG, secondary.saltMaxG),
+            fiberPer1000Kcal: num(source.fiberPer1000Kcal, secondary.fiberPer1000Kcal),
+            sugarMaxPctKcal: num(source.sugarMaxPctKcal, secondary.sugarMaxPctKcal),
+            satFatMaxPctKcal: num(source.satFatMaxPctKcal, secondary.satFatMaxPctKcal),
+            processingMaxScore: num(source.processingMaxScore, secondary.processingMaxScore)
+        };
+    };
+
+    const getSecondaryAdjustments = (saved) => {
+        const num = (value) => {
+            const parsed = parseFloat(value);
+            return Number.isFinite(parsed) ? parsed : 0;
+        };
+        return {
+            saltMaxG: num(saved && saved.saltMaxG),
+            fiberPer1000Kcal: num(saved && saved.fiberPer1000Kcal),
+            sugarMaxPctKcal: num(saved && saved.sugarMaxPctKcal),
+            satFatMaxPctKcal: num(saved && saved.satFatMaxPctKcal),
+            processingMaxScore: num(saved && saved.processingMaxScore)
+        };
+    };
+
+    const getSecondaryTargetsForKcal = (kcal, defaults = null, adjustments = null) => {
+        const cfg = defaults || getSecondaryDefaults(null, null, null);
+        const adj = adjustments || getSecondaryAdjustments(null);
+        const safeKcal = Number.isFinite(kcal) && kcal > 0 ? kcal : 0;
+        const round = (value, decimals) => {
+            const factor = 10 ** decimals;
+            return Math.round(value * factor) / factor;
+        };
+        const adjusted = (baseValue, adjustmentPct) => baseValue * (1 + (Number.isFinite(adjustmentPct) ? adjustmentPct : 0));
+
+        const baseSalt = cfg.saltMaxG;
+        const baseFiber = (safeKcal / 1000) * cfg.fiberPer1000Kcal;
+        const baseSugar = (safeKcal * cfg.sugarMaxPctKcal) / 4;
+        const baseSatFat = (safeKcal * cfg.satFatMaxPctKcal) / 9;
+        const baseProcessing = cfg.processingMaxScore;
+
+        return {
+            salt: round(adjusted(baseSalt, adj.saltMaxG), 2),
+            fiber: round(adjusted(baseFiber, adj.fiberPer1000Kcal), 1),
+            sugar: round(adjusted(baseSugar, adj.sugarMaxPctKcal), 1),
+            saturatedFat: round(adjusted(baseSatFat, adj.satFatMaxPctKcal), 1),
+            processing: round(adjusted(baseProcessing, adj.processingMaxScore), 1)
+        };
+    };
+
+    const getMacroContext = ({ activityKey = 'actividad', macroRatios = null } = {}) => ({
+        activityKey,
+        macroRatios
+    });
+
+    const getAdjustedValues = (baseKcal, macroContext, customAdj, { calcMacros, defaultMacroRatios } = {}) => {
+        const safeAdj = customAdj || { kcal: 0, p: 0, c: 0, f: 0 };
+        const targetKcal = baseKcal * (1 + safeAdj.kcal);
+        const context = (typeof macroContext === 'string')
+            ? { activityKey: macroContext, macroRatios: defaultMacroRatios }
+            : (macroContext || {});
+        const macrosFn = (typeof calcMacros === 'function')
+            ? calcMacros
+            : (kcal, ctx) => ({
+                p: Math.round((kcal * (defaultMacroRatios ? defaultMacroRatios.p : 0.30)) / 4),
+                c: Math.round((kcal * (defaultMacroRatios ? defaultMacroRatios.c : 0.40)) / 4),
+                f: Math.round((kcal * (defaultMacroRatios ? defaultMacroRatios.f : 0.30)) / 9)
+            });
+        const m = macrosFn(targetKcal, context);
+
+        const p = Math.round(m.p * (1 + safeAdj.p));
+        const c = Math.round(m.c * (1 + safeAdj.c));
+        const f = Math.round(m.f * (1 + safeAdj.f));
+
+        const finalKcal = (p * 4) + (c * 4) + (f * 9);
+        return { p, c, f, kcal: Math.round(finalKcal) };
+    };
+
+    const recalculateDailyTargets = ({
+        weeklyPlan,
+        profile,
+        adjustments,
+        exercisesMap,
+        daysCount,
+        weekDays,
+        restBmrFactor,
+        stepsDefaults,
+        dailyMacroRatios,
+        secondaryDefaults,
+        secondaryAdjustments,
+        macroContextBase,
+        getWalkInfo,
+        calculateStepsKcal,
+        calculateExerciseKcal,
+        calcBMR,
+        calcMacros,
+        defaultMacroRatios
+    } = {}) => {
+        const safeDaysCount = Number.isFinite(daysCount) ? daysCount : 7;
+        const safeWeekDays = Array.isArray(weekDays) && weekDays.length
+            ? weekDays.slice(0, safeDaysCount)
+            : Array.from({ length: safeDaysCount }, (_, idx) => `Día ${idx + 1}`);
+        const userProfile = profile || {};
+        const adj = adjustments || { kcal: 0, p: 0, c: 0, f: 0 };
+
+        if (!userProfile.weight || !userProfile.height || !userProfile.age) return null;
+        if (typeof calcBMR !== 'function') return null;
+
+        const bmr = calcBMR(
+            userProfile.weight,
+            userProfile.height,
+            userProfile.age,
+            userProfile.sex || 'hombre'
+        );
+
+        const dailyTargets = {};
+        const restFactor = Number.isFinite(restBmrFactor) ? restBmrFactor : 1.2;
+        const restKcal = bmr * restFactor;
+        const defaultStepsCfg = stepsDefaults || { target: 8000, perMinute: 100, met: 3.5 };
+        const exercises = exercisesMap || null;
+        const walkingExercise = exercises && exercises.caminar
+            ? exercises.caminar
+            : { met: defaultStepsCfg.met, cadenceBase: defaultStepsCfg.perMinute };
+        const baseCadence = parseInt(walkingExercise.cadenceBase, 10) || defaultStepsCfg.perMinute;
+        const stepsConfig = {
+            targetSteps: defaultStepsCfg.target,
+            stepsPerMin: baseCadence,
+            met: walkingExercise.met || defaultStepsCfg.met,
+            baseStepsPerMin: baseCadence
+        };
+        const weekly = Array.isArray(weeklyPlan)
+            ? weeklyPlan.slice(0, safeDaysCount)
+            : [];
+        const perDayMacroRatios = Array.isArray(dailyMacroRatios)
+            ? dailyMacroRatios.slice(0, safeDaysCount)
+            : [];
+
+        const secDefaults = secondaryDefaults || getSecondaryDefaults(null, null, null);
+        const secAdjustments = secondaryAdjustments || getSecondaryAdjustments(null);
+
+        safeWeekDays.forEach((day, index) => {
+            const dayData = Array.isArray(weekly) ? (weekly[index] || {}) : {};
+            const baseContext = macroContextBase || getMacroContext({ activityKey: 'actividad' });
+            const dayMacroRatios = perDayMacroRatios[index] || defaultMacroRatios || { p: 0.30, c: 0.40, f: 0.30 };
+            const macroContextWithRatios = { ...baseContext, macroRatios: dayMacroRatios };
+
+            const walkInfo = (typeof getWalkInfo === 'function')
+                ? getWalkInfo(dayData, { defaultStepsCfg, walkingExercise })
+                : { steps: defaultStepsCfg.target, stepsPerMin: stepsConfig.stepsPerMin, secPerRep: 0, cadenceBase: stepsConfig.baseStepsPerMin };
+            const daySteps = walkInfo.steps;
+            const dayStepsPerMin = walkInfo.stepsPerMin;
+            const perDayStepsConfig = {
+                ...stepsConfig,
+                stepsPerMin: dayStepsPerMin,
+                baseStepsPerMin: stepsConfig.baseStepsPerMin
+            };
+            const stepsKcal = (typeof calculateStepsKcal === 'function')
+                ? calculateStepsKcal(daySteps, { weightKg: userProfile.weight, stepsConfig: perDayStepsConfig })
+                : 0;
+
+            let gymKcal = 0;
+            const gymSection = dayData.gym;
+            if (gymSection && gymSection.type !== 'rest' && Array.isArray(gymSection.exercises) && typeof calculateExerciseKcal === 'function') {
+                gymSection.exercises.forEach((item) => {
+                    const ex = exercises && item ? exercises[item.exerciseId] : null;
+                    if (!ex) return;
+                    gymKcal += calculateExerciseKcal(item, ex, { weightKg: userProfile.weight });
+                });
+            }
+
+            let extraKcal = 0;
+            const extraSection = dayData.extra_activity;
+            if (extraSection && extraSection.type !== 'rest' && Array.isArray(extraSection.exercises) && typeof calculateExerciseKcal === 'function') {
+                extraSection.exercises.forEach((item) => {
+                    const ex = exercises && item ? exercises[item.exerciseId] : null;
+                    if (!ex) return;
+                    extraKcal += calculateExerciseKcal(item, ex, { weightKg: userProfile.weight });
+                });
+            }
+
+            const totalActivityKcal = stepsKcal + gymKcal + extraKcal;
+            const tdee = restKcal + totalActivityKcal;
+            const dayVals = getAdjustedValues(tdee, macroContextWithRatios, adj, {
+                calcMacros,
+                defaultMacroRatios: dayMacroRatios
+            });
+            const secondaryTargets = getSecondaryTargetsForKcal(dayVals.kcal, secDefaults, secAdjustments);
+
+            dailyTargets[day] = {
+                kcal: dayVals.kcal,
+                protein: dayVals.p,
+                carbs: dayVals.c,
+                fat: dayVals.f,
+                salt: secondaryTargets.salt,
+                fiber: secondaryTargets.fiber,
+                sugar: secondaryTargets.sugar,
+                saturatedFat: secondaryTargets.saturatedFat,
+                processing: secondaryTargets.processing
+            };
+        });
+
+        return dailyTargets;
+    };
+
+    return {
+        getObjectiveDescriptions,
+        getObjectiveDescription,
+        normalizeMacroRatios,
+        getSecondaryDefaults,
+        getSecondaryAdjustments,
+        getSecondaryTargetsForKcal,
+        getMacroContext,
+        getAdjustedValues,
+        recalculateDailyTargets
+    };
+})();
+
+var __root = (typeof globalThis !== 'undefined')
+    ? globalThis
+    : (typeof window !== 'undefined' ? window : this);
+__root.TargetsEngine = TargetsEngine;
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = TargetsEngine;
+}

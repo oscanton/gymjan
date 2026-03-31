@@ -1,10 +1,12 @@
-/* =========================================
+﻿/* =========================================
    pages/list.page.js - LISTA DE LA COMPRA
    ========================================= */
 
 function renderShoppingListPage() {
     const container = document.getElementById('lista-container');
     if (!container) return;
+
+    let formulas = null;
 
     window.MENU_DATA = undefined;
     const otherMenuScript = document.getElementById('dynamic-menu-data');
@@ -24,23 +26,34 @@ function renderShoppingListPage() {
     }
 
     UI.loadDependencies([
-        { when: () => typeof Formulas === 'undefined', path: 'js/core/formulas.js', id: 'core-formulas' },
-        { when: () => typeof FOODS === 'undefined', path: 'js/data/foods.js', id: 'static-foods-data' },
-        { when: true, path: 'js/data/' + menuFile, id: 'dynamic-menu-list' }
+        { when: () => typeof CoreBrowserAdapter === 'undefined', path: 'js/core/adapters/browser.adapter.js', id: 'core-browser-adapter' }
     ])
+        .then(() => (CoreBrowserAdapter && CoreBrowserAdapter.ensureCoreDomain
+            ? CoreBrowserAdapter.ensureCoreDomain()
+            : Promise.reject('CoreBrowserAdapter unavailable')))
+        .then(() => {
+            formulas = window.FormulasEngine;
+            if (!formulas) return Promise.reject('FormulasEngine unavailable');
+            if (typeof APP_MACRO_RATIOS !== 'undefined' && typeof formulas.setDefaultMacroRatios === 'function') {
+                formulas.setDefaultMacroRatios(APP_MACRO_RATIOS);
+            }
+            return true;
+        })
+        .then(() => CoreBrowserAdapter.loadFoods())
+        .then(() => CoreBrowserAdapter.loadMenuFile(menuFile))
         .then(() => {
             const savedData = MenuStore.getSavedMenuData(menuFile);
             if (savedData) {
                 window.MENU_DATA = savedData;
             }
-            calculateAndRenderList(container);
+            calculateAndRenderList(container, formulas);
         })
         .catch((file) => UI.showError(container, `Error cargando ${file}`));
 }
 
-function calculateAndRenderList(container) {
-    if (typeof MENU_DATA === 'undefined' || typeof FOODS === 'undefined' || typeof Formulas === 'undefined') {
-        container.innerHTML = `<div class="glass-card card"><p>Faltan datos (Menú o Alimentos).</p></div>`;
+function calculateAndRenderList(container, formulas) {
+    if (typeof MENU_DATA === 'undefined' || typeof FOODS === 'undefined' || !formulas) {
+        container.innerHTML = `<div class="glass-card card"><p>Faltan datos (MenÃº o Alimentos).</p></div>`;
         return;
     }
 
@@ -48,22 +61,22 @@ function calculateAndRenderList(container) {
     const mealKeys = (typeof MEAL_KEYS !== 'undefined' && Array.isArray(MEAL_KEYS) && MEAL_KEYS.length)
         ? MEAL_KEYS
         : ['breakfast', 'lunch', 'dinner'];
-    const totals = Formulas.calculateShoppingTotals(MENU_DATA, mealKeys);
+    const totals = formulas.calculateShoppingTotals(MENU_DATA, mealKeys);
 
     const listByCategory = {};
 
     const categoryOrder = [
-        "🥔 Verduras y hortalizas",
-        "🍎 Fruta",
-        "🥩 Proteínas",
-        "🥛 Lácteos",
-        "🍚 Cereales, legumbres y tubérculos",
-        "🥑 Grasas, frutos secos y semillas",
-        "🧂 Condimentos y especias",
-        "🍫 Dulces y chocolates",
-        "☕ Bebidas",
-        "📦 Otros / Procesados",
-        "💊 Suplementos"
+        "ðŸ¥” Verduras y hortalizas",
+        "ðŸŽ Fruta",
+        "ðŸ¥© ProteÃ­nas",
+        "ðŸ¥› LÃ¡cteos",
+        "ðŸš Cereales, legumbres y tubÃ©rculos",
+        "ðŸ¥‘ Grasas, frutos secos y semillas",
+        "ðŸ§‚ Condimentos y especias",
+        "ðŸ« Dulces y chocolates",
+        "â˜• Bebidas",
+        "ðŸ“¦ Otros / Procesados",
+        "ðŸ’Š Suplementos"
     ];
 
     Object.keys(totals).forEach(foodId => {
@@ -73,7 +86,7 @@ function calculateAndRenderList(container) {
         const food = FOODS[foodId];
         if (!food) return;
 
-        const cat = food.category || "📦 Otros / Procesados";
+        const cat = food.category || "ðŸ“¦ Otros / Procesados";
 
         if (!listByCategory[cat]) {
             listByCategory[cat] = [];
@@ -151,6 +164,145 @@ function calculateAndRenderList(container) {
     });
 
     if (!hasItems) {
-        container.innerHTML = `<div class="glass-card card"><p>Lista vacía.</p></div>`;
+        const empty = document.createElement('div');
+        empty.className = 'glass-card card';
+        empty.innerHTML = '<p>Lista vacÃ­a.</p>';
+        container.appendChild(empty);
     }
+
+    appendCustomListSection(container);
+    ensureListResetControls(container, formulas);
 }
+
+const CUSTOM_LIST_KEY = 'shop_custom_items';
+const LIST_RESET_CONTROLS_ID = 'list-controls-container';
+
+function getCustomListItems() {
+    const items = DB.get(CUSTOM_LIST_KEY, []);
+    if (!Array.isArray(items)) return [];
+    return items.filter(item => item && typeof item.text === 'string' && item.text.trim().length > 0);
+}
+
+function saveCustomListItems(items) {
+    DB.save(CUSTOM_LIST_KEY, items);
+}
+
+function buildCustomListRow(item) {
+    const label = document.createElement('label');
+    label.className = 'row-item';
+
+    const info = document.createElement('div');
+    info.className = 'row-item__info';
+
+    const title = document.createElement('span');
+    title.className = 'row-item__title';
+    title.textContent = item.text;
+
+    info.appendChild(title);
+
+    const actions = document.createElement('div');
+    actions.className = 'row-item__actions';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.dataset.customId = item.id;
+    if (item.checked) checkbox.checked = true;
+
+    actions.appendChild(checkbox);
+
+    label.appendChild(info);
+    label.appendChild(actions);
+
+    return label;
+}
+
+function appendCustomListSection(container) {
+    const section = document.createElement('div');
+    section.className = 'glass-card section-group';
+    section.innerHTML = '<h2>🧾 Varios</h2>';
+
+    const itemsGrid = document.createElement('div');
+    itemsGrid.className = 'section-group__grid list-custom__grid';
+
+    const items = getCustomListItems();
+    items.forEach(item => itemsGrid.appendChild(buildCustomListRow(item)));
+
+    itemsGrid.addEventListener('change', (e) => {
+        if (!e.target.matches('input[type="checkbox"][data-custom-id]')) return;
+        const customId = e.target.dataset.customId;
+        const updatedItems = getCustomListItems().map(item => (
+            item.id === customId ? { ...item, checked: e.target.checked } : item
+        ));
+        saveCustomListItems(updatedItems);
+    });
+
+    const form = document.createElement('div');
+    form.className = 'list-custom__form';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'input-base list-custom__input';
+    input.placeholder = 'Añadir item a Varios...';
+    input.setAttribute('aria-label', 'Nuevo item de varios');
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'list-custom__add';
+    button.textContent = 'Añadir';
+
+    const addItem = () => {
+        const text = input.value.trim();
+        if (!text) return;
+        const newItem = {
+            id: `custom_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+            text,
+            checked: false
+        };
+        const updated = [...getCustomListItems(), newItem];
+        saveCustomListItems(updated);
+        itemsGrid.appendChild(buildCustomListRow(newItem));
+        input.value = '';
+        input.focus();
+    };
+
+    button.addEventListener('click', addItem);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addItem();
+    });
+
+    form.appendChild(input);
+    form.appendChild(button);
+
+    section.appendChild(itemsGrid);
+    section.appendChild(form);
+
+    container.appendChild(section);
+}
+
+function ensureListResetControls(container, formulas) {
+    if (!container || document.getElementById(LIST_RESET_CONTROLS_ID)) return;
+
+    const controls = document.createElement('div');
+    controls.id = LIST_RESET_CONTROLS_ID;
+    controls.className = 'menu-controls';
+
+    const resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'btn-back';
+    resetBtn.textContent = 'Reset';
+    resetBtn.addEventListener('click', () => {
+        if (!confirm('¿Restablecer la lista? Se perderán checks y elementos añadidos.')) return;
+        const prefix = (typeof APP_PREFIX !== 'undefined') ? APP_PREFIX : '';
+        Object.keys(localStorage).forEach((key) => {
+            if (key.startsWith(prefix + 'shop_')) {
+                localStorage.removeItem(key);
+            }
+        });
+        calculateAndRenderList(container, formulas);
+    });
+
+    controls.appendChild(resetBtn);
+    container.after(controls);
+}
+
+

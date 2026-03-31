@@ -1,8 +1,8 @@
-/* =========================================
-   core/nutrition-score.js - NUTRITIONAL SCORE
+﻿/* =========================================
+   core/engine/nutrition-score.engine.js - PURE NUTRITION SCORE
    ========================================= */
 
-const NutritionScore = (() => {
+const NutritionScoreEngine = (() => {
     const DEFAULT_METRICS = Object.freeze({
         kcal: { mode: 'target_asymmetric', belowRatePer10: 0.5, aboveRatePer10: 1.2, cap: 3.0 },
         protein: { mode: 'target_asymmetric', belowRatePer10: 0.8, aboveRatePer10: 0.2, cap: 2.0 },
@@ -109,4 +109,11 @@ const NutritionScore = (() => {
     };
 })();
 
-window.NutritionScore = NutritionScore;
+var __root = (typeof globalThis !== 'undefined')
+    ? globalThis
+    : (typeof window !== 'undefined' ? window : this);
+__root.NutritionScoreEngine = NutritionScoreEngine;
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = NutritionScoreEngine;
+}

@@ -7,6 +7,9 @@ function renderActivityPage() {
     const tableBody = document.getElementById('actividad-body');
     if (!tableBody) return;
 
+    let formulas = null;
+    let targets = null;
+
     let isEditMode = false;
     const pendingAdds = {};
     const errorColspan = (typeof DAYS_COUNT !== 'undefined' && Number.isFinite(DAYS_COUNT))
@@ -137,18 +140,17 @@ function renderActivityPage() {
         intensity: 'Intensidad'
     };
 
-    const ensureDailyTargets = () => {
-        let storedTargets = DB.get('daily_nutrition_targets', {});
-        const hasTargets = storedTargets && Object.keys(storedTargets).length > 0;
-        const hasKcal = hasTargets && Object.values(storedTargets).some(dayTarget =>
-            dayTarget && Number.isFinite(parseFloat(dayTarget.kcal))
-        );
-        if ((!hasTargets || !hasKcal) && typeof Targets !== 'undefined') {
-            const recalculated = Targets.recalculateDailyTargets();
-            if (recalculated) storedTargets = recalculated;
-        }
-        return storedTargets || {};
-    };
+    const getDefaultMacroRatios = () => CoreBrowserDomain.getDefaultMacroRatios(formulas);
+    const getDailyMacroRatios = () => CoreBrowserDomain.getDailyMacroRatios(targets, { formulas });
+    const getSecondaryDefaults = () => CoreBrowserDomain.getSecondaryDefaults(targets);
+    const getSecondaryAdjustments = () => CoreBrowserDomain.getSecondaryAdjustments(targets);
+    const computeDailyTargets = (weeklyPlan, profile, adjustments, exercisesMap) => (
+        CoreBrowserDomain.computeDailyTargets(targets, formulas, weeklyPlan, profile, adjustments, exercisesMap)
+    );
+
+    const ensureDailyTargets = () => (
+        CoreBrowserDomain.ensureDailyTargets(targets, formulas, { needsKcal: true })
+    );
     const renderActivityScorePill = ({ stepsKcal, trainingKcal, met, intensity, targetKcal }) => {
         if (typeof ActivityScore === 'undefined') return '';
         const result = ActivityScore.calculate({
@@ -805,17 +807,29 @@ function renderActivityPage() {
     UI.bootstrapPage({
         rootId: 'actividad-body',
         requiredDeps: [
-            { global: 'Formulas', path: 'js/core/formulas.js' },
-            { global: 'Targets', path: 'js/core/targets.js' },
+            { global: 'CoreBrowserAdapter', path: 'js/core/adapters/browser.adapter.js' },
             { global: 'ActivityScore', path: 'js/core/activity-score.js' },
             { global: 'EXERCISES', path: 'js/data/exercises.js' }
         ],
         afterRequired: () => {
-            const plans = getPlanFiles();
-            if (plans.length) {
-                return loadPlanFile(getSelectedFile());
-            }
-            return Promise.resolve();
+            return (CoreBrowserAdapter && CoreBrowserAdapter.ensureCoreDomain
+                ? CoreBrowserAdapter.ensureCoreDomain()
+                : Promise.reject('CoreBrowserAdapter unavailable'))
+                .then(() => {
+                    formulas = window.FormulasEngine;
+                    targets = window.TargetsEngine;
+                    if (!formulas || !targets) {
+                        return Promise.reject('Core engines unavailable');
+                    }
+                    if (typeof CoreBrowserDomain !== 'undefined') {
+                        CoreBrowserDomain.applyMacroDefaults(formulas);
+                    }
+                    const plans = getPlanFiles();
+                    if (plans.length) {
+                        return loadPlanFile(getSelectedFile());
+                    }
+                    return Promise.resolve();
+                });
         },
         run: () => {
             buildPlanSelector();

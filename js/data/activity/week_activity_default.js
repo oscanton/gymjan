@@ -1,5 +1,5 @@
 ﻿/* =========================================
-   data/activity/activity_week_base.js - PLAN SEMANAL
+   data/activity/week_activity_default.js - PLAN SEMANAL
    ========================================= */
 
 window.ACTIVITY_DATA = [

@@ -235,6 +235,34 @@ input[type=number]::-webkit-outer-spin-button {
 .row-item__actions { display: flex; align-items: center; gap: 10px; }
 .row-item__quantity { font-weight: 500; opacity: 0.8; }
 
+.list-custom__form {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.list-custom__input {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+.list-custom__add {
+    border: 1px solid rgba(var(--color-primary-rgb), 0.35);
+    background: rgba(var(--color-primary-rgb), 0.2);
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+    line-height: 1;
+    padding: 8px 14px;
+    border-radius: var(--ui-radius-pill);
+    cursor: pointer;
+}
+
+.list-custom__add:hover {
+    background: rgba(var(--color-primary-rgb), 0.3);
+}
+
 /* --- 5. TABLES (MENU / ACTIVITY) --- */
 
 .table-scroller {

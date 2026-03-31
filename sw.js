@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = "app-cache-v15";
+const CACHE_NAME = "app-cache-v16";
 
 const FILES_TO_CACHE = [
   "index.html",
@@ -26,9 +26,9 @@ const FILES_TO_CACHE = [
   "js/core/ui.js",
   "js/data/foods.js",
   "js/data/exercises.js",
-  "js/data/menus/menu.js",
-  "js/data/menus/menu_1.js",
-  "js/data/activity/activity_week_base.js",
+  "js/data/menus/week_menu_default.js",
+  "js/data/menus/week_menu_weightloss.js",
+  "js/data/activity/week_activity_default.js",
 
   "js/pages/activity.page.js",
   "js/pages/calculator.page.js",
@@ -62,4 +62,6 @@ self.addEventListener("fetch", event => {
     })
   );
 });
+
+
 

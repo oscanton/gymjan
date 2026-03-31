@@ -11,16 +11,16 @@ const MEAL_KEYS = ['breakfast', 'lunch', 'dinner'];
 
 // Available menu data files.
 const AVAILABLE_MENUS = [
-    { label: 'Menú base', file: 'menus/menu.js' },
-    { label: 'Menú 1', file: 'menus/menu_1.js' },
+    { label: 'default', file: 'menus/week_menu_default.js' },
+    { label: 'weightloss', file: 'menus/week_menu_weightloss.js' },
 ];
 
 // Available activity plan files (weekly).
 const AVAILABLE_ACTIVITY_PLAN_FILES = [
-    { label: 'semana_base', file: 'activity/activity_week_base.js' }
+    { label: 'default', file: 'activity/week_activity_default.js' }
 ];
 
-const DEFAULT_ACTIVITY_PLAN_FILE = 'activity/activity_week_base.js';
+const DEFAULT_ACTIVITY_PLAN_FILE = 'activity/week_activity_default.js';
 
 // App-level defaults (business rules and baseline targets).
 const APP_DEFAULTS = {

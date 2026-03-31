@@ -23,6 +23,14 @@
 - Logic lives in `.js` files.
 - Use modern structure criteria; keep responsibilities separated.
 
+## Core Architecture (Refactor Target)
+- Use `js/core/engine/` for **pure** domain logic (no `window`, `DB`, `UI`, or DOM access).
+- Use `js/core/adapters/` for environment-specific wiring (browser, node, etc.).
+- Use `js/core/legacy/` only for backwards-compatible wrappers (compat-only; not used by the frontend).
+- The frontend should use engines via adapters (e.g., `CoreBrowserAdapter`, `CoreBrowserDomain`).
+- New logic should be written in the engine first; only add legacy wrappers if strictly required for compatibility.
+- For any future pages that need objectives/macros, use `CoreBrowserDomain` helpers instead of re-implementing domain logic.
+
 ## Comments
 - Add comments when needed.
 - Avoid over-commenting.

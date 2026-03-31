@@ -2,12 +2,58 @@
    core/stores.js - DATOS COMPARTIDOS
    ========================================= */
 
+const ACTIVITY_FILE_MIGRATIONS = {
+    'activity/activity_week_base.js': 'activity/week_activity_default.js',
+    'activity/activity_default.js': 'activity/week_activity_default.js'
+};
+
+const MENU_FILE_MIGRATIONS = {
+    'menus/menu.js': 'menus/week_menu_default.js',
+    'menus/menu_default.js': 'menus/week_menu_default.js',
+    'menus/menu_1.js': 'menus/week_menu_weightloss.js'
+};
+
+const normalizeActivityPlanFile = (file) => ACTIVITY_FILE_MIGRATIONS[file] || file;
+
+const normalizeMenuFile = (file) => MENU_FILE_MIGRATIONS[file] || file;
+
+const getLegacyActivityPlanFile = (file) => {
+    const entry = Object.entries(ACTIVITY_FILE_MIGRATIONS).find(([, current]) => current === file);
+    return entry ? entry[0] : null;
+};
+
+const getLegacyMenuFile = (file) => {
+    const entry = Object.entries(MENU_FILE_MIGRATIONS).find(([, current]) => current === file);
+    return entry ? entry[0] : null;
+};
+
 const ActivityStore = {
-    getSelectedFile: () => DB.get('selected_activity_plan_file', DEFAULT_ACTIVITY_PLAN_FILE),
-    setSelectedFile: (file) => DB.save('selected_activity_plan_file', file),
-    getSavedPlanData: (file) => DB.get(`activity_data_${file}`, null),
-    savePlanData: (file, data) => DB.save(`activity_data_${file}`, ActivityStore.normalizeActivityData(data)),
-    clearSavedPlanData: (file) => localStorage.removeItem(APP_PREFIX + `activity_data_${file}`),
+    getSelectedFile: () => {
+        const selected = DB.get('selected_activity_plan_file', DEFAULT_ACTIVITY_PLAN_FILE);
+        const normalized = normalizeActivityPlanFile(selected);
+        if (selected !== normalized) DB.save('selected_activity_plan_file', normalized);
+        return normalized;
+    },
+    setSelectedFile: (file) => DB.save('selected_activity_plan_file', normalizeActivityPlanFile(file)),
+    getSavedPlanData: (file) => {
+        const normalized = normalizeActivityPlanFile(file);
+        const dataKey = `activity_data_${normalized}`;
+        let data = DB.get(dataKey, null);
+        if (!data) {
+            const legacyFile = getLegacyActivityPlanFile(normalized);
+            if (legacyFile) {
+                const legacyData = DB.get(`activity_data_${legacyFile}`, null);
+                if (legacyData) {
+                    DB.save(dataKey, legacyData);
+                    localStorage.removeItem(APP_PREFIX + `activity_data_${legacyFile}`);
+                    data = legacyData;
+                }
+            }
+        }
+        return data;
+    },
+    savePlanData: (file, data) => DB.save(`activity_data_${normalizeActivityPlanFile(file)}`, ActivityStore.normalizeActivityData(data)),
+    clearSavedPlanData: (file) => localStorage.removeItem(APP_PREFIX + `activity_data_${normalizeActivityPlanFile(file)}`),
     getActivePlanData: (file = null) => {
         const selected = file || ActivityStore.getSelectedFile();
         const saved = ActivityStore.getSavedPlanData(selected);
@@ -64,19 +110,37 @@ const ActivityStore = {
 };
 
 const MenuStore = {
-    getSelectedFile: () => DB.get('selected_menu_file', 'menus/menu.js'),
-    setSelectedFile: (file) => DB.save('selected_menu_file', file),
-    getSavedMenuData: (file) => {
-        const raw = DB.get(`menu_data_${file}`, null);
-        if (!raw) return raw;
-        const normalized = MenuStore.normalizeMenuData(raw);
-        if (normalized !== raw) {
-            DB.save(`menu_data_${file}`, normalized);
-        }
+    getSelectedFile: () => {
+        const selected = DB.get('selected_menu_file', 'menus/week_menu_default.js');
+        const normalized = normalizeMenuFile(selected);
+        if (selected !== normalized) DB.save('selected_menu_file', normalized);
         return normalized;
     },
-    saveMenuData: (file, data) => DB.save(`menu_data_${file}`, MenuStore.normalizeMenuData(data)),
-    clearSavedMenuData: (file) => localStorage.removeItem(APP_PREFIX + `menu_data_${file}`)
+    setSelectedFile: (file) => DB.save('selected_menu_file', normalizeMenuFile(file)),
+    getSavedMenuData: (file) => {
+        const normalized = normalizeMenuFile(file);
+        const dataKey = `menu_data_${normalized}`;
+        let raw = DB.get(dataKey, null);
+        if (!raw) {
+            const legacyFile = getLegacyMenuFile(normalized);
+            if (legacyFile) {
+                const legacyData = DB.get(`menu_data_${legacyFile}`, null);
+                if (legacyData) {
+                    DB.save(dataKey, legacyData);
+                    localStorage.removeItem(APP_PREFIX + `menu_data_${legacyFile}`);
+                    raw = legacyData;
+                }
+            }
+        }
+        if (!raw) return raw;
+        const normalizedData = MenuStore.normalizeMenuData(raw);
+        if (normalizedData !== raw) {
+            DB.save(dataKey, normalizedData);
+        }
+        return normalizedData;
+    },
+    saveMenuData: (file, data) => DB.save(`menu_data_${normalizeMenuFile(file)}`, MenuStore.normalizeMenuData(data)),
+    clearSavedMenuData: (file) => localStorage.removeItem(APP_PREFIX + `menu_data_${normalizeMenuFile(file)}`)
 };
 
 MenuStore.normalizeMenuData = (data) => {

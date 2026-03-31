@@ -6,7 +6,7 @@ function renderCalculatorPage() {
     const container = document.getElementById('calculadora-container');
     if (!container) return;
 
-    if (typeof Formulas === 'undefined' || typeof Targets === 'undefined' || typeof ActivityStore === 'undefined') {
+    if (typeof CoreBrowserAdapter === 'undefined' || typeof ActivityStore === 'undefined') {
         UI.showError(container, 'Error cargando dependencias (formulas/targets/stores).');
         return;
     }
@@ -24,7 +24,8 @@ function renderCalculatorPage() {
         return UI.loadScript(`js/data/${selected}`, `activity-plan-${safeId}`);
     };
 
-    UI.loadDependencies(optionalLoads, { settled: true })
+    CoreBrowserAdapter.ensureCoreDomain()
+        .then(() => UI.loadDependencies(optionalLoads, { settled: true }))
         .then(() => loadActivityPlan())
         .then(() => {
             try {
@@ -46,10 +47,35 @@ function renderCalculatorPage() {
 }
 
 function initCalculator(container) {
-    const getMacroContext = () => Targets.getMacroContext();
+    const formulas = window.FormulasEngine;
+    const targets = window.TargetsEngine;
+    if (!formulas || !targets) {
+        UI.showError(container, 'Error cargando dependencias (engine formulas/targets).');
+        return;
+    }
+    if (typeof CoreBrowserDomain !== 'undefined') {
+        CoreBrowserDomain.applyMacroDefaults(formulas);
+    }
+
+    const getDefaultMacroRatios = () => CoreBrowserDomain.getDefaultMacroRatios(formulas);
+    const getDailyMacroRatios = () => CoreBrowserDomain.getDailyMacroRatios(targets, { formulas });
+    const getUserMacroRatios = () => CoreBrowserDomain.getUserMacroRatios(targets, { formulas });
+    const getSecondaryDefaults = () => CoreBrowserDomain.getSecondaryDefaults(targets);
+    const getSecondaryAdjustments = () => CoreBrowserDomain.getSecondaryAdjustments(targets);
+    const calcSecondaryTargetsForKcal = (kcal, defaults = null, adjustments = null) => (
+        CoreBrowserDomain.calcSecondaryTargetsForKcal(targets, kcal, defaults, adjustments)
+    );
+    const getMacroContext = () => CoreBrowserDomain.getMacroContext(targets, { formulas });
+    const calcAdjustedValues = (baseKcal, macroContext, customAdj) => (
+        CoreBrowserDomain.calcAdjustedValues(targets, formulas, baseKcal, macroContext, customAdj)
+    );
+    const computeDailyTargets = (weeklyPlan, profile, adjustments, exercisesMap) => (
+        CoreBrowserDomain.computeDailyTargets(targets, formulas, weeklyPlan, profile, adjustments, exercisesMap)
+    );
+
     const getObjectiveDescription = (key) => (
-        (typeof Targets.getObjectiveDescription === 'function')
-            ? Targets.getObjectiveDescription(key)
+        (typeof targets.getObjectiveDescription === 'function')
+            ? targets.getObjectiveDescription(key)
             : ''
     );
 
@@ -79,7 +105,7 @@ function initCalculator(container) {
     const weeklyPlan = getActivityPlan();
 
     let adjustments = DB.get('user_adjustments', { kcal: 0, p: 0, c: 0, f: 0 });
-    const defaultSecondaryTargets = Targets.getSecondaryDefaults();
+    const defaultSecondaryTargets = getSecondaryDefaults();
     let secondaryAdjustments = DB.get('user_secondary_adjustments', {
         saltMaxG: 0,
         fiberPer1000Kcal: 0,
@@ -87,9 +113,8 @@ function initCalculator(container) {
         satFatMaxPctKcal: 0,
         processingMaxScore: 0
     });
-    let macroRatios = (typeof Targets.getUserMacroRatios === 'function')
-        ? Targets.getUserMacroRatios()
-        : Formulas.DEFAULT_MACRO_RATIOS;
+    const defaultMacroRatios = getDefaultMacroRatios();
+    let macroRatios = getUserMacroRatios();
 
     // --- SECCIÓN: DATOS PERSONALES ---
     const profileCard = document.createElement('div');
@@ -142,9 +167,9 @@ function initCalculator(container) {
         return Math.round(safe * 100);
     };
     const getRestMacroRatios = () => ({
-        p: Number.isFinite(macroRatios.p) ? macroRatios.p : Formulas.DEFAULT_MACRO_RATIOS.p,
-        c: Number.isFinite(macroRatios.c) ? macroRatios.c : Formulas.DEFAULT_MACRO_RATIOS.c,
-        f: Number.isFinite(macroRatios.f) ? macroRatios.f : Formulas.DEFAULT_MACRO_RATIOS.f
+        p: Number.isFinite(macroRatios.p) ? macroRatios.p : defaultMacroRatios.p,
+        c: Number.isFinite(macroRatios.c) ? macroRatios.c : defaultMacroRatios.c,
+        f: Number.isFinite(macroRatios.f) ? macroRatios.f : defaultMacroRatios.f
     });
     let restMacroRatios = getRestMacroRatios();
     const GRAM_KEYS = new Set(['p', 'c', 'f', 'saturatedFat', 'fiber', 'sugar']);
@@ -307,9 +332,9 @@ function initCalculator(container) {
 
         const macroInputs = document.querySelectorAll('input[data-macro-day-index][data-macro-key]');
         if (macroInputs && macroInputs.length) {
-            const baseDaily = (typeof Targets.getDailyMacroRatios === 'function')
-                ? Targets.getDailyMacroRatios()
-                : Array(DAYS_COUNT).fill(Formulas.DEFAULT_MACRO_RATIOS);
+            const baseDaily = (typeof getDailyMacroRatios === 'function')
+                ? getDailyMacroRatios()
+                : Array(DAYS_COUNT).fill(defaultMacroRatios);
             const dayData = Array.from({ length: DAYS_COUNT }, (_, i) => ({
                 p: baseDaily[i] ? baseDaily[i].p * 100 : 30,
                 c: baseDaily[i] ? baseDaily[i].c * 100 : 40,
@@ -326,7 +351,7 @@ function initCalculator(container) {
 
             const normalizedDaily = dayData.map((entry, idx) => {
                 const sum = entry.p + entry.c + entry.f;
-                if (sum <= 0) return baseDaily[idx] || Formulas.DEFAULT_MACRO_RATIOS;
+                if (sum <= 0) return baseDaily[idx] || defaultMacroRatios;
                 return {
                     p: entry.p / sum,
                     c: entry.c / sum,
@@ -334,9 +359,9 @@ function initCalculator(container) {
                 };
             });
             DB.save('user_macro_ratios_by_day', normalizedDaily);
-            macroRatios = (typeof Targets.getUserMacroRatios === 'function')
-                ? Targets.getUserMacroRatios()
-                : Formulas.DEFAULT_MACRO_RATIOS;
+            macroRatios = (typeof getUserMacroRatios === 'function')
+                ? getUserMacroRatios()
+                : defaultMacroRatios;
             restMacroRatios = getRestMacroRatios();
         }
 
@@ -344,9 +369,9 @@ function initCalculator(container) {
     };
 
     const renderBaseResults = (profile) => {
-        const bmi = Formulas.calcBMI(profile.weight, profile.height);
-        const bmiData = Formulas.getBMICategory(bmi);
-        const bmr = Formulas.calcBMR(profile.weight, profile.height, profile.age, profile.sex);
+        const bmi = formulas.calcBMI(profile.weight, profile.height);
+        const bmiData = formulas.getBMICategory(bmi);
+        const bmr = formulas.calcBMR(profile.weight, profile.height, profile.age, profile.sex);
 
         baseResultsCard.innerHTML = `
             <h2>Resultados Base</h2>
@@ -372,16 +397,16 @@ function initCalculator(container) {
         const baseKcal = Math.round(bmr * restBmrFactor);
         const zeroAdj = { kcal: 0, p: 0, c: 0, f: 0 };
         const baseContext = getMacroContext();
-        const baseVals = Targets.getAdjustedValues(baseKcal, baseContext, zeroAdj);
-        const objectiveVals = Targets.getAdjustedValues(baseKcal, baseContext, adjustments);
+        const baseVals = calcAdjustedValues(baseKcal, baseContext, zeroAdj);
+        const objectiveVals = calcAdjustedValues(baseKcal, baseContext, adjustments);
 
-        const baseSecondary = (typeof Targets.getSecondaryTargetsForKcal === 'function')
-            ? Targets.getSecondaryTargetsForKcal(baseVals.kcal, defaultSecondaryTargets, {
+        const baseSecondary = (typeof calcSecondaryTargetsForKcal === 'function')
+            ? calcSecondaryTargetsForKcal(baseVals.kcal, defaultSecondaryTargets, {
                 saltMaxG: 0, fiberPer1000Kcal: 0, sugarMaxPctKcal: 0, satFatMaxPctKcal: 0, processingMaxScore: 0
             })
             : { salt: 0, fiber: 0, sugar: 0, saturatedFat: 0, processing: 0 };
-        const objectiveSecondary = (typeof Targets.getSecondaryTargetsForKcal === 'function')
-            ? Targets.getSecondaryTargetsForKcal(objectiveVals.kcal, defaultSecondaryTargets, secondaryAdjustments)
+        const objectiveSecondary = (typeof calcSecondaryTargetsForKcal === 'function')
+            ? calcSecondaryTargetsForKcal(objectiveVals.kcal, defaultSecondaryTargets, secondaryAdjustments)
             : baseSecondary;
 
         const rawValues = {
@@ -437,7 +462,7 @@ function initCalculator(container) {
         if (!table || !tableHead || !tableBody) return;
         tableBody.innerHTML = '';
         const exercises = (typeof EXERCISES !== 'undefined') ? EXERCISES : null;
-        const dailyTargets = Targets.recalculateDailyTargets(weeklyPlan, profile, adjustments, exercises) || {};
+        const dailyTargets = computeDailyTargets(weeklyPlan, profile, adjustments, exercises) || {};
         const roundTo = (value, decimals) => {
             const factor = 10 ** decimals;
             return Math.round(value * factor) / factor;
@@ -461,10 +486,10 @@ function initCalculator(container) {
             return renderMetricPill(row.key, row.icon, formatMetricValue(row.key, dayMetricValue));
         };
 
-        const baseRest = Formulas.calcBMR(profile.weight, profile.height, profile.age, profile.sex) * restBmrFactor;
-        const dailyMacroRatios = (typeof Targets.getDailyMacroRatios === 'function')
-            ? Targets.getDailyMacroRatios()
-            : Array(DAYS_COUNT).fill(Formulas.DEFAULT_MACRO_RATIOS);
+        const baseRest = formulas.calcBMR(profile.weight, profile.height, profile.age, profile.sex) * restBmrFactor;
+        const dailyMacroRatios = (typeof getDailyMacroRatios === 'function')
+            ? getDailyMacroRatios()
+            : Array(DAYS_COUNT).fill(defaultMacroRatios);
         const activityPlan = Array.isArray(weeklyPlan) ? weeklyPlan : [];
 
         const todayIndex = UI.getTodayIndex();
@@ -480,9 +505,9 @@ function initCalculator(container) {
             const dayData = activityPlan[index] || {};
             const walkInfo = getDayWalkInfo(dayData);
             const macroContext = getMacroContext();
-            const dayMacroRatios = dailyMacroRatios[index] || (Formulas.DEFAULT_MACRO_RATIOS || { p: 0.30, c: 0.40, f: 0.30 });
+            const dayMacroRatios = dailyMacroRatios[index] || (defaultMacroRatios || { p: 0.30, c: 0.40, f: 0.30 });
             const macroContextWithRatios = { ...macroContext, macroRatios: dayMacroRatios };
-            const rawDayVals = dailyTargets[day] || Targets.getAdjustedValues(baseRest, macroContextWithRatios, adjustments);
+            const rawDayVals = dailyTargets[day] || calcAdjustedValues(baseRest, macroContextWithRatios, adjustments);
             const dayVals = {
                 kcal: Number.isFinite(parseFloat(rawDayVals.kcal)) ? Math.round(parseFloat(rawDayVals.kcal)) : 0,
                 p: Number.isFinite(parseFloat(rawDayVals.p)) ? Math.round(parseFloat(rawDayVals.p)) : Math.round(parseFloat(rawDayVals.protein) || 0),
@@ -492,8 +517,8 @@ function initCalculator(container) {
             const secondaryVals = (dailyTargets[day] && Number.isFinite(parseFloat(dailyTargets[day].salt)))
                 ? normalizeSecondary(dailyTargets[day])
                 : normalizeSecondary(
-                    (typeof Targets.getSecondaryTargetsForKcal === 'function')
-                        ? Targets.getSecondaryTargetsForKcal(dayVals.kcal)
+                    (typeof calcSecondaryTargetsForKcal === 'function')
+                        ? calcSecondaryTargetsForKcal(dayVals.kcal)
                         : {}
                 );
             weekRows.push({
@@ -509,7 +534,7 @@ function initCalculator(container) {
             <tr>
                 <td class="goals-row-header">Macros (%)</td>
                 ${weekRows.map((row, index) => {
-                    const ratios = row.macroRatios || Formulas.DEFAULT_MACRO_RATIOS;
+                    const ratios = row.macroRatios || defaultMacroRatios;
                     const p = formatMacroPct(ratios.p);
                     const c = formatMacroPct(ratios.c);
                     const f = formatMacroPct(ratios.f);
@@ -592,6 +617,8 @@ function initCalculator(container) {
 
     updateAndCalculate();
 }
+
+
 
 
 

@@ -6,6 +6,10 @@ function renderMenuPage() {
     const tableBody = document.getElementById("menu-body");
     if (!tableBody) return;
 
+    let formulas = null;
+    let targets = null;
+    let nutritionScore = null;
+
     let isEditMode = false;
     const errorColspan = (typeof DAYS_COUNT !== 'undefined' && Number.isFinite(DAYS_COUNT))
         ? (DAYS_COUNT + 1)
@@ -26,7 +30,7 @@ function renderMenuPage() {
     const loadMenuData = (fileName) => {
         window.MENU_DATA = undefined;
 
-        UI.loadScript(`js/data/${fileName}`, 'dynamic-menu-data')
+        CoreBrowserAdapter.loadMenuFile(fileName)
             .then(() => {
                 const savedData = MenuStore.getSavedMenuData(fileName);
                 if (savedData) window.MENU_DATA = savedData;
@@ -129,10 +133,14 @@ function renderMenuPage() {
     `;
 
     const mealLabels = { breakfast: 'Desayuno', lunch: 'Comida', dinner: 'Cena' };
-    const calculateDayTotals = (dayData) => Formulas.calculateDayTotals(dayData, mealKeys);
+    const computeDailyTargets = (weeklyPlan, profile, adjustments, exercisesMap) => (
+        CoreBrowserDomain.computeDailyTargets(targets, formulas, weeklyPlan, profile, adjustments, exercisesMap)
+    );
+
+    const calculateDayTotals = (dayData) => formulas.calculateDayTotals(dayData, FOODS, mealKeys);
     const renderNutritionScorePill = (dayTotals, target) => {
-        if (typeof NutritionScore === 'undefined') return '';
-        const result = NutritionScore.calculate({
+        if (!nutritionScore) return '';
+        const result = nutritionScore.calculate({
             kcal: dayTotals.kcal,
             protein: dayTotals.protein,
             carbs: dayTotals.carbs,
@@ -143,7 +151,7 @@ function renderMenuPage() {
             salt: dayTotals.salt,
             processing: dayTotals.processingAvg
         }, target || {});
-        const statusClass = NutritionScore.getStatusClass(result.score);
+        const statusClass = nutritionScore.getStatusClass(result.score);
         const scoreText = Number.isFinite(result.score) ? formatNumber(result.score, 1) : '-';
         const debugPayload = encodePayload({
             score: result.score,
@@ -368,18 +376,9 @@ function renderMenuPage() {
         return `${totalsHtml}${renderNutritionScorePill(dayTotals, target)}`;
     };
 
-    const ensureDailyTargets = () => {
-        let storedTargets = DB.get('daily_nutrition_targets', {});
-        const hasTargets = storedTargets && Object.keys(storedTargets).length > 0;
-        const hasMissingSecondaryTargets = hasTargets && Object.values(storedTargets).some(dayTarget =>
-            !dayTarget || SECONDARY_TARGET_KEYS.some(key => !Number.isFinite(parseFloat(dayTarget[key])))
-        );
-        if ((!hasTargets || hasMissingSecondaryTargets) && typeof Targets !== 'undefined') {
-            const recalculated = Targets.recalculateDailyTargets();
-            if (recalculated) storedTargets = recalculated;
-        }
-        return storedTargets || {};
-    };
+    const ensureDailyTargets = () => (
+        CoreBrowserDomain.ensureDailyTargets(targets, formulas, { needsSecondary: true })
+    );
 
     const renderTableContent = () => {
         if (typeof window.MENU_DATA === 'undefined') {
@@ -450,7 +449,7 @@ function renderMenuPage() {
 
                 currentData.forEach((day, dayIndex) => {
                     const mealData = day[mealKey];
-                    const nut = Formulas.calculateMeal(mealData.items);
+                    const nut = formulas.calculateMeal(mealData.items, FOODS);
 
                     html += `
                         <td>
@@ -646,7 +645,7 @@ function renderMenuPage() {
             });
 
             const scoreText = Number.isFinite(payload.score) ? formatNumber(payload.score, 1) : '-';
-            const statusClass = NutritionScore.getStatusClass(payload.score);
+            const statusClass = nutritionScore.getStatusClass(payload.score);
 
             UI.showModal({
                 id: 'nutrition-score-modal',
@@ -782,7 +781,7 @@ function renderMenuPage() {
                 MenuStore.saveMenuData(currentFile, window.MENU_DATA);
 
                 const mealItems = window.MENU_DATA[dayIndex][mealKey].items;
-                const mealNut = Formulas.calculateMeal(mealItems);
+                const mealNut = formulas.calculateMeal(mealItems, FOODS);
                 const mealMacroDiv = document.getElementById(`macros-${dayIndex}-${mealKey}`);
                 if (mealMacroDiv) {
                     mealMacroDiv.innerHTML = renderMealMacroPills(mealNut);
@@ -846,12 +845,25 @@ function renderMenuPage() {
 
     const loadDependencies = () => {
         UI.loadDependencies([
-            { when: () => typeof Formulas === 'undefined', path: 'js/core/formulas.js' },
-            { when: () => typeof Targets === 'undefined', path: 'js/core/targets.js' },
-            { when: () => typeof NutritionScore === 'undefined', path: 'js/core/nutrition-score.js' },
-            { when: () => typeof FOODS === 'undefined', path: 'js/data/foods.js' },
-            { when: () => typeof EXERCISES === 'undefined', path: 'js/data/exercises.js' }
+            { when: () => typeof CoreBrowserAdapter === 'undefined', path: 'js/core/adapters/browser.adapter.js' }
         ])
+            .then(() => (CoreBrowserAdapter && CoreBrowserAdapter.ensureCoreDomain
+                ? CoreBrowserAdapter.ensureCoreDomain()
+                : Promise.reject('CoreBrowserAdapter unavailable')))
+            .then(() => {
+                formulas = window.FormulasEngine;
+                targets = window.TargetsEngine;
+                nutritionScore = window.NutritionScoreEngine;
+                if (!formulas || !targets || !nutritionScore) {
+                    return Promise.reject('Core engines unavailable');
+                }
+                if (typeof CoreBrowserDomain !== 'undefined') {
+                    CoreBrowserDomain.applyMacroDefaults(formulas);
+                }
+                return true;
+            })
+            .then(() => CoreBrowserAdapter.loadFoods())
+            .then(() => CoreBrowserAdapter.loadExercises())
             .then(() => loadMenuData(currentFile))
             .catch(err => {
                 console.error("Error loading dependencies:", err);
