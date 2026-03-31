@@ -89,7 +89,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
     renderIndexCard();
 
-    const headerTitle = document.querySelector('.page-header h1');
+    const openIndexModal = () => {
+        buildIndexModal();
+        const modal = document.getElementById('global-index-modal');
+        if (modal) modal.classList.add('is-open');
+    };
+
+    const header = document.querySelector('.page-header');
+    const headerTitle = header ? header.querySelector('h1') : null;
     if (headerTitle) {
         let titleSpan = headerTitle.querySelector('.page-title-text');
         if (!titleSpan) {
@@ -103,12 +110,16 @@ window.addEventListener('DOMContentLoaded', () => {
             titleSpan.textContent = titleText || headerTitle.textContent.trim();
             headerTitle.insertBefore(titleSpan, headerTitle.firstChild);
         }
-        titleSpan.classList.add('page-title--clickable');
-        titleSpan.addEventListener('click', () => {
-            buildIndexModal();
-            const modal = document.getElementById('global-index-modal');
-            if (modal) modal.classList.add('is-open');
-        });
+    }
+
+    if (header && !header.querySelector('.page-menu-trigger')) {
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'page-menu-trigger';
+        trigger.setAttribute('aria-label', 'Abrir índice');
+        trigger.addEventListener('click', openIndexModal);
+        header.classList.add('page-header--with-menu');
+        header.insertBefore(trigger, header.firstChild);
     }
 });
 
