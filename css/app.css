@@ -274,7 +274,7 @@ h2 {
 
 .page-menu-trigger {
     position: absolute;
-    left: var(--space-md);
+    left: 5px;
     top: 50%;
     transform: translateY(-50%);
     width: 36px;
@@ -355,11 +355,13 @@ h2 {
 @media (min-width: 700px) {
     body { padding: var(--space-md); }
     .page-header { padding: var(--space-xl); }
+    .page-menu-trigger { left: 5px; }
 }
 
 @media (min-width: 1100px) {
     body { padding: var(--space-lg); }
     :root { --page-gap: var(--space-xl); }
+    .page-menu-trigger { left: 5px; }
 }
 
 /* Stack vertical con separación (usado en actividad.html) */
