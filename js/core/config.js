@@ -31,6 +31,11 @@ const APP_DEFAULTS = {
         perMinute: 100,
         met: 3.5
     },
+    hydration: {
+        minMlPerKg: 30,
+        maxMlPerKg: 35,
+        activityMlPerMin: 10
+    },
     secondaryTargets: {
         saltMaxG: 5,
         fiberPer1000Kcal: 14,
@@ -49,6 +54,12 @@ const APP_MACRO_RATIOS = (APP_DEFAULTS.macroRatios && Number.isFinite(APP_DEFAUL
 const APP_STEPS_DEFAULTS = (APP_DEFAULTS.steps && Number.isFinite(APP_DEFAULTS.steps.target) && Number.isFinite(APP_DEFAULTS.steps.perMinute) && Number.isFinite(APP_DEFAULTS.steps.met))
     ? APP_DEFAULTS.steps
     : { target: 8000, perMinute: 100, met: 3.5 };
+const APP_HYDRATION_DEFAULTS = (APP_DEFAULTS.hydration
+    && Number.isFinite(APP_DEFAULTS.hydration.minMlPerKg)
+    && Number.isFinite(APP_DEFAULTS.hydration.maxMlPerKg)
+    && Number.isFinite(APP_DEFAULTS.hydration.activityMlPerMin))
+    ? APP_DEFAULTS.hydration
+    : { minMlPerKg: 30, maxMlPerKg: 35, activityMlPerMin: 10 };
 const APP_SECONDARY_DEFAULTS = (APP_DEFAULTS.secondaryTargets
     && Number.isFinite(APP_DEFAULTS.secondaryTargets.saltMaxG)
     && Number.isFinite(APP_DEFAULTS.secondaryTargets.fiberPer1000Kcal)

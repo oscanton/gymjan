@@ -1,5 +1,5 @@
 /* =========================================
-   pages/tracking.page.js - CONTROL DE PESO
+   pages/tracking.page.js - WEIGHT TRACKING
    ========================================= */
 
 function renderControlPage() {
@@ -22,7 +22,7 @@ const ACTIVITY_TYPE_LABELS = ACTIVITY_TYPE_OPTIONS.reduce((acc, option) => {
 }, {});
 
 function initControlPage(container) {
-    // 1. Obtener Datos
+    // 1. Get Data
     let history = DB.get('weight_history', []);
 
     history = history
@@ -33,22 +33,22 @@ function initControlPage(container) {
         })
         .filter((h) => h.date && h.weight);
 
-    // Ordenar por fecha (más reciente primero) para la tabla
+    // Sort by date (most recent first) for the table
     history.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Fecha por defecto: Hoy
+    // Default date: Today
     const today = DateUtils.toISODate();
 
-    // Peso por defecto: Último registrado
+    // Default weight: Last recorded
     const lastWeight = history.length > 0 ? history[0].weight : '';
 
-    // Actividad por defecto: La del plan semanal para hoy
+    // Default activity: Weekly plan entry for today
     const todayIndex = DateUtils.getTodayIndex();
     const defaultActivity = getDefaultActivityForDayIndex(todayIndex);
 
     const activityOptions = getActivityOptions(defaultActivity);
 
-    // 2. Renderizar Estructura
+    // 2. Render Structure
     container.innerHTML = `
         <div class="glass-card card">
             <h2>Nuevo Registro</h2>
@@ -98,18 +98,18 @@ function initControlPage(container) {
         </div>
     `;
 
-    // 3. Renderizar Componentes
+    // 3. Render Components
     renderWeightChart(history);
     renderHistoryTable(history);
 
-    // 4. Eventos
+    // 4. Events
     document.getElementById('btn-add-weight').addEventListener('click', () => {
         const dateVal = document.getElementById('new-date').value;
         const weightVal = parseFloat(document.getElementById('new-weight').value);
         const activityVal = document.getElementById('new-activity').value;
 
         if (dateVal && weightVal > 0) {
-            // Verificar si ya existe registro para esa fecha
+            // Check if a record already exists for that date
             const existingIndex = history.findIndex(h => h.date === dateVal);
 
             const newEntry = { date: dateVal, weight: weightVal, activity: activityVal };
@@ -121,18 +121,18 @@ function initControlPage(container) {
                 history.push(newEntry);
             }
 
-            // Ordenar y guardar
+            // Sort and save
             history.sort((a, b) => new Date(b.date) - new Date(a.date));
             DB.save('weight_history', history);
 
-            // Sincronización con perfil si es la fecha más reciente
+            // Sync with profile if this is the most recent date
             if (history[0].date === dateVal) {
                 const profile = DB.get('user_profile', {});
                 profile.weight = weightVal;
                 DB.save('user_profile', profile);
             }
 
-            // Recargar página
+            // Reload page
             renderControlPage();
         } else {
             alert("Por favor, introduce una fecha y un peso válido.");
@@ -203,7 +203,7 @@ function renderWeightChart(history) {
     const canvas = document.getElementById('weightChart');
     if (!canvas) return;
 
-    // Ajustar resolución del canvas
+    // Adjust canvas resolution
     const rect = canvas.parentElement.getBoundingClientRect();
     canvas.width = rect.width;
     canvas.height = rect.height;
@@ -212,7 +212,7 @@ function renderWeightChart(history) {
     const width = canvas.width;
     const height = canvas.height;
 
-    // Limpiar
+    // Clear
     ctx.clearRect(0, 0, width, height);
 
     if (history.length < 2) {
@@ -223,10 +223,10 @@ function renderWeightChart(history) {
         return;
     }
 
-    // Preparar datos (Orden cronológico para la gráfica: antiguo -> nuevo)
+    // Prepare data (chronological order for the chart: old -> new)
     const data = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Escalas
+    // Scales
     const weights = data.map(d => d.weight);
     const minW = Math.min(...weights) - 1;
     const maxW = Math.max(...weights) + 1;
@@ -236,7 +236,7 @@ function renderWeightChart(history) {
     const graphWidth = width - (padding * 2);
     const graphHeight = height - (padding * 2);
 
-    // Dibujar línea
+    // Draw line
     ctx.beginPath();
     ctx.strokeStyle = "rgb(255, 209, 102)";
     ctx.lineWidth = 3;
@@ -249,11 +249,11 @@ function renderWeightChart(history) {
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
 
-        // Puntos
+        // Points
         ctx.fillStyle = "#fff";
         ctx.fillRect(x - 3, y - 3, 6, 6);
 
-        // Etiquetas (solo primero y último para no saturar)
+        // Labels (only first and last to avoid clutter)
         if (i === 0 || i === data.length - 1) {
             ctx.fillStyle = "#fff";
             ctx.font = "12px sans-serif";

@@ -63,6 +63,7 @@ const FormulasEngine = (() => {
         fiber: 0,
         sugar: 0,
         salt: 0,
+        waterMl: 0,
         processingWeightedSum: 0,
         processingKcalBase: 0,
         processingAvg: 0
@@ -104,6 +105,11 @@ const FormulasEngine = (() => {
             totals.fiber += (nutrition.fiber || 0) * ratio;
             totals.sugar += (nutrition.sugar || 0) * ratio;
             totals.salt += ((nutrition.sodiumMg || 0) * ratio * 2.5) / 1000;
+            if (food.waterMlPer100 && food.nutritionPer100) {
+                totals.waterMl += (food.waterMlPer100 || 0) * ratio;
+            } else if (food.waterMlPerUnit && food.nutritionPerUnit) {
+                totals.waterMl += (food.waterMlPerUnit || 0) * ratio;
+            }
 
             if (Number.isFinite(food.processed) && itemKcal > 0) {
                 totals.processingWeightedSum += food.processed * itemKcal;
@@ -134,6 +140,7 @@ const FormulasEngine = (() => {
             dayTotals.fiber += mealTotals.fiber;
             dayTotals.sugar += mealTotals.sugar;
             dayTotals.salt += mealTotals.salt;
+            dayTotals.waterMl += mealTotals.waterMl;
             dayTotals.processingWeightedSum += mealTotals.processingWeightedSum;
             dayTotals.processingKcalBase += mealTotals.processingKcalBase;
         });

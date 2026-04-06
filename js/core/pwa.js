@@ -2,7 +2,7 @@
 (() => {
   if (!("serviceWorker" in navigator)) return;
 
-  // HTTPS requerido (salvo localhost)
+  // HTTPS required (except localhost)
   const isLocalhost =
     location.hostname === "localhost" ||
     location.hostname === "127.0.0.1" ||
@@ -12,8 +12,8 @@
 
   window.addEventListener("load", () => {
     try {
-      // pwa.js est en: /js/core/pwa.js
-      // ../../sw.js => /sw.js relativo a la "raz del site publicado"
+      // pwa.js lives at: /js/core/pwa.js
+      // ../../sw.js => /sw.js relative to the published site root
       const scriptUrl = document.currentScript?.src;
       const swUrl = scriptUrl
         ? new URL("../../sw.js", scriptUrl).toString()

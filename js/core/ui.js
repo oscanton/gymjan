@@ -1,18 +1,18 @@
 /* =========================================
-   core/ui.js - UTILIDADES DE UI
+   core/ui.js - UI UTILITIES
    ========================================= */
 
 const UI = {
-    // Detectar si estamos en subdirectorio views/
+    // Detect if we are in the views/ subdirectory
     isInViews: () => window.location.pathname.includes('/views/'),
 
-    // Resolver ruta relativa desde la raz del proyecto
+    // Resolve relative path from the project root
     resolvePath: (path) => {
         const prefix = UI.isInViews() ? '../' : '';
         return prefix + path;
     },
 
-    // Cargar script dinmicamente (Promesa)
+    // Load script dynamically (Promise)
     loadScript: (path, id = null) => {
         return new Promise((resolve, reject) => {
             const resolvedPath = UI.resolvePath(path) + `?v=${Date.now()}`;
@@ -29,7 +29,7 @@ const UI = {
         });
     },
 
-    // Cargar dependencias con condicin
+    // Load dependencies with condition
     loadDependencies: (deps, { settled = false } = {}) => {
         const loads = (deps || []).filter(dep => {
             if (typeof dep.when === 'function') return dep.when();
@@ -85,7 +85,7 @@ const UI = {
             });
     },
 
-    // Renderizar mensaje de error en contenedor
+    // Render error message inside container
     showError: (container, message) => {
         container.innerHTML = `<div class="glass-card card"><p class="text-status--danger">${message}</p></div>`;
     },
@@ -169,6 +169,11 @@ const UI = {
         const numeric = Number.isFinite(value) ? value : 0;
         return numeric.toFixed(decimals).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
     },
+    formatInt: (value) => `${Math.round(Number.parseFloat(value) || 0)}`,
+    formatKcal: (value) => `${UI.formatInt(value)} kcal`,
+    formatMl: (value) => `${UI.formatInt(value)} ml`,
+    formatGrams: (value, decimals = 0) => `${UI.formatNumber(Number.parseFloat(value) || 0, decimals)} g`,
+    formatScore: (value, decimals = 1, max = 10) => `${UI.formatNumber(Number.parseFloat(value) || 0, decimals)}/${max}`,
     escapeHtml: (value) => String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -216,17 +221,6 @@ const UI = {
             && secPerRep >= 30;
     },
 
-    formatTrabajo: (item) => {
-        if (item && UI.isTimedItem(item)) {
-            const sets = Math.round(item.sets || 0);
-            const secPerRep = Math.round(item.secPerRep || 0);
-            if (sets > 1) return `&#9201;&#65039; ${sets} x ${secPerRep}s`;
-            const totalMin = secPerRep / 60;
-            if (Number.isFinite(totalMin)) return `&#9201;&#65039; ${UI.formatMinutes(totalMin)} min`;
-        }
-        if (item && item.sets && item.reps) return `&#128257; ${item.sets} x ${item.reps}`;
-        return '-';
-    },
 
     getExerciseTimeBreakdown: (item, ex, { routineTimes = null } = {}) => {
         if (!ex || !item) return { workMin: 0, restMin: 0, totalMin: 0 };

@@ -1,5 +1,5 @@
-﻿/* =========================================
-   pages/calculator.page.js - CALCULADORA
+/* =========================================
+   pages/calculator.page.js - CALCULATOR
    ========================================= */
 
 function renderCalculatorPage() {
@@ -62,6 +62,8 @@ function initCalculator(container) {
     const getUserMacroRatios = () => CoreBrowserDomain.getUserMacroRatios(targets, { formulas });
     const getSecondaryDefaults = () => CoreBrowserDomain.getSecondaryDefaults(targets);
     const getSecondaryAdjustments = () => CoreBrowserDomain.getSecondaryAdjustments(targets);
+    const getHydrationDefaults = () => CoreBrowserDomain.getHydrationDefaults(targets);
+    const getHydrationAdjustments = () => CoreBrowserDomain.getHydrationAdjustments(targets);
     const calcSecondaryTargetsForKcal = (kcal, defaults = null, adjustments = null) => (
         CoreBrowserDomain.calcSecondaryTargetsForKcal(targets, kcal, defaults, adjustments)
     );
@@ -95,7 +97,7 @@ function initCalculator(container) {
         (typeof ActivityStore !== 'undefined') ? ActivityStore.getActivePlanData() : null
     );
 
-    // 1. Cargar datos (o defaults)
+    // 1. Load data (or defaults)
     const userProfile = DB.get('user_profile', {
         sex: 'hombre', age: 30, height: 175, weight: 75
     });
@@ -104,7 +106,7 @@ function initCalculator(container) {
     const defaultStepsCfg = APP_STEPS_DEFAULTS;
     const weeklyPlan = getActivityPlan();
 
-    let adjustments = DB.get('user_adjustments', { kcal: 0, p: 0, c: 0, f: 0 });
+    let adjustments = DB.get('user_adjustments', { kcal: 0, p: 0, c: 0, f: 0, hydration: 0 });
     const defaultSecondaryTargets = getSecondaryDefaults();
     let secondaryAdjustments = DB.get('user_secondary_adjustments', {
         saltMaxG: 0,
@@ -113,10 +115,11 @@ function initCalculator(container) {
         satFatMaxPctKcal: 0,
         processingMaxScore: 0
     });
+    const hydrationDefaults = getHydrationDefaults();
     const defaultMacroRatios = getDefaultMacroRatios();
     let macroRatios = getUserMacroRatios();
 
-    // --- SECCIÓN: DATOS PERSONALES ---
+    // --- SECTION: PERSONAL DATA ---
     const profileCard = document.createElement('div');
     profileCard.className = 'glass-card card';
     profileCard.innerHTML = `
@@ -145,12 +148,12 @@ function initCalculator(container) {
     `;
     container.appendChild(profileCard);
 
-    // --- SECCIÓN: RESULTADOS BASE ---
+    // --- SECTION: BASE RESULTS ---
     const baseResultsCard = document.createElement('div');
     baseResultsCard.className = 'glass-card card mt-lg';
     container.appendChild(baseResultsCard);
 
-    // --- SECCIÓN: AJUSTES GENERALES ---
+    // --- SECTION: GENERAL ADJUSTMENTS ---
     const adjustmentsCard = document.createElement('div');
     adjustmentsCard.className = 'glass-card card mt-lg';
     const generateOpts = (val) => {
@@ -162,6 +165,12 @@ function initCalculator(container) {
     };
 
     const formatRuleValue = (value, decimals = 1) => UI.formatNumber(value, decimals);
+    const formatHydrationRange = (minMl, maxMl) => {
+        if (!Number.isFinite(minMl) || !Number.isFinite(maxMl)) return '-';
+        const minL = minMl / 1000;
+        const maxL = maxMl / 1000;
+        return `${formatRuleValue(minL, 1)}-${formatRuleValue(maxL, 1)} L`;
+    };
     const formatMacroPct = (ratio) => {
         const safe = Number.isFinite(ratio) ? ratio : 0;
         return Math.round(safe * 100);
@@ -174,12 +183,18 @@ function initCalculator(container) {
     let restMacroRatios = getRestMacroRatios();
     const GRAM_KEYS = new Set(['p', 'c', 'f', 'saturatedFat', 'fiber', 'sugar']);
     const formatMetricValue = (key, value) => {
+        if (key === 'hydration') {
+            if (value && typeof value === 'object') {
+                return formatHydrationRange(value.min, value.max);
+            }
+            return '-';
+        }
         const safe = Number.isFinite(value) ? value : 0;
-        if (key === 'kcal') return `${Math.round(safe)} kcal`;
-        if (GRAM_KEYS.has(key)) return `${Math.round(safe)} g`;
-        if (key === 'salt') return `${formatRuleValue(safe, 2)} g`;
-        if (key === 'processing') return `${formatRuleValue(safe, 1)} /10`;
-        return `${formatRuleValue(safe, 1)} g`;
+        if (key === 'kcal') return UI.formatKcal(safe);
+        if (GRAM_KEYS.has(key)) return UI.formatGrams(safe, 0);
+        if (key === 'salt') return UI.formatGrams(safe, 2);
+        if (key === 'processing') return UI.formatScore(safe, 1, 10);
+        return UI.formatGrams(safe, 1);
     };
     const renderMetricPill = (key, icon, value) => `
         <div class="stats-pills">
@@ -191,10 +206,19 @@ function initCalculator(container) {
         { key: 'c', icon: '🍞', label: 'Carbohidratos', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.c * 100, 1)}% de kcal (g = (kcal x %)/4)`, description: getObjectiveDescription('c'), adjustmentSource: 'macro', adjustmentKey: 'c' },
         { key: 'f', icon: '🥑', label: 'Grasas', rule: () => `Objetivo: ${formatRuleValue(restMacroRatios.f * 100, 1)}% de kcal (g = (kcal x %)/9)`, description: getObjectiveDescription('f'), adjustmentSource: 'macro', adjustmentKey: 'f' },
         {
+            key: 'hydration',
+            icon: '💧',
+            label: 'Hidratación',
+            rule: () => `Objetivo: ${formatRuleValue(hydrationDefaults.minMlPerKg, 0)}-${formatRuleValue(hydrationDefaults.maxMlPerKg, 0)} ml/kg (+${formatRuleValue(hydrationDefaults.activityMlPerMin, 0)} ml/min actividad)`,
+            description: getObjectiveDescription('hydration'),
+            adjustmentSource: 'macro',
+            adjustmentKey: 'hydration'
+        },
+        {
             key: 'salt',
             icon: '🧂',
             label: 'Sal',
-            rule: () => `Máx: ${formatRuleValue(defaultSecondaryTargets.saltMaxG, 2)}g / día`,
+            rule: () => `Máx: ${UI.formatGrams(defaultSecondaryTargets.saltMaxG, 2)} / día`,
             description: getObjectiveDescription('salt'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'saltMaxG'
@@ -203,7 +227,7 @@ function initCalculator(container) {
             key: 'fiber',
             icon: '🌾',
             label: 'Fibra',
-            rule: () => `Mín: ${formatRuleValue(defaultSecondaryTargets.fiberPer1000Kcal, 1)}g / 1000 kcal`,
+            rule: () => `Mín: ${UI.formatGrams(defaultSecondaryTargets.fiberPer1000Kcal, 1)} / 1000 kcal`,
             description: getObjectiveDescription('fiber'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'fiberPer1000Kcal'
@@ -230,7 +254,7 @@ function initCalculator(container) {
             key: 'processing',
             icon: '🏭',
             label: 'Procesado',
-            rule: () => `Máximo: ${formatRuleValue(defaultSecondaryTargets.processingMaxScore, 1)}/10`,
+            rule: () => `Máximo: ${UI.formatScore(defaultSecondaryTargets.processingMaxScore, 1, 10)}`,
             description: getObjectiveDescription('processing'),
             adjustmentSource: 'secondary',
             adjustmentKey: 'processingMaxScore'
@@ -245,6 +269,7 @@ function initCalculator(container) {
         p: 'p',
         c: 'c',
         f: 'f',
+        hydration: 'hydration',
         salt: 'salt',
         fiber: 'fiber',
         sugar: 'sugar',
@@ -294,7 +319,7 @@ function initCalculator(container) {
     `;
     container.appendChild(adjustmentsCard);
 
-    // --- SECCIÓN: OBJETIVOS SEMANALES ---
+    // --- SECTION: WEEKLY TARGETS ---
     const weeklyGoalsCard = document.createElement('div');
     weeklyGoalsCard.className = 'glass-card card mt-lg';
     weeklyGoalsCard.innerHTML = `
@@ -408,12 +433,18 @@ function initCalculator(container) {
         const objectiveSecondary = (typeof calcSecondaryTargetsForKcal === 'function')
             ? calcSecondaryTargetsForKcal(objectiveVals.kcal, defaultSecondaryTargets, secondaryAdjustments)
             : baseSecondary;
+        const hydrationBase = targets.getHydrationBaseTargets(userProfile, hydrationDefaults, { hydration: 0 });
+        const hydrationAdjusted = targets.getHydrationBaseTargets(userProfile, hydrationDefaults, { hydration: adjustments.hydration || 0 });
 
         const rawValues = {
             kcal: { base: baseKcal, adjusted: objectiveVals.kcal },
             p: { base: baseVals.p, adjusted: objectiveVals.p },
             c: { base: baseVals.c, adjusted: objectiveVals.c },
             f: { base: baseVals.f, adjusted: objectiveVals.f },
+            hydration: {
+                base: hydrationBase ? { min: hydrationBase.min, max: hydrationBase.max } : null,
+                adjusted: hydrationAdjusted ? { min: hydrationAdjusted.min, max: hydrationAdjusted.max } : null
+            },
             salt: { base: baseSecondary.salt, adjusted: objectiveSecondary.salt },
             fiber: { base: baseSecondary.fiber, adjusted: objectiveSecondary.fiber },
             sugar: { base: baseSecondary.sugar, adjusted: objectiveSecondary.sugar },
@@ -482,6 +513,9 @@ function initCalculator(container) {
             };
         };
         const formatGoalCell = (row, dayData) => {
+            if (row.key === 'hydration') {
+                return renderMetricPill(row.key, row.icon, formatHydrationRange(dayData.hydrationMin, dayData.hydrationMax));
+            }
             const dayMetricValue = dayData[DAY_METRIC_KEY[row.key]];
             return renderMetricPill(row.key, row.icon, formatMetricValue(row.key, dayMetricValue));
         };
@@ -512,7 +546,9 @@ function initCalculator(container) {
                 kcal: Number.isFinite(parseFloat(rawDayVals.kcal)) ? Math.round(parseFloat(rawDayVals.kcal)) : 0,
                 p: Number.isFinite(parseFloat(rawDayVals.p)) ? Math.round(parseFloat(rawDayVals.p)) : Math.round(parseFloat(rawDayVals.protein) || 0),
                 c: Number.isFinite(parseFloat(rawDayVals.c)) ? Math.round(parseFloat(rawDayVals.c)) : Math.round(parseFloat(rawDayVals.carbs) || 0),
-                f: Number.isFinite(parseFloat(rawDayVals.f)) ? Math.round(parseFloat(rawDayVals.f)) : Math.round(parseFloat(rawDayVals.fat) || 0)
+                f: Number.isFinite(parseFloat(rawDayVals.f)) ? Math.round(parseFloat(rawDayVals.f)) : Math.round(parseFloat(rawDayVals.fat) || 0),
+                hydrationMin: Number.isFinite(parseFloat(rawDayVals.hydrationMin)) ? Math.round(parseFloat(rawDayVals.hydrationMin)) : 0,
+                hydrationMax: Number.isFinite(parseFloat(rawDayVals.hydrationMax)) ? Math.round(parseFloat(rawDayVals.hydrationMax)) : 0
             };
             const secondaryVals = (dailyTargets[day] && Number.isFinite(parseFloat(dailyTargets[day].salt)))
                 ? normalizeSecondary(dailyTargets[day])

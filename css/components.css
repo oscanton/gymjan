@@ -1,8 +1,8 @@
 /* =========================================
-   components.css - UI KIT & MÓDULOS
+   components.css - UI KIT & MODULES
    ========================================= */
 
-/* --- 1. BASES & UTILIDADES DE UI --- */
+/* --- 1. UI BASES & UTILITIES --- */
 
 /* --- 1. BASE CONTAINERS (GLASSMORPHISM) --- */
 .card {
@@ -10,7 +10,7 @@
     text-align: center;
 }
 
-/* Panel: Sub-tarjeta para datos (Reemplaza a mini-card) */
+/* Panel: Sub-card for data (Replaces mini-card) */
 .card-panel {
     background: var(--glass-dark);
     border: 1px solid var(--border-faint);
@@ -291,7 +291,7 @@ input[type=number]::-webkit-outer-spin-button {
     background: var(--glass-dark);
     border-radius: var(--ui-radius-md);
     margin-bottom: var(--space-lg);
-    position: relative; /* Para el botón de edición */
+    position: relative; /* For the edit button */
     width: 100%;
 }
 
@@ -362,7 +362,8 @@ input[type=number]::-webkit-outer-spin-button {
 .menu-table .menu-row-header.text-status--ok,
 .menu-table th.text-status--ok,
 .activity-table .activity-row-header.text-status--ok,
-.activity-table th.text-status--ok { font-weight: bold; }
+.activity-table th.text-status--ok,
+.goals-table th.text-status--ok { font-weight: bold; }
 
 .menu-table th,
 .activity-table th {
@@ -381,9 +382,11 @@ input[type=number]::-webkit-outer-spin-button {
 .menu-header-empty { padding: var(--space-xs); }
 
 .menu-table td:nth-child(even),
-.activity-table td:nth-child(even) { background: var(--glass-faint); }
+.activity-table td:nth-child(even),
+.goals-table td:nth-child(even) { background: var(--glass-faint); }
 .menu-table tbody tr:last-child td,
-.activity-table tbody tr:last-child td { border-bottom: none; }
+.activity-table tbody tr:last-child td,
+.goals-table tbody tr:last-child td,
 
 /* Shared modal triggers (clickable labels with subtle underline + hover highlight) */
 .modal-trigger {
@@ -514,7 +517,8 @@ input[type=number]::-webkit-outer-spin-button {
     font-style: italic;
 }
 
-.activity-training__title {
+.activity-training__title,
+.activity-exercise__name {
     font-size: var(--font-size-md);
     font-weight: 600;
 }
@@ -534,10 +538,6 @@ input[type=number]::-webkit-outer-spin-button {
     gap: 6px;
 }
 
-.activity-exercise__name {
-    font-size: var(--font-size-md);
-    font-weight: 600;
-}
 .activity-exercise__name-row {
     display: flex;
     align-items: center;
@@ -623,20 +623,30 @@ input[type=number]::-webkit-outer-spin-button {
     color: var(--color-primary);
     border: 1px solid rgba(var(--color-primary-rgb), 0.3);
 }
-
-.stat-pill--nutritional-score {
-    background: var(--surface-black-30);
-    border: 1px solid var(--border-light);
+.stat-pill--hydration {
+    background: rgba(90, 185, 255, 0.18);
+    border: 1px solid rgba(90, 185, 255, 0.35);
+    color: #8ad2ff;
 }
-.nutritional-score-info-trigger { margin-top: 8px; }
-.nutritional-score-modal-score-pill { text-align: center; justify-content: center; display: inline-flex; }
+.stat-pill--kcal .text-status--ok,
+.stat-pill--kcal .text-status--warning,
+.stat-pill--kcal .text-status--danger,
+.stat-pill--hydration .text-status--ok,
+.stat-pill--hydration .text-status--warning,
+.stat-pill--hydration .text-status--danger {
+    font-weight: inherit;
+}
 
+.stat-pill--nutritional-score,
 .stat-pill--activity-score {
     background: var(--surface-black-30);
     border: 1px solid var(--border-light);
 }
+.nutritional-score-info-trigger,
 .activity-score-info-trigger { margin-top: 8px; }
+.nutritional-score-modal-score-pill,
 .activity-score-modal-score-pill { text-align: center; justify-content: center; display: inline-flex; }
+
 .pill-trigger {
     border: none;
     cursor: pointer;
@@ -759,9 +769,6 @@ input[type=number]::-webkit-outer-spin-button {
     letter-spacing: 0.3px;
 }
 
-.goals-table td:nth-child(even) { background: var(--glass-faint); }
-.goals-table tbody tr:last-child td { border-bottom: none; }
-.goals-table th.text-status--ok { font-weight: bold; }
 .goals-table__cell .stats-pills { justify-content: flex-start; }
 
 .macro-inputs {

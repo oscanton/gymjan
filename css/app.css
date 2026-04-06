@@ -3,17 +3,17 @@
    ========================================= */
 
 :root {
-    /* --- 1. Paleta Base --- */
+    /* --- 1. Base Palette --- */
     --color-surface-base: #0f2027;
     --color-surface-strong: #203a43;
     --color-surface-deep: #2c5364;
     --color-bg-gradient: linear-gradient(180deg, var(--color-surface-base), var(--color-surface-strong), var(--color-surface-deep));
-    --color-bg-sticky: var(--color-surface-strong); /* Fondo sólido para elementos fijos */
+    --color-bg-sticky: var(--color-surface-strong); /* Solid background for sticky elements */
     --color-text-main:   #ffffff;
     --color-text-muted:  rgba(255, 255, 255, 0.7);
-    --color-text-inverse: #1a1a1a; /* Texto oscuro sobre colores brillantes */
+    --color-text-inverse: #1a1a1a; /* Dark text on bright colors */
     
-    /* --- 2. Colores de Acento --- */
+    /* --- 2. Accent Colors --- */
     --color-primary-rgb: 255, 209, 102; /* #ffd166 */
     --color-primary:     rgb(var(--color-primary-rgb));
 
@@ -32,14 +32,14 @@
     --color-critical-rgb: 183, 28, 28;  /* #b71c1c */
     --color-critical:     rgb(var(--color-critical-rgb));
 
-    /* --- 3. UI: Fondos Glassmorphism --- */
-    /* Usamos niveles de opacidad para jerarquía */
-    --glass-light: rgba(255, 255, 255, 0.1);  /* Contenedores principales */
-    --glass-medium: rgba(255, 255, 255, 0.06); /* Celdas impares */
-    --glass-dark:  rgba(0, 0, 0, 0.25);       /* Fondos oscuros/contrastes */
-    --glass-faint: rgba(255, 255, 255, 0.03); /* Fondos muy sutiles */
+    /* --- 3. UI: Glassmorphism Backgrounds --- */
+    /* Opacity levels create hierarchy */
+    --glass-light: rgba(255, 255, 255, 0.1);  /* Main containers */
+    --glass-medium: rgba(255, 255, 255, 0.06); /* Odd cells */
+    --glass-dark:  rgba(0, 0, 0, 0.25);       /* Dark backgrounds/contrast */
+    --glass-faint: rgba(255, 255, 255, 0.03); /* Very subtle backgrounds */
 
-    /* Bordes */
+    /* Borders */
     --border-light: rgba(255, 255, 255, 0.1);
     --border-faint: rgba(255, 255, 255, 0.05);
     --surface-white-10: rgba(255, 255, 255, 0.1);
@@ -54,7 +54,7 @@
     --surface-black-50: rgba(0, 0, 0, 0.5);
     --overlay-backdrop: rgba(0, 0, 0, 0.6);
     
-    /* --- 4. UI: Elementos Semánticos --- */
+    /* --- 4. UI: Semantic Elements --- */
     --ui-radius-lg: 18px;
     --ui-radius-md: 14px;
     --ui-radius-sm: 10px;
@@ -74,10 +74,10 @@
     --ui-control-height: 31px;
     --ui-index-width: 520px;
     
-    /* Highlight para filas activas o botones principales */
+    /* Highlight for active rows or primary buttons */
     --ui-highlight-gradient: linear-gradient(135deg, var(--color-primary), var(--color-danger));
 
-    /* --- 5. Espaciado --- */
+    /* --- 5. Spacing --- */
     --space-xs: 6px;
     --space-sm: 8px;
     --space-md: 12px;
@@ -85,7 +85,7 @@
     --space-xl: 24px;
     --page-gap: var(--space-lg);
 
-    /* --- 6. Tipografía --- */
+    /* --- 6. Typography --- */
     --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
     --font-size-2xs: 0.7rem;
     --font-size-caption: 0.8rem;
@@ -100,7 +100,7 @@
     --font-size-h1: 1.6rem;
     --line-height-tight: 1.2;
 
-    /* --- 7. Layout scales --- */
+    /* --- 7. Layout Scales --- */
     --table-min-width-sm: 260px;
     --table-min-width-md: 340px;
     --table-min-width-lg: 600px;
@@ -114,7 +114,7 @@
 
 * {
     box-sizing: border-box;
-    /* Mejora el tap highlight en móviles */
+    /* Improves tap highlight on mobile */
     -webkit-tap-highlight-color: transparent; 
 }
 
@@ -125,15 +125,15 @@ body {
     
     font-family: var(--font-stack);
     background: var(--color-bg-gradient);
-    background-attachment: fixed; /* Evita que el fondo se mueva al hacer scroll */
+    background-attachment: fixed; /* Prevents background from moving on scroll */
     color: var(--color-text-main);
     
-    /* Comportamiento PWA nativo */
+    /* Native PWA behavior */
     overscroll-behavior-y: none;
     -webkit-font-smoothing: antialiased;
 }
 
-/* Utilidades Globales */
+/* Global Utilities */
 .text-center { text-align: center; }
 .w-100 { width: 100%; }
 .w-auto { width: auto; }
@@ -157,7 +157,7 @@ body {
 }
 
 /* =========================================
-   TIPOGRAFÍA GLOBAL
+   GLOBAL TYPOGRAPHY
    ========================================= */
 
 h1 {
@@ -186,7 +186,7 @@ h2 {
     letter-spacing: 0.5px;
 }
 
-/* Clases de Tipografía Estándar */
+/* Standard Typography Classes */
 .text-label {
     font-size: var(--font-size-xs);
     text-transform: uppercase;
@@ -212,7 +212,7 @@ h2 {
 .text-status--warning { color: var(--color-warning); font-weight: bold; }
 .text-status--danger { color: var(--color-danger); font-weight: bold; }
 
-/* Utilidades de Color (Movidas desde components.css) */
+/* Color Utilities (Moved from components.css) */
 .color-blue { color: var(--color-info); }
 .color-success { color: var(--color-success); }
 .color-warning { color: var(--color-warning); }
@@ -223,7 +223,7 @@ h2 {
    LAYOUT UTILS
    ========================================= */
 
-/* Para centrar contenido (usado en index.html) */
+/* Center content (used in index.html) */
 .layout-center {
     display: flex;
     flex-direction: column;
@@ -232,7 +232,7 @@ h2 {
     min-height: 100vh;
 }
 
-/* Contenedor principal para las vistas */
+/* Main container for views */
 .layout-container {
     max-width: 600px;
     margin: 0 auto;
@@ -248,7 +248,8 @@ h2 {
 }
 
 .page-header h1 { margin: 0; }
-.page-header--with-close h1 {
+.page-header--with-close h1,
+.page-header--with-menu h1 {
     text-align: center;
     margin: 0 auto;
 }
@@ -259,11 +260,6 @@ h2 {
     align-items: center;
     justify-content: center;
     position: relative;
-}
-
-.page-header--with-menu h1 {
-    text-align: center;
-    margin: 0 auto;
 }
 
 .page-menu-trigger {
@@ -349,16 +345,14 @@ h2 {
 @media (min-width: 700px) {
     body { padding: var(--space-md); }
     .page-header { padding: var(--space-xl); }
-    .page-menu-trigger { left: 5px; }
 }
 
 @media (min-width: 1100px) {
     body { padding: var(--space-lg); }
     :root { --page-gap: var(--space-xl); }
-    .page-menu-trigger { left: 5px; }
 }
 
-/* Stack vertical con separación (usado en actividad.html) */
+/* Vertical stack with spacing (used in actividad.html) */
 .stack-vertical {
     display: flex;
     flex-direction: column;

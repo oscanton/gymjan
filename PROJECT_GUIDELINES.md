@@ -34,6 +34,7 @@
 ## Comments
 - Add comments when needed.
 - Avoid over-commenting.
+- All code comments must be in English across `.js`, `.html`, and `.css`.
 
 ## Naming & Language
 - Use English for variables, functions, data, file names, and code identifiers.

@@ -1,6 +1,6 @@
-﻿
+
 /* =========================================
-   pages/activity.page.js - ACTIVIDAD SEMANAL
+   pages/activity.page.js - WEEKLY ACTIVITY
    ========================================= */
 
 function renderActivityPage() {

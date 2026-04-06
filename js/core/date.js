@@ -1,5 +1,5 @@
 /* =========================================
-   core/date.js - UTILIDADES DE FECHAS
+   core/date.js - DATE UTILITIES
    ========================================= */
 
 const DateUtils = {
@@ -10,7 +10,7 @@ const DateUtils = {
         return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
     },
 
-    // Lunes=0 ... Domingo=6
+    // Monday=0 ... Sunday=6
     getTodayIndex: (date = new Date()) => (date.getDay() + 6) % 7,
 
     toShortDate: (isoDate = '') => {

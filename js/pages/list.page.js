@@ -1,5 +1,5 @@
-﻿/* =========================================
-   pages/list.page.js - LISTA DE LA COMPRA
+/* =========================================
+   pages/list.page.js - SHOPPING LIST
    ========================================= */
 
 function renderShoppingListPage() {
@@ -51,21 +51,28 @@ function renderShoppingListPage() {
         .catch((file) => UI.showError(container, `Error cargando ${file}`));
 }
 
-const LIST_CATEGORY_ORDER = [
-    "ðŸ¥” Verduras y hortalizas",
-    "ðŸŽ Fruta",
-    "ðŸ¥© ProteÃ­nas",
-    "ðŸ¥› LÃ¡cteos",
-    "ðŸš Cereales, legumbres y tubÃ©rculos",
-    "ðŸ¥‘ Grasas, frutos secos y semillas",
-    "ðŸ§‚ Condimentos y especias",
-    "ðŸ« Dulces y chocolates",
-    "â˜• Bebidas",
-    "ðŸ“¦ Otros / Procesados",
-    "ðŸ’Š Suplementos"
-];
+const LIST_CATEGORY_ORDER = (typeof FOOD_CATEGORY_ORDER !== 'undefined'
+    && Array.isArray(FOOD_CATEGORY_ORDER)
+    && FOOD_CATEGORY_ORDER.length)
+    ? FOOD_CATEGORY_ORDER
+    : [
+        "🥔 Vegetables",
+        "🍎 Fruit",
+        "🥩 Proteins",
+        "🥛 Dairy",
+        "🌾 Grains, legumes and tubers",
+        "🥑 Fats, nuts and seeds",
+        "🧂 Condiments and spices",
+        "🍫 Sweets and chocolate",
+        "☕ Drinks",
+        "📦 Other / Processed",
+        "💊 Supplements"
+    ];
 
-const LIST_FALLBACK_CATEGORY = "ðŸ“¦ Otros / Procesados";
+const LIST_FALLBACK_CATEGORY = (typeof FOOD_FALLBACK_CATEGORY !== 'undefined'
+    && FOOD_FALLBACK_CATEGORY)
+    ? FOOD_FALLBACK_CATEGORY
+    : "📦 Other / Processed";
 
 function normalizeShoppingAmount(amount, unit, formatNumber) {
     let displayAmount = amount;
@@ -84,7 +91,7 @@ function normalizeShoppingAmount(amount, unit, formatNumber) {
 
 function calculateAndRenderList(container, formulas) {
     if (typeof MENU_DATA === 'undefined' || typeof FOODS === 'undefined' || !formulas) {
-        container.innerHTML = `<div class="glass-card card"><p>Faltan datos (MenÃº o Alimentos).</p></div>`;
+        container.innerHTML = `<div class="glass-card card"><p>Faltan datos (Menú o Alimentos).</p></div>`;
         return;
     }
 
@@ -173,7 +180,7 @@ function calculateAndRenderList(container, formulas) {
     if (!hasItems) {
         const empty = document.createElement('div');
         empty.className = 'glass-card card';
-        empty.innerHTML = '<p>Lista vacÃ­a.</p>';
+        empty.innerHTML = '<p>Lista vacía.</p>';
         container.appendChild(empty);
     }
 

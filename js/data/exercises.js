@@ -1,5 +1,5 @@
-﻿/* =========================================
-   data/exercises.js - DATOS
+/* =========================================
+   data/exercises.js - DATA
    ========================================= */
 
 // Conventions:
@@ -7,12 +7,12 @@
 // - focus: tren_superior | tren_inferior | core | full_body | movilidad | recuperacion
 // - met: approximate METs (kcal = MET * weightKg * timeMin / 60)
 //   timeMin is derived from sets x reps x secPerRep.
-// - restSec: descanso entre series para el ejercicio (se aplica en la rutina).
+// - restSec: rest between sets for the exercise (applied in the routine).
 // - For timed exercises: sets=1, reps=1, secPerRep=total_seconds.
 
 const EXERCISES = {
   /* =========================
-     FUERZA - TREN SUPERIOR
+     STRENGTH - UPPER BODY
      ========================= */
   flexiones: {
     id: "flexiones",
@@ -211,7 +211,7 @@ const EXERCISES = {
   },
 
   /* =========================
-     FUERZA - TREN INFERIOR
+     STRENGTH - LOWER BODY
      ========================= */
   sentadilla: {
     id: "sentadilla",
@@ -332,7 +332,7 @@ const EXERCISES = {
   },
 
   /* =========================
-     FUERZA - CORE
+     STRENGTH - CORE
      ========================= */
   plancha: {
     id: "plancha",
@@ -401,7 +401,7 @@ const EXERCISES = {
   },
 
   /* =========================
-     FUERZA - FULL BODY
+     STRENGTH - FULL BODY
      ========================= */
   burpees: {
     id: "burpees",
@@ -539,7 +539,7 @@ const EXERCISES = {
   },
 
   /* =========================
-     CARDIO - TREN INFERIOR
+     CARDIO - LOWER BODY
      ========================= */
   bicicleta_carretera: {
     id: "bicicleta_carretera",
@@ -634,7 +634,7 @@ const EXERCISES = {
   },
 
   /* =========================
-     CARDIO - TREN SUPERIOR
+     CARDIO - UPPER BODY
      ========================= */
   remo_ergometro: {
     id: "remo_ergometro",
@@ -677,7 +677,7 @@ const EXERCISES = {
   },
 
   /* =========================
-     CARDIO - MOVILIDAD / RECUPERACION
+     CARDIO - MOBILITY / RECOVERY
      ========================= */
   estiramientos: {
     id: "estiramientos",

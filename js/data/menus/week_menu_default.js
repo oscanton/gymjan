@@ -1,14 +1,20 @@
 /* =========================================
-   data/menus/week_menu_default.js - DATOS
+   data/menus/week_menu_default.js - DATA
    ========================================= */
 
-// --- 3. PLAN: MENUS SEMANAL ---
+// --- 3. PLAN: WEEKLY MENUS ---
 window.MENU_DATA = [
     {
         day: "Lunes",
+        hydration: {
+            items: [
+                { foodId: "water", amount: 1500 }
+            ],
+            description: "Hidratacion directa necesaria durante todo el dia"
+        },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 1 },
+                { foodId: "coffee", amount: 200 },
                 { foodId: "plain_yogurt", amount: 195 },
                 { foodId: "oats", amount: 35 },
                 { foodId: "berries", amount: 105 },
@@ -41,9 +47,15 @@ window.MENU_DATA = [
     },
     {
         day: "Martes",
+        hydration: {
+            items: [
+                { foodId: "water", amount: 1500 }
+            ],
+            description: "Hidratacion directa necesaria durante todo el dia"
+        },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 1 },
+                { foodId: "coffee", amount: 200 },
                 { foodId: "wholegrain_bread", amount: 40 },
                 { foodId: "tomato", amount: 115 },
                 { foodId: "olive_oil", amount: 10 },
@@ -78,9 +90,15 @@ window.MENU_DATA = [
     },
     {
         day: "Miércoles",
+        hydration: {
+            items: [
+                { foodId: "water", amount: 1500 }
+            ],
+            description: "Hidratacion directa necesaria durante todo el dia"
+        },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 1 },
+                { foodId: "coffee", amount: 200 },
                 { foodId: "greek_yogurt", amount: 125 },
                 { foodId: "banana", amount: 110 },
                 { foodId: "mixed_nuts", amount: 10 },
@@ -112,9 +130,15 @@ window.MENU_DATA = [
     },
     {
         day: "Jueves",
+        hydration: {
+            items: [
+                { foodId: "water", amount: 1500 }
+            ],
+            description: "Hidratacion directa necesaria durante todo el dia"
+        },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 1 },
+                { foodId: "coffee", amount: 200 },
                 { foodId: "kefir", amount: 245 },
                 { foodId: "oats", amount: 35 },
                 { foodId: "apple", amount: 80 },
@@ -146,9 +170,15 @@ window.MENU_DATA = [
     },
     {
         day: "Viernes",
+        hydration: {
+            items: [
+                { foodId: "water", amount: 1500 }
+            ],
+            description: "Hidratacion directa necesaria durante todo el dia"
+        },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 1 },
+                { foodId: "coffee", amount: 200 },
                 { foodId: "wholegrain_bread", amount: 65 },
                 { foodId: "avocado", amount: 65 },
                 { foodId: "egg", amount: 1 },
@@ -181,9 +211,15 @@ window.MENU_DATA = [
     },
     {
         day: "Sábado",
+        hydration: {
+            items: [
+                { foodId: "water", amount: 1500 }
+            ],
+            description: "Hidratacion directa necesaria durante todo el dia"
+        },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 1 },
+                { foodId: "coffee", amount: 200 },
                 { foodId: "plain_yogurt", amount: 155 },
                 { foodId: "rye_bread", amount: 65 },
                 { foodId: "fruit", amount: 80 },
@@ -215,9 +251,15 @@ window.MENU_DATA = [
     },
     {
         day: "Domingo",
+        hydration: {
+            items: [
+                { foodId: "water", amount: 1500 }
+            ],
+            description: "Hidratacion directa necesaria durante todo el dia"
+        },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 1 },
+                { foodId: "coffee", amount: 200 },
                 { foodId: "wholegrain_sandwich_bread", amount: 65 },
                 { foodId: "cheese_fresh", amount: 165 },
                 { foodId: "tomato", amount: 105 },

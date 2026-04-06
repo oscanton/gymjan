@@ -4,15 +4,16 @@
 
 const TargetsEngine = (() => {
     const getObjectiveDescriptions = () => ({
-        kcal: 'Define la energÃ­a diaria total. Un exceso sostenido puede favorecer ganancia de grasa; un dÃ©ficit excesivo puede reducir rendimiento y recuperaciÃ³n.',
-        p: 'La proteÃ­na ayuda a conservar y construir masa muscular, y mejora la saciedad. Un aporte bajo sostenido puede limitar recuperaciÃ³n y mantenimiento muscular.',
-        c: 'Los carbohidratos son el combustible principal para entrenar y recuperar glucÃ³geno. Un aporte muy bajo puede reducir energÃ­a, rendimiento e intensidad.',
-        f: 'Las grasas son clave para funciÃ³n hormonal, absorciÃ³n de vitaminas y salud celular. Un aporte muy bajo puede afectar hormonas y bienestar general.',
-        salt: 'Controla el sodio total aproximado (expresado como sal). Un exceso mantenido puede empeorar retenciÃ³n de lÃ­quidos y tensiÃ³n arterial en personas sensibles.',
-        fiber: 'La fibra mejora salud digestiva, saciedad y control glucÃ©mico. Un aporte bajo suele empeorar trÃ¡nsito intestinal y calidad global de la dieta.',
-        sugar: 'Limita azÃºcares libres para mejorar calidad nutricional y estabilidad energÃ©tica. Regla base: mÃ¡ximo % de kcal y conversiÃ³n a gramos con (kcal x %)/4. Un exceso sostenido facilita picos de apetito y desplazamiento de alimentos de calidad.',
-        saturatedFat: 'Limita grasas saturadas para proteger perfil lipÃ­dico y salud cardiovascular. Un exceso habitual puede empeorar marcadores cardiometabÃ³licos.',
-        processing: 'Refleja el grado medio de procesado de la dieta. Cuanto mÃ¡s alto, mayor riesgo de baja densidad nutricional y peor adherencia a largo plazo.'
+        kcal: 'Define la energía diaria total. Un exceso sostenido puede favorecer ganancia de grasa; un déficit excesivo puede reducir rendimiento y recuperación.',
+        p: 'La proteína ayuda a conservar y construir masa muscular, y mejora la saciedad. Un aporte bajo sostenido puede limitar recuperación y mantenimiento muscular.',
+        c: 'Los carbohidratos son el combustible principal para entrenar y recuperar glucógeno. Un aporte muy bajo puede reducir energía, rendimiento e intensidad.',
+        f: 'Las grasas son clave para función hormonal, absorción de vitaminas y salud celular. Un aporte muy bajo puede afectar hormonas y bienestar general.',
+        salt: 'Controla el sodio total aproximado (expresado como sal). Un exceso mantenido puede empeorar retención de líquidos y tensión arterial en personas sensibles.',
+        fiber: 'La fibra mejora salud digestiva, saciedad y control glucémico. Un aporte bajo suele empeorar tránsito intestinal y calidad global de la dieta.',
+        sugar: 'Limita azúcares libres para mejorar calidad nutricional y estabilidad energética. Regla base: máximo % de kcal y conversión a gramos con (kcal x %)/4. Un exceso sostenido facilita picos de apetito y desplazamiento de alimentos de calidad.',
+        saturatedFat: 'Limita grasas saturadas para proteger perfil lipídico y salud cardiovascular. Un exceso habitual puede empeorar marcadores cardiometabólicos.',
+        processing: 'Refleja el grado medio de procesado de la dieta. Cuanto más alto, mayor riesgo de baja densidad nutricional y peor adherencia a largo plazo.',
+        hydration: 'Define la hidratacion diaria base segun peso (30-35 ml/kg) y el extra por actividad (ml/min).'
     });
 
     const getObjectiveDescription = (key) => {
@@ -58,6 +59,46 @@ const TargetsEngine = (() => {
             sugarMaxPctKcal: num(saved && saved.sugarMaxPctKcal),
             satFatMaxPctKcal: num(saved && saved.satFatMaxPctKcal),
             processingMaxScore: num(saved && saved.processingMaxScore)
+        };
+    };
+
+    const getHydrationDefaults = (hydrationDefaults, savedRules, legacyTargets) => {
+        const defaults = hydrationDefaults || { minMlPerKg: 30, maxMlPerKg: 35, activityMlPerMin: 10 };
+        const source = savedRules || legacyTargets || {};
+        const num = (value, fallback) => {
+            const parsed = parseFloat(value);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+        };
+        return {
+            minMlPerKg: num(source.minMlPerKg, defaults.minMlPerKg),
+            maxMlPerKg: num(source.maxMlPerKg, defaults.maxMlPerKg),
+            activityMlPerMin: num(source.activityMlPerMin, defaults.activityMlPerMin)
+        };
+    };
+
+    const getHydrationAdjustments = (saved) => {
+        const num = (value) => {
+            const parsed = parseFloat(value);
+            return Number.isFinite(parsed) ? parsed : 0;
+        };
+        return {
+            hydration: num(saved && saved.hydration)
+        };
+    };
+
+    const getHydrationBaseTargets = (profile, defaults = null, adjustments = null) => {
+        const cfg = defaults || getHydrationDefaults(null, null, null);
+        const adj = adjustments || getHydrationAdjustments(null);
+        const weight = parseFloat(profile && profile.weight);
+        if (!Number.isFinite(weight) || weight <= 0) return null;
+        const baseMin = weight * cfg.minMlPerKg;
+        const baseMax = weight * cfg.maxMlPerKg;
+        const factor = 1 + (Number.isFinite(adj.hydration) ? adj.hydration : 0);
+        return {
+            baseMin,
+            baseMax,
+            min: baseMin * factor,
+            max: baseMax * factor
         };
     };
 
@@ -126,10 +167,13 @@ const TargetsEngine = (() => {
         dailyMacroRatios,
         secondaryDefaults,
         secondaryAdjustments,
+        hydrationDefaults,
+        hydrationAdjustments,
         macroContextBase,
         getWalkInfo,
         calculateStepsKcal,
         calculateExerciseKcal,
+        calculateExerciseMinutes,
         calcBMR,
         calcMacros,
         defaultMacroRatios
@@ -175,6 +219,9 @@ const TargetsEngine = (() => {
 
         const secDefaults = secondaryDefaults || getSecondaryDefaults(null, null, null);
         const secAdjustments = secondaryAdjustments || getSecondaryAdjustments(null);
+        const hydDefaults = hydrationDefaults || getHydrationDefaults(null, null, null);
+        const hydAdjustments = hydrationAdjustments || getHydrationAdjustments(null);
+        const hydrationBase = getHydrationBaseTargets(userProfile, hydDefaults, hydAdjustments);
 
         safeWeekDays.forEach((day, index) => {
             const dayData = Array.isArray(weekly) ? (weekly[index] || {}) : {};
@@ -187,6 +234,12 @@ const TargetsEngine = (() => {
                 : { steps: defaultStepsCfg.target, stepsPerMin: stepsConfig.stepsPerMin, secPerRep: 0, cadenceBase: stepsConfig.baseStepsPerMin };
             const daySteps = walkInfo.steps;
             const dayStepsPerMin = walkInfo.stepsPerMin;
+            const walkMinutes = (() => {
+                const sec = parseFloat(walkInfo.secPerRep);
+                if (Number.isFinite(sec) && sec > 0) return sec / 60;
+                const spm = parseFloat(dayStepsPerMin) || stepsConfig.stepsPerMin;
+                return spm > 0 ? (daySteps / spm) : 0;
+            })();
             const perDayStepsConfig = {
                 ...stepsConfig,
                 stepsPerMin: dayStepsPerMin,
@@ -197,32 +250,46 @@ const TargetsEngine = (() => {
                 : 0;
 
             let gymKcal = 0;
+            let gymMinutes = 0;
             const gymSection = dayData.gym;
             if (gymSection && gymSection.type !== 'rest' && Array.isArray(gymSection.exercises) && typeof calculateExerciseKcal === 'function') {
                 gymSection.exercises.forEach((item) => {
                     const ex = exercises && item ? exercises[item.exerciseId] : null;
                     if (!ex) return;
                     gymKcal += calculateExerciseKcal(item, ex, { weightKg: userProfile.weight });
+                    if (typeof calculateExerciseMinutes === 'function') {
+                        gymMinutes += calculateExerciseMinutes(item, ex);
+                    }
                 });
             }
 
             let extraKcal = 0;
+            let extraMinutes = 0;
             const extraSection = dayData.extra_activity;
             if (extraSection && extraSection.type !== 'rest' && Array.isArray(extraSection.exercises) && typeof calculateExerciseKcal === 'function') {
                 extraSection.exercises.forEach((item) => {
                     const ex = exercises && item ? exercises[item.exerciseId] : null;
                     if (!ex) return;
                     extraKcal += calculateExerciseKcal(item, ex, { weightKg: userProfile.weight });
+                    if (typeof calculateExerciseMinutes === 'function') {
+                        extraMinutes += calculateExerciseMinutes(item, ex);
+                    }
                 });
             }
 
             const totalActivityKcal = stepsKcal + gymKcal + extraKcal;
+            const totalActivityMin = walkMinutes + gymMinutes + extraMinutes;
             const tdee = restKcal + totalActivityKcal;
             const dayVals = getAdjustedValues(tdee, macroContextWithRatios, adj, {
                 calcMacros,
                 defaultMacroRatios: dayMacroRatios
             });
             const secondaryTargets = getSecondaryTargetsForKcal(dayVals.kcal, secDefaults, secAdjustments);
+            const hydrationExtra = Number.isFinite(totalActivityMin)
+                ? totalActivityMin * hydDefaults.activityMlPerMin
+                : 0;
+            const hydrationMin = hydrationBase ? Math.round(hydrationBase.min + hydrationExtra) : 0;
+            const hydrationMax = hydrationBase ? Math.round(hydrationBase.max + hydrationExtra) : 0;
 
             dailyTargets[day] = {
                 kcal: dayVals.kcal,
@@ -233,7 +300,12 @@ const TargetsEngine = (() => {
                 fiber: secondaryTargets.fiber,
                 sugar: secondaryTargets.sugar,
                 saturatedFat: secondaryTargets.saturatedFat,
-                processing: secondaryTargets.processing
+                processing: secondaryTargets.processing,
+                hydrationMin,
+                hydrationMax,
+                hydrationBaseMin: hydrationBase ? Math.round(hydrationBase.min) : 0,
+                hydrationBaseMax: hydrationBase ? Math.round(hydrationBase.max) : 0,
+                hydrationExtra: Math.round(hydrationExtra)
             };
         });
 
@@ -246,6 +318,9 @@ const TargetsEngine = (() => {
         normalizeMacroRatios,
         getSecondaryDefaults,
         getSecondaryAdjustments,
+        getHydrationDefaults,
+        getHydrationAdjustments,
+        getHydrationBaseTargets,
         getSecondaryTargetsForKcal,
         getMacroContext,
         getAdjustedValues,

@@ -1,5 +1,5 @@
 /* =========================================
-   core/storage.js - PERSISTENCIA (LocalStorage)
+   core/storage.js - PERSISTENCE (LocalStorage)
    ========================================= */
 
 const DB = {

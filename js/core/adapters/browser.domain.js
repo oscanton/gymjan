@@ -5,6 +5,7 @@
 const CoreBrowserDomain = (() => {
     const DEFAULT_MACROS = { p: 0.30, c: 0.40, f: 0.30 };
     const DEFAULT_SECONDARY = { saltMaxG: 5, fiberPer1000Kcal: 14, sugarMaxPctKcal: 0.10, satFatMaxPctKcal: 0.10, processingMaxScore: 3.5 };
+    const DEFAULT_HYDRATION = { minMlPerKg: 30, maxMlPerKg: 35, activityMlPerMin: 10 };
 
     const getDefaultMacroRatios = (formulas) => (
         typeof formulas?.getDefaultMacroRatios === 'function'
@@ -45,6 +46,16 @@ const CoreBrowserDomain = (() => {
         DB.get('user_secondary_adjustments', {})
     );
 
+    const getHydrationDefaults = (targets) => targets.getHydrationDefaults(
+        (typeof APP_HYDRATION_DEFAULTS !== 'undefined') ? APP_HYDRATION_DEFAULTS : DEFAULT_HYDRATION,
+        DB.get('user_hydration_rules', null),
+        DB.get('user_hydration_targets', null)
+    );
+
+    const getHydrationAdjustments = (targets) => targets.getHydrationAdjustments(
+        DB.get('user_adjustments', {})
+    );
+
     const calcSecondaryTargetsForKcal = (targets, kcal, defaults = null, adjustments = null) => {
         const cfg = defaults || getSecondaryDefaults(targets);
         const adj = adjustments || getSecondaryAdjustments(targets);
@@ -68,12 +79,14 @@ const CoreBrowserDomain = (() => {
 
     const computeDailyTargets = (targets, formulas, weeklyPlan, profile, adjustments, exercisesMap) => {
         const userProfile = profile || DB.get('user_profile', {});
-        const adj = adjustments || DB.get('user_adjustments', { kcal: 0, p: 0, c: 0, f: 0 });
+        const adj = adjustments || DB.get('user_adjustments', { kcal: 0, p: 0, c: 0, f: 0, hydration: 0 });
         if (!userProfile.weight || !userProfile.height || !userProfile.age) return null;
 
         const dailyMacroRatios = getDailyMacroRatios(targets, { formulas });
         const secondaryDefaults = getSecondaryDefaults(targets);
         const secondaryAdjustments = getSecondaryAdjustments(targets);
+        const hydrationDefaults = getHydrationDefaults(targets);
+        const hydrationAdjustments = getHydrationAdjustments(targets);
         const weekly = Array.isArray(weeklyPlan)
             ? weeklyPlan.slice(0, DAYS_COUNT)
             : ((typeof ActivityStore !== 'undefined')
@@ -90,6 +103,9 @@ const CoreBrowserDomain = (() => {
         const getWalkInfo = (typeof ActivityStore !== 'undefined' && ActivityStore.getWalkInfo)
             ? ActivityStore.getWalkInfo
             : null;
+        const calculateExerciseMinutes = (typeof UI !== 'undefined' && typeof UI.estimateExerciseMinutes === 'function')
+            ? UI.estimateExerciseMinutes
+            : null;
 
         const dailyTargets = targets.recalculateDailyTargets({
             weeklyPlan: weekly,
@@ -103,10 +119,13 @@ const CoreBrowserDomain = (() => {
             dailyMacroRatios,
             secondaryDefaults,
             secondaryAdjustments,
+            hydrationDefaults,
+            hydrationAdjustments,
             macroContextBase: targets.getMacroContext({ activityKey: 'actividad' }),
             getWalkInfo,
             calculateStepsKcal,
             calculateExerciseKcal,
+            calculateExerciseMinutes,
             calcBMR: formulas.calcBMR,
             calcMacros: formulas.calcMacros,
             defaultMacroRatios: getDefaultMacroRatios(formulas)
@@ -121,7 +140,8 @@ const CoreBrowserDomain = (() => {
     const ensureDailyTargets = (targets, formulas, {
         storedTargets = null,
         needsSecondary = false,
-        needsKcal = false
+        needsKcal = false,
+        needsHydration = false
     } = {}) => {
         let current = storedTargets || DB.get('daily_nutrition_targets', {});
         const hasTargets = current && Object.keys(current).length > 0;
@@ -133,9 +153,13 @@ const CoreBrowserDomain = (() => {
         const hasKcal = hasTargets && Object.values(current).some(dayTarget =>
             dayTarget && Number.isFinite(parseFloat(dayTarget.kcal))
         );
+        const hasHydration = hasTargets && Object.values(current).some(dayTarget =>
+            dayTarget && Number.isFinite(parseFloat(dayTarget.hydrationMin)) && Number.isFinite(parseFloat(dayTarget.hydrationMax))
+        );
         const needsRecalc = !hasTargets
             || (needsSecondary && !hasSecondary)
-            || (needsKcal && !hasKcal);
+            || (needsKcal && !hasKcal)
+            || (needsHydration && !hasHydration);
         if (needsRecalc) {
             const recalculated = computeDailyTargets(targets, formulas);
             if (recalculated) current = recalculated;
@@ -156,6 +180,8 @@ const CoreBrowserDomain = (() => {
         getDailyMacroRatios,
         getSecondaryDefaults,
         getSecondaryAdjustments,
+        getHydrationDefaults,
+        getHydrationAdjustments,
         calcSecondaryTargetsForKcal,
         getMacroContext,
         calcAdjustedValues,

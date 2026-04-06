@@ -1,5 +1,5 @@
 /* =========================================
-   core/stores.js - DATOS COMPARTIDOS
+   core/stores.js - SHARED DATA
    ========================================= */
 
 const ACTIVITY_FILE_MIGRATIONS = {
@@ -154,7 +154,36 @@ MenuStore.normalizeMenuData = (data) => {
         cena: 'dinner'
     };
     const needsMigration = data.some(day => day && (day.dia || day.desayuno || day.comida || day.cena));
-    if (!needsMigration) return data;
+    const ensureHydration = (day) => {
+        const defaultItems = [{ foodId: 'water', amount: 1500 }];
+        const defaultDescription = 'Hidratacion directa necesaria durante todo el dia';
+        const rawHydration = day && day.hydration && typeof day.hydration === 'object' ? day.hydration : null;
+        if (rawHydration && Array.isArray(rawHydration.items)) {
+            return {
+                items: rawHydration.items,
+                description: rawHydration.description || defaultDescription
+            };
+        }
+        if (rawHydration && Number.isFinite(parseFloat(rawHydration.directMl))) {
+            return {
+                items: [{ foodId: 'water', amount: parseFloat(rawHydration.directMl) }],
+                description: rawHydration.description || defaultDescription
+            };
+        }
+        return {
+            items: defaultItems,
+            description: defaultDescription
+        };
+    };
+
+    if (!needsMigration) {
+        return data.map(day => {
+            if (!day || typeof day !== 'object') return day;
+            const normalized = { ...day };
+            normalized.hydration = ensureHydration(day);
+            return normalized;
+        });
+    }
 
     return data.map(day => {
         if (!day || typeof day !== 'object') return day;
@@ -166,6 +195,7 @@ MenuStore.normalizeMenuData = (data) => {
             const source = day[key] || day[legacyKey] || null;
             normalized[key] = source || { items: [], description: '' };
         });
+        normalized.hydration = ensureHydration(day);
         return normalized;
     });
 };

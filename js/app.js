@@ -1,5 +1,5 @@
-﻿/* =========================================
-   app.js - BOOTSTRAP (Inicializacin)
+/* =========================================
+   app.js - BOOTSTRAP (Initialization)
    ========================================= */
 
 window.addEventListener('DOMContentLoaded', () => {
