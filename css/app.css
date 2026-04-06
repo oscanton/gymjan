@@ -248,19 +248,13 @@ h2 {
 }
 
 .page-header h1 { margin: 0; }
-.page-title--clickable { cursor: pointer; }
-.page-header--with-close {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
 .page-header--with-close h1 {
     text-align: center;
     margin: 0 auto;
 }
 
-.page-header--with-menu {
+.page-header--with-menu,
+.page-header--with-close {
     flex-direction: row;
     align-items: center;
     justify-content: center;
@@ -371,5 +365,3 @@ h2 {
     gap: var(--space-md);
     width: 100%;
 }
-
-
