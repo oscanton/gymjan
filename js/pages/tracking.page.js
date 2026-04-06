@@ -6,9 +6,20 @@ function renderControlPage() {
     const container = document.getElementById('control-container');
     if (!container) return;
 
-
     initControlPage(container);
 }
+
+const ACTIVITY_TYPE_OPTIONS = [
+    { value: 'gym', label: 'Gimnasio' },
+    { value: 'walk', label: 'Caminar' },
+    { value: 'rest', label: 'Descanso' },
+    { value: 'extra', label: 'Extra' }
+];
+
+const ACTIVITY_TYPE_LABELS = ACTIVITY_TYPE_OPTIONS.reduce((acc, option) => {
+    acc[option.value] = option.label;
+    return acc;
+}, {});
 
 function initControlPage(container) {
     // 1. Obtener Datos
@@ -17,7 +28,7 @@ function initControlPage(container) {
     history = history
         .map((h) => {
             const date = DateUtils.normalizeISODate(h.date || '');
-            let activity = h.activity || 'rest';
+            const activity = h.activity || 'rest';
             return { ...h, date, activity };
         })
         .filter((h) => h.date && h.weight);
@@ -142,25 +153,13 @@ function getDefaultActivityForDayIndex(dayIndex) {
 }
 
 function getActivityOptions(defaultActivity) {
-    const options = [
-        { value: 'gym', label: 'Gimnasio' },
-        { value: 'walk', label: 'Caminar' },
-        { value: 'rest', label: 'Descanso' },
-        { value: 'extra', label: 'Extra' }
-    ];
-    return options.map(opt =>
+    return ACTIVITY_TYPE_OPTIONS.map(opt =>
         `<option value="${opt.value}" ${opt.value === defaultActivity ? 'selected' : ''}>${opt.label}</option>`
     ).join('');
 }
 
 function getActivityLabel(activityKey) {
-    const map = {
-        gym: 'Gimnasio',
-        walk: 'Caminar',
-        rest: 'Descanso',
-        extra: 'Extra'
-    };
-    return map[activityKey] || (activityKey || '-');
+    return ACTIVITY_TYPE_LABELS[activityKey] || (activityKey || '-');
 }
 
 function renderHistoryTable(history) {
@@ -180,22 +179,23 @@ function renderHistoryTable(history) {
                 <div class="history-col--weight"><strong>${entry.weight}</strong></div>
                 <div class="history-col--activity text-xs text-muted">${actLabel}</div>
                 <div class="history-col--actions">
-                    <button class="btn-delete-entry btn-ghost" data-index="${index}" type="button">❌</button>
+                    <button class="btn-delete-entry btn-ghost" data-index="${index}" type="button" aria-label="Borrar registro">❌</button>
                 </div>
             </div>
         `;
     }).join('');
 
-    // Listeners para borrar entradas individuales
-    listContainer.querySelectorAll('.btn-delete-entry').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            if(confirm('¿Borrar este registro?')) {
-                const idx = parseInt(e.target.dataset.index);
-                history.splice(idx, 1);
-                DB.save('weight_history', history);
-                renderControlPage();
-            }
-        });
+    listContainer.addEventListener('click', (event) => {
+        const deleteButton = event.target.closest('.btn-delete-entry');
+        if (!deleteButton) return;
+
+        const idx = parseInt(deleteButton.dataset.index, 10);
+        if (!Number.isInteger(idx) || idx < 0 || idx >= history.length) return;
+        if (!confirm('¿Borrar este registro?')) return;
+
+        history.splice(idx, 1);
+        DB.save('weight_history', history);
+        renderControlPage();
     });
 }
 
