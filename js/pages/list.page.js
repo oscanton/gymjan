@@ -51,6 +51,37 @@ function renderShoppingListPage() {
         .catch((file) => UI.showError(container, `Error cargando ${file}`));
 }
 
+const LIST_CATEGORY_ORDER = [
+    "ðŸ¥” Verduras y hortalizas",
+    "ðŸŽ Fruta",
+    "ðŸ¥© ProteÃ­nas",
+    "ðŸ¥› LÃ¡cteos",
+    "ðŸš Cereales, legumbres y tubÃ©rculos",
+    "ðŸ¥‘ Grasas, frutos secos y semillas",
+    "ðŸ§‚ Condimentos y especias",
+    "ðŸ« Dulces y chocolates",
+    "â˜• Bebidas",
+    "ðŸ“¦ Otros / Procesados",
+    "ðŸ’Š Suplementos"
+];
+
+const LIST_FALLBACK_CATEGORY = "ðŸ“¦ Otros / Procesados";
+
+function normalizeShoppingAmount(amount, unit, formatNumber) {
+    let displayAmount = amount;
+    let displayUnit = unit || '';
+
+    if (displayUnit === 'g' && displayAmount >= 1000) {
+        displayAmount = formatNumber(displayAmount / 1000, 1);
+        displayUnit = 'kg';
+    } else if (displayUnit === 'ml' && displayAmount >= 1000) {
+        displayAmount = formatNumber(displayAmount / 1000, 1);
+        displayUnit = 'L';
+    }
+
+    return { displayAmount, displayUnit };
+}
+
 function calculateAndRenderList(container, formulas) {
     if (typeof MENU_DATA === 'undefined' || typeof FOODS === 'undefined' || !formulas) {
         container.innerHTML = `<div class="glass-card card"><p>Faltan datos (MenÃº o Alimentos).</p></div>`;
@@ -65,20 +96,6 @@ function calculateAndRenderList(container, formulas) {
 
     const listByCategory = {};
 
-    const categoryOrder = [
-        "ðŸ¥” Verduras y hortalizas",
-        "ðŸŽ Fruta",
-        "ðŸ¥© ProteÃ­nas",
-        "ðŸ¥› LÃ¡cteos",
-        "ðŸš Cereales, legumbres y tubÃ©rculos",
-        "ðŸ¥‘ Grasas, frutos secos y semillas",
-        "ðŸ§‚ Condimentos y especias",
-        "ðŸ« Dulces y chocolates",
-        "â˜• Bebidas",
-        "ðŸ“¦ Otros / Procesados",
-        "ðŸ’Š Suplementos"
-    ];
-
     Object.keys(totals).forEach(foodId => {
         const amount = totals[foodId];
         if (amount <= 0) return;
@@ -86,7 +103,7 @@ function calculateAndRenderList(container, formulas) {
         const food = FOODS[foodId];
         if (!food) return;
 
-        const cat = food.category || "ðŸ“¦ Otros / Procesados";
+        const cat = food.category || LIST_FALLBACK_CATEGORY;
 
         if (!listByCategory[cat]) {
             listByCategory[cat] = [];
@@ -104,8 +121,8 @@ function calculateAndRenderList(container, formulas) {
     let hasItems = false;
 
     const sortedCategories = Object.keys(listByCategory).sort((a, b) => {
-        const idxA = categoryOrder.indexOf(a);
-        const idxB = categoryOrder.indexOf(b);
+        const idxA = LIST_CATEGORY_ORDER.indexOf(a);
+        const idxB = LIST_CATEGORY_ORDER.indexOf(b);
         if (idxA === -1 && idxB === -1) return a.localeCompare(b);
         if (idxA === -1) return 1;
         if (idxB === -1) return -1;
@@ -132,17 +149,7 @@ function calculateAndRenderList(container, formulas) {
         items.forEach(item => {
             const isChecked = DB.get(`shop_${item.id}`, false);
 
-            let displayAmount = item.amount;
-            let displayUnit = item.unit || '';
-
-            if (displayUnit === 'g' && displayAmount >= 1000) {
-                displayAmount = formatNumber(displayAmount / 1000, 1);
-                displayUnit = 'kg';
-            }
-            if (displayUnit === 'ml' && displayAmount >= 1000) {
-                displayAmount = formatNumber(displayAmount / 1000, 1);
-                displayUnit = 'L';
-            }
+            const { displayAmount, displayUnit } = normalizeShoppingAmount(item.amount, item.unit, formatNumber);
 
             const label = document.createElement('label');
             label.className = 'row-item';
@@ -304,5 +311,4 @@ function ensureListResetControls(container, formulas) {
     controls.appendChild(resetBtn);
     container.after(controls);
 }
-
 
