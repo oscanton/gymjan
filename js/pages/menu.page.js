@@ -323,8 +323,9 @@ function renderMenuPage() {
 
     const renderHydrationTotalsPill = (dayData, dayTotals, target) => {
         const direct = getHydrationDirectMl(dayData);
-        const indirect = dayTotals && Number.isFinite(parseFloat(dayTotals.waterMl)) ? parseFloat(dayTotals.waterMl) : 0;
-        const total = direct + indirect;
+        const total = dayTotals && Number.isFinite(parseFloat(dayTotals.waterMl))
+            ? parseFloat(dayTotals.waterMl)
+            : direct;
         const targetMin = target && Number.isFinite(parseFloat(target.hydrationMin)) ? parseFloat(target.hydrationMin) : 0;
         const targetMax = target && Number.isFinite(parseFloat(target.hydrationMax)) ? parseFloat(target.hydrationMax) : 0;
         const statusClass = getStatusClassByRange(total, targetMin, targetMax);

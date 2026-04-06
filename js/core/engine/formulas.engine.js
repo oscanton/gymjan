@@ -129,7 +129,11 @@ const FormulasEngine = (() => {
         const dayTotals = createEmptyNutritionTotals();
         if (!dayData || !Array.isArray(safeMealKeys)) return dayTotals;
 
-        safeMealKeys.forEach(mealKey => {
+        const mealKeysWithHydration = (dayData.hydration && !safeMealKeys.includes('hydration'))
+            ? ['hydration', ...safeMealKeys]
+            : safeMealKeys;
+
+        mealKeysWithHydration.forEach(mealKey => {
             const items = dayData && dayData[mealKey] ? dayData[mealKey].items : [];
             const mealTotals = calculateMealDetails(items, foods);
             dayTotals.kcal += mealTotals.kcal;
@@ -167,7 +171,10 @@ const FormulasEngine = (() => {
         if (!Array.isArray(menuData)) return totals;
 
         menuData.forEach(day => {
-            safeMealKeys.forEach(mealKey => {
+            const mealKeysWithHydration = (day && day.hydration && !safeMealKeys.includes('hydration'))
+                ? ['hydration', ...safeMealKeys]
+                : safeMealKeys;
+            mealKeysWithHydration.forEach(mealKey => {
                 const mealItems = day && day[mealKey] && Array.isArray(day[mealKey].items)
                     ? day[mealKey].items
                     : [];

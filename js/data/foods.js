@@ -3,18 +3,18 @@
 // - nutritionPerUnit: for unit="ud" or unit="ml".
 // - processed: 0-10 (0 raw/direct; 10 ultra-processed).
 
-const FOOD_CATEGORY_ORDER = [
-  "🥔 Vegetables",
-  "🍎 Fruit",
-  "🥩 Proteins",
-  "🥛 Dairy",
-  "🌾 Grains, legumes and tubers",
-  "🥑 Fats, nuts and seeds",
-  "🧂 Condiments and spices",
-  "🍫 Sweets and chocolate",
-  "☕ Drinks",
-  "📦 Other / Processed",
-  "💊 Supplements"
+const FOOD_CATEGORIES = [
+  { id: "🥔 Vegetables", label: "🥔 Verduras" },
+  { id: "🍎 Fruit", label: "🍎 Fruta" },
+  { id: "🥩 Proteins", label: "🥩 Proteínas" },
+  { id: "🥛 Dairy", label: "🥛 Lácteos" },
+  { id: "🌾 Grains, legumes and tubers", label: "🌾 Cereales, legumbres y tubérculos" },
+  { id: "🥑 Fats, nuts and seeds", label: "🥑 Grasas, frutos secos y semillas" },
+  { id: "🧂 Condiments and spices", label: "🧂 Condimentos y especias" },
+  { id: "🍫 Sweets and chocolate", label: "🍫 Dulces y chocolate" },
+  { id: "☕ Drinks", label: "☕ Bebidas" },
+  { id: "📦 Other / Processed", label: "📦 Otros / Procesados" },
+  { id: "💊 Supplements", label: "💊 Suplementos" }
 ];
 
 const FOOD_FALLBACK_CATEGORY = "📦 Other / Processed";
@@ -221,7 +221,7 @@ const FOODS = {
   /* =========================
      DRINKS AND INFUSIONS
      ========================= */
-  bolero_sachet_9g: { name: "Bolero (1 sobre de 9g)", category: "☕ Drinks", unit: "ud", waterMlPerUnit: 0, nutritionPerUnit: { kcal: 1, protein: 0.0, carbs: 0.1, fat: 0.0, saturatedFat: 0.0, fiber: 0.0, sugar: 0.0, sodiumMg: 15 }, processed: 7 },
+  bolero_9g: { name: "Bolero 9gr", category: "☕ Drinks", unit: "ud", waterMlPerUnit: 0, nutritionPerUnit: { kcal: 1, protein: 0.0, carbs: 0.1, fat: 0.0, saturatedFat: 0.0, fiber: 0.0, sugar: 0.0, sodiumMg: 15 }, processed: 7 },
   coconut_water: { name: "Agua de coco", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0.192, protein: 0.002, carbs: 0.044, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0.04, sodiumMg: 0.42 }, processed: 4 },
   coffee: { name: "Café", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0, protein: 0, carbs: 0, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0, sodiumMg: 0.025 }, processed: 1 },
   diet_soda: { name: "Refresco light", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0.006, protein: 0, carbs: 0.001, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0, sodiumMg: 0.045 }, processed: 7 },
@@ -230,6 +230,7 @@ const FOODS = {
   shake: { name: "Batido", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0.72, protein: 0.028, carbs: 0.104, fat: 0.02, saturatedFat: 0.012, fiber: 0, sugar: 0.096, sodiumMg: 0.48 }, processed: 8 },
   tea: { name: "Té", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0, protein: 0, carbs: 0, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0, sodiumMg: 0.012 }, processed: 1 },
   water: { name: "Agua", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0, protein: 0.0, carbs: 0.0, fat: 0.0, saturatedFat: 0.0, fiber: 0.0, sugar: 0.0, sodiumMg: 0 }, processed: 1 },
+  zero_coca_cola: { name: "Coca-cola Zero", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0.006, protein: 0, carbs: 0.001, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0, sodiumMg: 0.045 }, processed: 7 },
 
   /* =========================
      GENERICS

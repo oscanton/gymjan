@@ -51,28 +51,26 @@ function renderShoppingListPage() {
         .catch((file) => UI.showError(container, `Error cargando ${file}`));
 }
 
-const LIST_CATEGORY_ORDER = (typeof FOOD_CATEGORY_ORDER !== 'undefined'
-    && Array.isArray(FOOD_CATEGORY_ORDER)
-    && FOOD_CATEGORY_ORDER.length)
-    ? FOOD_CATEGORY_ORDER
-    : [
-        "🥔 Vegetables",
-        "🍎 Fruit",
-        "🥩 Proteins",
-        "🥛 Dairy",
-        "🌾 Grains, legumes and tubers",
-        "🥑 Fats, nuts and seeds",
-        "🧂 Condiments and spices",
-        "🍫 Sweets and chocolate",
-        "☕ Drinks",
-        "📦 Other / Processed",
-        "💊 Supplements"
-    ];
-
 const LIST_FALLBACK_CATEGORY = (typeof FOOD_FALLBACK_CATEGORY !== 'undefined'
     && FOOD_FALLBACK_CATEGORY)
     ? FOOD_FALLBACK_CATEGORY
     : "📦 Other / Processed";
+
+function getCategoryMeta() {
+    if (typeof FOOD_CATEGORIES === 'undefined' || !Array.isArray(FOOD_CATEGORIES)) {
+        return { order: [], labels: {} };
+    }
+
+    const order = [];
+    const labels = {};
+    FOOD_CATEGORIES.forEach(category => {
+        if (!category || !category.id) return;
+        order.push(category.id);
+        labels[category.id] = category.label || category.id;
+    });
+
+    return { order, labels };
+}
 
 function normalizeShoppingAmount(amount, unit, formatNumber) {
     let displayAmount = amount;
@@ -127,9 +125,10 @@ function calculateAndRenderList(container, formulas) {
     container.innerHTML = '';
     let hasItems = false;
 
+    const categoryMeta = getCategoryMeta();
     const sortedCategories = Object.keys(listByCategory).sort((a, b) => {
-        const idxA = LIST_CATEGORY_ORDER.indexOf(a);
-        const idxB = LIST_CATEGORY_ORDER.indexOf(b);
+        const idxA = categoryMeta.order.indexOf(a);
+        const idxB = categoryMeta.order.indexOf(b);
         if (idxA === -1 && idxB === -1) return a.localeCompare(b);
         if (idxA === -1) return 1;
         if (idxB === -1) return -1;
@@ -143,7 +142,10 @@ function calculateAndRenderList(container, formulas) {
 
         const section = document.createElement('div');
         section.className = 'glass-card section-group';
-        section.innerHTML = `<h2>${catName}</h2><div class="section-group__grid"></div>`;
+        const categoryLabel = categoryMeta.labels && categoryMeta.labels[catName]
+            ? categoryMeta.labels[catName]
+            : catName;
+        section.innerHTML = `<h2>${categoryLabel}</h2><div class="section-group__grid"></div>`;
 
         const grid = section.querySelector('.section-group__grid');
 
