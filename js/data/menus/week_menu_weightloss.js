@@ -1,4 +1,4 @@
-/* =========================================
+﻿/* =========================================
    data/menus/week_menu_weightloss.js - DATA
    ========================================= */
 
@@ -9,7 +9,8 @@ window.MENU_DATA = [
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -18,7 +19,8 @@ window.MENU_DATA = [
                 { foodId: "plain_yogurt", amount: 125 },
                 { foodId: "avocado", amount: 80 }
             ],
-            description: "Desayuno completo y saciante, con hidratos complejos y proteína para arrancar el día con energía estable."
+            description: "Desayuno completo y saciante, con hidratos complejos y proteÃ­na para arrancar el dÃ­a con energÃ­a estable.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -28,7 +30,8 @@ window.MENU_DATA = [
                 { foodId: "tomato", amount: 80 },
                 { foodId: "fruit", amount: 100 }
             ],
-            description: "Plato principal equilibrado, rico en proteína y carbohidratos complejos, ideal para sostener el entrenamiento de la tarde."
+            description: "Plato principal equilibrado, rico en proteÃ­na y carbohidratos complejos, ideal para sostener el entrenamiento de la tarde.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -38,7 +41,8 @@ window.MENU_DATA = [
                 { foodId: "kefir", amount: 125 },
                 { foodId: "protein", amount: 30 }
             ],
-            description: "Cena ligera y digestiva, rica en proteína y fibra, pensada para favorecer la recuperación tras el entrenamiento."
+            description: "Cena ligera y digestiva, rica en proteÃ­na y fibra, pensada para favorecer la recuperaciÃ³n tras el entrenamiento.",
+            recipe: ""
         }
     },
     {
@@ -47,7 +51,8 @@ window.MENU_DATA = [
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -56,7 +61,8 @@ window.MENU_DATA = [
                 { foodId: "tomato", amount: 100 },
                 { foodId: "turkey", amount: 100 }
             ],
-            description: "Desayuno sencillo y proteico, con hidratos integrales que aportan saciedad sin exceso calórico."
+            description: "Desayuno sencillo y proteico, con hidratos integrales que aportan saciedad sin exceso calÃ³rico.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -67,7 +73,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "plain_yogurt", amount: 125 }
             ],
-            description: "Comida rica en fibra y proteína vegetal, muy beneficiosa para la salud intestinal y la saciedad."
+            description: "Comida rica en fibra y proteÃ­na vegetal, muy beneficiosa para la salud intestinal y la saciedad.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -75,16 +82,18 @@ window.MENU_DATA = [
                 { foodId: "spinach", amount: 250 },
                 { foodId: "olive_oil", amount: 5 }
             ],
-            description: "Cena nutritiva con grasas saludables y verduras, fácil de digerir y adecuada para un día sin entrenamiento."
+            description: "Cena nutritiva con grasas saludables y verduras, fÃ¡cil de digerir y adecuada para un dÃ­a sin entrenamiento.",
+            recipe: ""
         }
     },
     {
-        day: "Miércoles",
+        day: "MiÃ©rcoles",
         hydration: {
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -94,7 +103,8 @@ window.MENU_DATA = [
                 { foodId: "tomato", amount: 80 },
                 { foodId: "fruit", amount: 150 }
             ],
-            description: "Desayuno equilibrado con proteína y carbohidratos, ideal para mantener energía constante durante la mañana."
+            description: "Desayuno equilibrado con proteÃ­na y carbohidratos, ideal para mantener energÃ­a constante durante la maÃ±ana.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -105,7 +115,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 10 },
                 { foodId: "plain_yogurt", amount: 125 }
             ],
-            description: "Comida completa y variada, con buen aporte de proteína y carbohidratos complejos para el entrenamiento."
+            description: "Comida completa y variada, con buen aporte de proteÃ­na y carbohidratos complejos para el entrenamiento.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -113,7 +124,8 @@ window.MENU_DATA = [
                 { foodId: "artichoke", amount: 150 },
                 { foodId: "olive_oil", amount: 5 }
             ],
-            description: "Cena ligera, rica en proteína magra y verduras, que facilita la digestión y el descanso nocturno."
+            description: "Cena ligera, rica en proteÃ­na magra y verduras, que facilita la digestiÃ³n y el descanso nocturno.",
+            recipe: ""
         }
     },
     {
@@ -122,7 +134,8 @@ window.MENU_DATA = [
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -132,7 +145,8 @@ window.MENU_DATA = [
                 { foodId: "oats", amount: 50 },
                 { foodId: "fruit", amount: 150 }
             ],
-            description: "Desayuno rápido y proteico, ideal si hay poco tiempo por la mañana."
+            description: "Desayuno rÃ¡pido y proteico, ideal si hay poco tiempo por la maÃ±ana.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -144,7 +158,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "plain_yogurt", amount: 125 }
             ],
-            description: "Comida equilibrada con proteína magra, hidratos moderados y verduras variadas."
+            description: "Comida equilibrada con proteÃ­na magra, hidratos moderados y verduras variadas.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -153,7 +168,8 @@ window.MENU_DATA = [
                 { foodId: "zucchini", amount: 250 },
                 { foodId: "olive_oil", amount: 5 }
             ],
-            description: "Cena sencilla y baja en carga digestiva, pensada para mantener el déficit sin pasar hambre."
+            description: "Cena sencilla y baja en carga digestiva, pensada para mantener el dÃ©ficit sin pasar hambre.",
+            recipe: ""
         }
     },
     {
@@ -162,7 +178,8 @@ window.MENU_DATA = [
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -172,7 +189,8 @@ window.MENU_DATA = [
                 { foodId: "protein", amount: 30 },
                 { foodId: "fruit", amount: 100 }
             ],
-            description: "Desayuno ligero pero saciante, con hidratos complejos y proteína para un día activo."
+            description: "Desayuno ligero pero saciante, con hidratos complejos y proteÃ­na para un dÃ­a activo.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -183,7 +201,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "plain_yogurt", amount: 125 }
             ],
-            description: "Comida completa con buen aporte energético, ideal para rendir en el entrenamiento posterior."
+            description: "Comida completa con buen aporte energÃ©tico, ideal para rendir en el entrenamiento posterior.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -192,16 +211,18 @@ window.MENU_DATA = [
                 { foodId: "potato", amount: 80 },
                 { foodId: "olive_oil", amount: 5 }
             ],
-            description: "Cena proteica y reconfortante, con alimentos fáciles de digerir tras el esfuerzo físico."
+            description: "Cena proteica y reconfortante, con alimentos fÃ¡ciles de digerir tras el esfuerzo fÃ­sico.",
+            recipe: ""
         }
     },
     {
-        day: "Sábado",
+        day: "SÃ¡bado",
         hydration: {
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -211,7 +232,8 @@ window.MENU_DATA = [
                 { foodId: "cheese_fresh", amount: 125 },
                 { foodId: "fruit", amount: 100 }
             ],
-            description: "Desayuno equilibrado, con proteína y fruta, pensado para un día más relajado."
+            description: "Desayuno equilibrado, con proteÃ­na y fruta, pensado para un dÃ­a mÃ¡s relajado.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -221,7 +243,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "fruit", amount: 200 }
             ],
-            description: "Comida rica en grasas saludables y verduras, muy saciante y nutritiva."
+            description: "Comida rica en grasas saludables y verduras, muy saciante y nutritiva.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -229,7 +252,8 @@ window.MENU_DATA = [
                 { foodId: "cauliflower", amount: 250 },
                 { foodId: "olive_oil", amount: 5 }
             ],
-            description: "Cena sencilla y proteica, con verduras cocidas que facilitan la digestión."
+            description: "Cena sencilla y proteica, con verduras cocidas que facilitan la digestiÃ³n.",
+            recipe: ""
         }
     },
     {
@@ -238,7 +262,8 @@ window.MENU_DATA = [
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -247,7 +272,8 @@ window.MENU_DATA = [
                 { foodId: "avocado", amount: 80 },
                 { foodId: "wholegrain_bread", amount: 80 }
             ],
-            description: "Desayuno completo y saciante, con grasas saludables y proteína."
+            description: "Desayuno completo y saciante, con grasas saludables y proteÃ­na.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -257,7 +283,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "plain_yogurt", amount: 125 }
             ],
-            description: "Comida equilibrada y tradicional, con buena combinación de proteína, hidratos y verduras."
+            description: "Comida equilibrada y tradicional, con buena combinaciÃ³n de proteÃ­na, hidratos y verduras.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -266,8 +293,12 @@ window.MENU_DATA = [
                 { foodId: "spinach", amount: 250 },
                 { foodId: "olive_oil", amount: 5 }
             ],
-            description: "Cena ligera y vegetal, ideal para cerrar la semana sin sensación de pesadez."
+            description: "Cena ligera y vegetal, ideal para cerrar la semana sin sensaciÃ³n de pesadez.",
+            recipe: ""
         }
     }
 ];
+
+
+
 

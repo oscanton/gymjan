@@ -143,6 +143,11 @@ function renderMenuPage() {
             `<option value="${escapeHtml(id)}">${escapeHtml(food.name || id)}</option>`
         )).join('');
     };
+    const getMealInfoPayload = (mealKey, mealData) => encodePayload({
+        title: mealLabels[mealKey] || 'Comida',
+        description: mealData && mealData.description ? mealData.description : '',
+        recipe: mealData && mealData.recipe ? mealData.recipe : ''
+    });
     const renderMealMacroPills = (nut) => `
         <div class="stat-pill stat-pill--kcal stat-pill--xs">🔥 ${Math.round(nut.kcal)} kcal</div>
         <div class="stat-pill stat-pill--xs">🥩 ${Math.round(nut.protein)}g</div>
@@ -574,7 +579,8 @@ function renderMenuPage() {
                                     ${renderMealMacroPills(nut)}
                                 </div>
                             ` : ''}
-                            <div class="meal-description">
+                            <div class="meal-description meal-description-trigger" role="button" tabindex="0"
+                                data-meal-info="${getMealInfoPayload(mealKey, mealData)}">
                                 ${mealData.description || ''}
                             </div>
                         </td>`;
@@ -676,6 +682,11 @@ function renderMenuPage() {
             const sodiumMg = vals.sodiumMg ?? 0;
             const saltG = (sodiumMg * scale * 2.5) / 1000;
             const processingScore = Number.isFinite(food.processed) ? food.processed : NaN;
+            const waterMl = food.waterMlPer100 && food.nutritionPer100
+                ? (food.waterMlPer100 || 0) * scale
+                : (food.waterMlPerUnit && food.nutritionPerUnit
+                    ? (food.waterMlPerUnit || 0) * scale
+                    : 0);
 
             UI.showModal({
                 id: 'food-popup',
@@ -683,6 +694,9 @@ function renderMenuPage() {
                 bodyHtml: `
                     <div class="text-xs text-muted mb-sm">${label}</div>
 
+                    <div class="stats-pills stats-pills--center mb-sm">
+                        <div class="stat-pill stat-pill--hydration stat-pill--block modal-stat-pill-lg">💧 ${formatMl(waterMl)}</div>
+                    </div>
                     ${renderCompleteNutritionHtml({
                         kcal: (vals.kcal || 0) * scale,
                         protein: (vals.protein || 0) * scale,
@@ -695,6 +709,29 @@ function renderMenuPage() {
                         processing: processingScore
                     }, { kcalSizeClass: 'modal-stat-pill-lg' })}
                 `
+            });
+            return;
+        }
+
+        const mealInfoTrigger = e.target.closest('.meal-description-trigger');
+        if (mealInfoTrigger) {
+            const payload = decodePayload(mealInfoTrigger.dataset.mealInfo);
+            if (!payload) return;
+
+            const title = payload.title || 'Comida';
+            const description = payload.description || '';
+            const recipe = payload.recipe || '';
+            const descriptionHtml = description
+                ? `<p class="mb-sm">${escapeHtml(description)}</p>`
+                : '<p class="text-muted mb-sm">Sin descripcion.</p>';
+            const recipeHtml = recipe
+                ? `<div class="text-xs text-muted mb-xs">Receta</div><p>${escapeHtml(recipe)}</p>`
+                : '<div class="text-xs text-muted mb-xs">Receta</div><p class="text-muted">Sin receta.</p>';
+
+            UI.showModal({
+                id: 'meal-info-modal',
+                titleHtml: `<h3 class="text-primary modal-title">${escapeHtml(title)}</h3>`,
+                bodyHtml: `<div class="text-sm">${descriptionHtml}${recipeHtml}</div>`
             });
             return;
         }

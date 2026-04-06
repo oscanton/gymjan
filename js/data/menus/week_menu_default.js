@@ -1,4 +1,4 @@
-/* =========================================
+﻿/* =========================================
    data/menus/week_menu_default.js - DATA
    ========================================= */
 
@@ -10,7 +10,8 @@ window.MENU_DATA = [
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -20,7 +21,8 @@ window.MENU_DATA = [
                 { foodId: "berries", amount: 105 },
                 { foodId: "egg_whites", amount: 160 }
             ],
-            description: "Desayuno con lacteo y avena, equilibrado para empezar el dia."
+            description: "Desayuno con lacteo y avena, equilibrado para empezar el dia.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -31,7 +33,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "plain_yogurt", amount: 170 }
             ],
-            description: "Comida principal con pollo, arroz y verduras variadas."
+            description: "Comida principal con pollo, arroz y verduras variadas.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -42,7 +45,8 @@ window.MENU_DATA = [
                 { foodId: "plain_yogurt", amount: 105 },
                 { foodId: "potato", amount: 140 }
             ],
-            description: "Cena ligera con pescado blanco y verduras."
+            description: "Cena ligera con pescado blanco y verduras.",
+            recipe: ""
         }
     },
     {
@@ -51,7 +55,8 @@ window.MENU_DATA = [
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -63,7 +68,8 @@ window.MENU_DATA = [
                 { foodId: "fruit", amount: 95 },
                 { foodId: "egg_whites", amount: 215 }
             ],
-            description: "Tostadas con tomate y pavo, mas fruta para variar."
+            description: "Tostadas con tomate y pavo, mas fruta para variar.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -74,7 +80,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 10 },
                 { foodId: "plain_yogurt", amount: 100 }
             ],
-            description: "Legumbres con pavo y verduras, saciante y equilibrada."
+            description: "Legumbres con pavo y verduras, saciante y equilibrada.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -85,16 +92,18 @@ window.MENU_DATA = [
                 { foodId: "kiwi", amount: 95 },
                 { foodId: "potato", amount: 150 }
             ],
-            description: "Cena sencilla con cerdo magro y ensalada fresca."
+            description: "Cena sencilla con cerdo magro y ensalada fresca.",
+            recipe: ""
         }
     },
     {
-        day: "Miércoles",
+        day: "MiÃ©rcoles",
         hydration: {
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -104,7 +113,8 @@ window.MENU_DATA = [
                 { foodId: "mixed_nuts", amount: 10 },
                 { foodId: "egg_whites", amount: 285 }
             ],
-            description: "Desayuno rapido con fruta y grasas saludables."
+            description: "Desayuno rapido con fruta y grasas saludables.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -115,7 +125,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "plain_yogurt", amount: 170 }
             ],
-            description: "Pescado con arroz integral y verduras para mantener energia."
+            description: "Pescado con arroz integral y verduras para mantener energia.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -125,7 +136,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "potato", amount: 170 }
             ],
-            description: "Cena con pollo y verduras al vapor."
+            description: "Cena con pollo y verduras al vapor.",
+            recipe: ""
         }
     },
     {
@@ -134,7 +146,8 @@ window.MENU_DATA = [
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -144,7 +157,8 @@ window.MENU_DATA = [
                 { foodId: "apple", amount: 80 },
                 { foodId: "egg_whites", amount: 225 }
             ],
-            description: "Avena con kefir y fruta para variar el lacteo."
+            description: "Avena con kefir y fruta para variar el lacteo.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -155,7 +169,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "plain_yogurt", amount: 130 }
             ],
-            description: "Salmon con legumbres y vegetales, comida completa."
+            description: "Salmon con legumbres y vegetales, comida completa.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -165,7 +180,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 10 },
                 { foodId: "potato", amount: 125 }
             ],
-            description: "Cena con calamar y verduras variadas."
+            description: "Cena con calamar y verduras variadas.",
+            recipe: ""
         }
     },
     {
@@ -174,7 +190,8 @@ window.MENU_DATA = [
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -184,7 +201,8 @@ window.MENU_DATA = [
                 { foodId: "egg", amount: 1 },
                 { foodId: "egg_whites", amount: 210 }
             ],
-            description: "Tostadas con aguacate y huevo, saciante y equilibrado."
+            description: "Tostadas con aguacate y huevo, saciante y equilibrado.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -195,7 +213,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "plain_yogurt", amount: 145 }
             ],
-            description: "Ternera con quinoa y verduras, enfocada a la comida principal."
+            description: "Ternera con quinoa y verduras, enfocada a la comida principal.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -206,16 +225,18 @@ window.MENU_DATA = [
                 { foodId: "plain_yogurt", amount: 155 },
                 { foodId: "potato", amount: 130 }
             ],
-            description: "Cena ligera con pavo y vegetales."
+            description: "Cena ligera con pavo y vegetales.",
+            recipe: ""
         }
     },
     {
-        day: "Sábado",
+        day: "SÃ¡bado",
         hydration: {
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -225,7 +246,8 @@ window.MENU_DATA = [
                 { foodId: "fruit", amount: 80 },
                 { foodId: "egg_whites", amount: 295 }
             ],
-            description: "Desayuno variado con yogur, pan y fruta."
+            description: "Desayuno variado con yogur, pan y fruta.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -236,7 +258,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 10 },
                 { foodId: "plain_yogurt", amount: 190 }
             ],
-            description: "Atun con pasta integral y vegetales."
+            description: "Atun con pasta integral y vegetales.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -246,7 +269,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "potato", amount: 150 }
             ],
-            description: "Cena con cerdo magro y ensalada."
+            description: "Cena con cerdo magro y ensalada.",
+            recipe: ""
         }
     },
     {
@@ -255,7 +279,8 @@ window.MENU_DATA = [
             items: [
                 { foodId: "water", amount: 1500 }
             ],
-            description: "Hidratacion directa necesaria durante todo el dia"
+            description: "Hidratacion directa necesaria durante todo el dia",
+            recipe: ""
         },
         breakfast: {
             items: [
@@ -266,7 +291,8 @@ window.MENU_DATA = [
                 { foodId: "fruit", amount: 85 },
                 { foodId: "egg_whites", amount: 205 }
             ],
-            description: "Tostadas con queso fresco y fruta para cerrar la semana."
+            description: "Tostadas con queso fresco y fruta para cerrar la semana.",
+            recipe: ""
         },
         lunch: {
             items: [
@@ -277,7 +303,8 @@ window.MENU_DATA = [
                 { foodId: "olive_oil", amount: 5 },
                 { foodId: "plain_yogurt", amount: 120 }
             ],
-            description: "Salmon con patata y verduras, con postre ligero."
+            description: "Salmon con patata y verduras, con postre ligero.",
+            recipe: ""
         },
         dinner: {
             items: [
@@ -288,7 +315,11 @@ window.MENU_DATA = [
                 { foodId: "plain_yogurt", amount: 105 },
                 { foodId: "potato", amount: 155 }
             ],
-            description: "Cena suave con ternera y verduras."
+            description: "Cena suave con ternera y verduras.",
+            recipe: ""
         }
     }
 ];
+
+
+
