@@ -248,18 +248,39 @@ input[type=number]::-webkit-outer-spin-button {
     min-width: 0;
 }
 
-.list-custom__add {
+.list-custom__add,
+.activity-training__add,
+.activity-exercise__add-done {
     border: 1px solid rgba(var(--color-primary-rgb), 0.35);
     background: rgba(var(--color-primary-rgb), 0.2);
     color: var(--color-primary);
-    font-size: var(--font-size-sm);
-    line-height: 1;
-    padding: 8px 14px;
     border-radius: var(--ui-radius-pill);
     cursor: pointer;
 }
 
-.list-custom__add:hover {
+.list-custom__add {
+    font-size: var(--font-size-sm);
+    line-height: 1;
+    padding: 8px 14px;
+}
+
+.activity-training__add,
+.activity-exercise__add-done {
+    font-size: var(--font-size-xs);
+}
+
+.activity-training__add {
+    line-height: 1;
+    padding: 4px 10px;
+}
+
+.activity-exercise__add-done {
+    padding: 2px 8px;
+}
+
+.list-custom__add:hover,
+.activity-training__add:hover,
+.activity-exercise__add-done:hover {
     background: rgba(var(--color-primary-rgb), 0.3);
 }
 
@@ -422,19 +443,7 @@ input[type=number]::-webkit-outer-spin-button {
     color: var(--color-text-muted);
 }
 .meal-item__amount { white-space: nowrap; display: flex; align-items: center; }
-.meal-item__delete {
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-    font-size: 0.95rem;
-    line-height: 1;
-    padding: 0 4px;
-    opacity: 0.8;
-}
-.meal-item__delete:hover {
-    opacity: 1;
-    color: var(--color-danger);
-}
+.meal-item__delete,
 .meal-item__add {
     border: 0;
     background: transparent;
@@ -442,8 +451,16 @@ input[type=number]::-webkit-outer-spin-button {
     font-size: 0.95rem;
     line-height: 1;
     padding: 0 4px;
-    opacity: 0.9;
 }
+
+.meal-item__delete {
+    opacity: 0.8;
+}
+.meal-item__delete:hover {
+    opacity: 1;
+    color: var(--color-danger);
+}
+.meal-item__add { opacity: 0.9; }
 .meal-item__add:hover {
     opacity: 1;
     color: var(--color-success);
@@ -507,20 +524,6 @@ input[type=number]::-webkit-outer-spin-button {
     justify-content: space-between;
     gap: var(--space-sm);
 }
-.activity-training__add {
-    border: 1px solid rgba(var(--color-primary-rgb), 0.35);
-    background: rgba(var(--color-primary-rgb), 0.2);
-    color: var(--color-primary);
-    font-size: var(--font-size-xs);
-    line-height: 1;
-    padding: 4px 10px;
-    border-radius: var(--ui-radius-pill);
-    cursor: pointer;
-}
-.activity-training__add:hover {
-    background: rgba(var(--color-primary-rgb), 0.3);
-}
-
 .activity-exercise {
     border: 1px solid var(--border-light);
     background: var(--surface-black-20);
@@ -563,15 +566,6 @@ input[type=number]::-webkit-outer-spin-button {
     border-color: rgba(var(--color-primary-rgb), 0.35);
     background: rgba(var(--color-primary-rgb), 0.12);
 }
-.activity-exercise__add-done {
-    border: 1px solid rgba(var(--color-primary-rgb), 0.35);
-    background: rgba(var(--color-primary-rgb), 0.2);
-    color: var(--color-primary);
-    font-size: var(--font-size-xs);
-    border-radius: var(--ui-radius-pill);
-    padding: 2px 8px;
-    cursor: pointer;
-}
 .activity-exercise__pending-note {
     font-size: var(--font-size-2xs);
     color: var(--color-text-muted);
@@ -613,16 +607,7 @@ input[type=number]::-webkit-outer-spin-button {
     margin: var(--space-sm) 0;
 }
 
-.activity-exercise__pill {
-    background: var(--surface-white-10);
-    border-radius: var(--ui-radius-pill);
-    padding: 4px 10px;
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    color: var(--color-text-main);
-    white-space: nowrap;
-}
-
+.activity-exercise__pill,
 .stat-pill {
     background: var(--surface-white-10);
     border-radius: var(--ui-radius-pill);
