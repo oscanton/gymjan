@@ -223,7 +223,7 @@ const FOODS = {
      ========================= */
   bolero_9g: { name: "Bolero 9gr", category: "☕ Drinks", unit: "ud", waterMlPerUnit: 0, nutritionPerUnit: { kcal: 1, protein: 0.0, carbs: 0.1, fat: 0.0, saturatedFat: 0.0, fiber: 0.0, sugar: 0.0, sodiumMg: 15 }, processed: 7 },
   coconut_water: { name: "Agua de coco", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0.192, protein: 0.002, carbs: 0.044, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0.04, sodiumMg: 0.42 }, processed: 4 },
-  coffee: { name: "Café", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0, protein: 0, carbs: 0, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0, sodiumMg: 0.025 }, processed: 1 },
+  coffee: { name: "Café", category: "☕ Drinks", unit: "ud", waterMlPerUnit: 200, nutritionPerUnit: { kcal: 0, protein: 0, carbs: 0, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0, sodiumMg: 5 }, processed: 1 },
   diet_soda: { name: "Refresco light", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0.006, protein: 0, carbs: 0.001, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0, sodiumMg: 0.045 }, processed: 7 },
   herbal_tea: { name: "Infusión", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0, protein: 0, carbs: 0, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0, sodiumMg: 0.02 }, processed: 1 },
   natural_juice: { name: "Zumo natural", category: "☕ Drinks", unit: "ml", waterMlPerUnit: 1, nutritionPerUnit: { kcal: 0.44, protein: 0.006, carbs: 0.1, fat: 0.001, saturatedFat: 0, fiber: 0.002, sugar: 0.084, sodiumMg: 0.02 }, processed: 3 },

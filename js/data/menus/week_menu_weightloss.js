@@ -13,7 +13,7 @@ window.MENU_DATA = [
         },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 200 },
+                { foodId: "coffee", amount: 1 },
                 { foodId: "oats", amount: 60 },
                 { foodId: "plain_yogurt", amount: 125 },
                 { foodId: "avocado", amount: 80 }
@@ -51,7 +51,7 @@ window.MENU_DATA = [
         },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 200 },
+                { foodId: "coffee", amount: 1 },
                 { foodId: "wholegrain_bread", amount: 80 },
                 { foodId: "tomato", amount: 100 },
                 { foodId: "turkey", amount: 100 }
@@ -88,7 +88,7 @@ window.MENU_DATA = [
         },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 200 },
+                { foodId: "coffee", amount: 1 },
                 { foodId: "egg", amount: 2 },
                 { foodId: "wholegrain_bread", amount: 80 },
                 { foodId: "tomato", amount: 80 },
@@ -126,7 +126,7 @@ window.MENU_DATA = [
         },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 200 },
+                { foodId: "coffee", amount: 1 },
                 { foodId: "protein", amount: 30 },
                 { foodId: "kefir", amount: 125 },
                 { foodId: "oats", amount: 50 },
@@ -166,7 +166,7 @@ window.MENU_DATA = [
         },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 200 },
+                { foodId: "coffee", amount: 1 },
                 { foodId: "plain_yogurt", amount: 170 },
                 { foodId: "oats", amount: 40 },
                 { foodId: "protein", amount: 30 },
@@ -205,7 +205,7 @@ window.MENU_DATA = [
         },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 200 },
+                { foodId: "coffee", amount: 1 },
                 { foodId: "wholegrain_bread", amount: 80 },
                 { foodId: "tomato", amount: 80 },
                 { foodId: "cheese_fresh", amount: 125 },
@@ -242,7 +242,7 @@ window.MENU_DATA = [
         },
         breakfast: {
             items: [
-                { foodId: "coffee", amount: 200 },
+                { foodId: "coffee", amount: 1 },
                 { foodId: "egg", amount: 2 },
                 { foodId: "avocado", amount: 80 },
                 { foodId: "wholegrain_bread", amount: 80 }
