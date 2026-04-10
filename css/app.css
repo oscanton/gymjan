@@ -1,45 +1,37 @@
-/* =========================================
-   app.css - CORE & VARIABLES
-   ========================================= */
-
 :root {
-    /* --- 1. Base Palette --- */
+
     --color-surface-base: #0f2027;
     --color-surface-strong: #203a43;
     --color-surface-deep: #2c5364;
     --color-bg-gradient: linear-gradient(180deg, var(--color-surface-base), var(--color-surface-strong), var(--color-surface-deep));
-    --color-bg-sticky: var(--color-surface-strong); /* Solid background for sticky elements */
-    --color-text-main:   #ffffff;
-    --color-text-muted:  rgba(255, 255, 255, 0.7);
-    --color-text-inverse: #1a1a1a; /* Dark text on bright colors */
-    
-    /* --- 2. Accent Colors --- */
-    --color-primary-rgb: 255, 209, 102; /* #ffd166 */
-    --color-primary:     rgb(var(--color-primary-rgb));
+    --color-bg-sticky: var(--color-surface-strong);
+    --color-text-main: #ffffff;
+    --color-text-muted: rgba(255, 255, 255, 0.7);
+    --color-text-inverse: #1a1a1a;
 
-    --color-danger-rgb:  239, 71, 111;  /* #ef476f */
-    --color-danger:      rgb(var(--color-danger-rgb));
+    --color-primary-rgb: 255, 209, 102;
+    --color-primary: rgb(var(--color-primary-rgb));
 
-    --color-success-rgb: 76, 175, 80;   /* #4caf50 */
-    --color-success:     rgb(var(--color-success-rgb));
+    --color-danger-rgb: 239, 71, 111;
+    --color-danger: rgb(var(--color-danger-rgb));
 
-    --color-warning-rgb: 255, 152, 0;   /* #ff9800 */
-    --color-warning:     rgb(var(--color-warning-rgb));
+    --color-success-rgb: 76, 175, 80;
+    --color-success: rgb(var(--color-success-rgb));
 
-    --color-info-rgb:    79, 195, 247;  /* #4fc3f7 */
-    --color-info:        rgb(var(--color-info-rgb));
+    --color-warning-rgb: 255, 152, 0;
+    --color-warning: rgb(var(--color-warning-rgb));
 
-    --color-critical-rgb: 183, 28, 28;  /* #b71c1c */
-    --color-critical:     rgb(var(--color-critical-rgb));
+    --color-info-rgb: 79, 195, 247;
+    --color-info: rgb(var(--color-info-rgb));
 
-    /* --- 3. UI: Glassmorphism Backgrounds --- */
-    /* Opacity levels create hierarchy */
-    --glass-light: rgba(255, 255, 255, 0.1);  /* Main containers */
-    --glass-medium: rgba(255, 255, 255, 0.06); /* Odd cells */
-    --glass-dark:  rgba(0, 0, 0, 0.25);       /* Dark backgrounds/contrast */
-    --glass-faint: rgba(255, 255, 255, 0.03); /* Very subtle backgrounds */
+    --color-critical-rgb: 183, 28, 28;
+    --color-critical: rgb(var(--color-critical-rgb));
 
-    /* Borders */
+    --glass-light: rgba(255, 255, 255, 0.1);
+    --glass-medium: rgba(255, 255, 255, 0.06);
+    --glass-dark: rgba(0, 0, 0, 0.25);
+    --glass-faint: rgba(255, 255, 255, 0.03);
+
     --border-light: rgba(255, 255, 255, 0.1);
     --border-faint: rgba(255, 255, 255, 0.05);
     --surface-white-10: rgba(255, 255, 255, 0.1);
@@ -53,14 +45,13 @@
     --surface-black-40: rgba(0, 0, 0, 0.4);
     --surface-black-50: rgba(0, 0, 0, 0.5);
     --overlay-backdrop: rgba(0, 0, 0, 0.6);
-    
-    /* --- 4. UI: Semantic Elements --- */
+
     --ui-radius-lg: 18px;
     --ui-radius-md: 14px;
     --ui-radius-sm: 10px;
     --ui-radius-table: 12px;
     --ui-radius-pill: 20px;
-    
+
     --ui-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
     --ui-modal-gradient: linear-gradient(135deg, var(--color-surface-strong), var(--color-surface-deep));
     --ui-shadow-primary: 0 4px 15px rgba(var(--color-primary-rgb), 0.3);
@@ -71,13 +62,10 @@
     --ui-focus-ring-sm: 0 0 0 2px rgba(var(--color-primary-rgb), 0.1);
     --ui-transition-fast: 0.2s;
     --ui-transition-press: 0.1s;
-    --ui-control-height: 31px;
     --ui-index-width: 520px;
-    
-    /* Highlight for active rows or primary buttons */
+
     --ui-highlight-gradient: linear-gradient(135deg, var(--color-primary), var(--color-danger));
 
-    /* --- 5. Spacing --- */
     --space-xs: 6px;
     --space-sm: 8px;
     --space-md: 12px;
@@ -85,7 +73,6 @@
     --space-xl: 24px;
     --page-gap: var(--space-lg);
 
-    /* --- 6. Typography --- */
     --font-stack: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
     --font-size-2xs: 0.7rem;
     --font-size-caption: 0.8rem;
@@ -100,7 +87,6 @@
     --font-size-h1: 1.6rem;
     --line-height-tight: 1.2;
 
-    /* --- 7. Layout Scales --- */
     --table-min-width-sm: 260px;
     --table-min-width-md: 340px;
     --table-min-width-lg: 600px;
@@ -108,32 +94,26 @@
     --column-min-width-md: 180px;
 }
 
-/* =========================================
-   RESET & BASE
-   ========================================= */
-
 * {
     box-sizing: border-box;
-    /* Improves tap highlight on mobile */
-    -webkit-tap-highlight-color: transparent; 
+
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
     margin: 0;
     padding: var(--space-sm);
     min-height: 100vh;
-    
+
     font-family: var(--font-stack);
     background: var(--color-bg-gradient);
-    background-attachment: fixed; /* Prevents background from moving on scroll */
+    background-attachment: fixed;
     color: var(--color-text-main);
-    
-    /* Native PWA behavior */
+
     overscroll-behavior-y: none;
     -webkit-font-smoothing: antialiased;
 }
 
-/* Global Utilities */
 .text-center { text-align: center; }
 .w-100 { width: 100%; }
 .w-auto { width: auto; }
@@ -144,9 +124,6 @@ body {
 .opacity-70 { opacity: 0.7; }
 .p-lg { padding: var(--space-lg); }
 
-/* =========================================
-   UI: SKINS (GLASSMORPHISM)
-   ========================================= */
 .glass-card {
     background: var(--glass-light);
     backdrop-filter: blur(10px);
@@ -155,10 +132,6 @@ body {
     border-radius: var(--ui-radius-lg);
     box-shadow: var(--ui-shadow);
 }
-
-/* =========================================
-   GLOBAL TYPOGRAPHY
-   ========================================= */
 
 h1 {
     text-align: center;
@@ -186,7 +159,6 @@ h2 {
     letter-spacing: 0.5px;
 }
 
-/* Standard Typography Classes */
 .text-label {
     font-size: var(--font-size-xs);
     text-transform: uppercase;
@@ -212,18 +184,12 @@ h2 {
 .text-status--warning { color: var(--color-warning); font-weight: bold; }
 .text-status--danger { color: var(--color-danger); font-weight: bold; }
 
-/* Color Utilities (Moved from components.css) */
 .color-blue { color: var(--color-info); }
 .color-success { color: var(--color-success); }
 .color-warning { color: var(--color-warning); }
 .color-danger { color: var(--color-danger); }
 .color-critical { color: var(--color-critical); }
 
-/* =========================================
-   LAYOUT UTILS
-   ========================================= */
-
-/* Center content (used in index.html) */
 .layout-center {
     display: flex;
     flex-direction: column;
@@ -232,7 +198,6 @@ h2 {
     min-height: 100vh;
 }
 
-/* Main container for views */
 .layout-container {
     max-width: 600px;
     margin: 0 auto;
@@ -352,7 +317,6 @@ h2 {
     :root { --page-gap: var(--space-xl); }
 }
 
-/* Vertical stack with spacing (used in actividad.html) */
 .stack-vertical {
     display: flex;
     flex-direction: column;

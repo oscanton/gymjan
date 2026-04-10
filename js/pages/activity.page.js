@@ -1,51 +1,55 @@
-
-/* =========================================
-   pages/activity.page.js - WEEKLY ACTIVITY
-   ========================================= */
-
 function renderActivityPage() {
     const tableBody = document.getElementById('actividad-body');
     if (!tableBody) return;
 
     let formulas = null;
     let targets = null;
-
+    let activityService = null;
+    let activityPresenter = null;
+    let currentPlanData = null;
+    let exercisesCatalog = null;
     let isEditMode = false;
+
     const pendingAdds = {};
-    const errorColspan = (typeof DAYS_COUNT !== 'undefined' && Number.isFinite(DAYS_COUNT))
-        ? (DAYS_COUNT + 1)
-        : 8;
-
-    let container = document.getElementById('actividad-container');
-    if (!container) {
-        const table = tableBody.closest('table');
-        if (table) container = table.parentElement;
-    }
-
     const PLAN_KEY = 'activity_plan_selector';
+    const defaultStepsCfg = APP_STEPS_DEFAULTS;
+    const errorColspan = Number.isFinite(DAYS_COUNT) ? DAYS_COUNT + 1 : 8;
+    const table = tableBody.closest('table');
+    let container = document.getElementById('actividad-container');
+    if (!container && table) container = table.parentElement;
 
-    const getPlanFiles = () => (Array.isArray(AVAILABLE_ACTIVITY_PLAN_FILES) ? AVAILABLE_ACTIVITY_PLAN_FILES : []);
+    const getPlanFiles = () => Array.isArray(AVAILABLE_ACTIVITY_PLAN_FILES) ? AVAILABLE_ACTIVITY_PLAN_FILES : [];
     const getSelectedFile = () => ActivityStore.getSelectedFile();
     const setSelectedFile = (file) => ActivityStore.setSelectedFile(file);
-    const getPlanData = () => ActivityStore.getActivePlanData(getSelectedFile());
-    const savePlanData = (data) => ActivityStore.savePlanData(getSelectedFile(), data);
-    const clearPlanData = () => ActivityStore.clearSavedPlanData(getSelectedFile());
-
-    const resetActivityData = () => {
-        clearPlanData();
+    const getPlanData = () => currentPlanData;
+    const getSectionItems = (dayData, sectionKey) => (
+        dayData && dayData[sectionKey] && Array.isArray(dayData[sectionKey].exercises) ? dayData[sectionKey].exercises : null
+    );
+    const getExerciseItem = (planData, dayIndex, sectionKey, exerciseId) => {
+        const items = getSectionItems(planData[dayIndex], sectionKey);
+        return items && items.find((item) => item && item.exerciseId === exerciseId);
     };
-
+    const savePlanData = (data) => {
+        currentPlanData = ActivityStore.normalizeActivityData(data);
+        ActivityStore.savePlanData(getSelectedFile(), currentPlanData);
+    };
+    const clearPlanData = () => {
+        currentPlanData = null;
+        ActivityStore.clearSavedPlanData(getSelectedFile());
+    };
+    const resetActivityData = () => clearPlanData();
     const confirmAndResetActivity = () => {
-        if (!confirm("¿Restablecer actividad por defecto? Se perderán los cambios.")) return;
+        if (!confirm("\u00BFRestablecer actividad por defecto? Se perder\u00E1n los cambios.")) return;
         resetActivityData();
         if (isEditMode) isEditMode = false;
-        renderTableContent();
+        loadPlanFile(getSelectedFile()).then(renderTableContent);
     };
 
-    const defaultStepsCfg = APP_STEPS_DEFAULTS;
-
     const getWalkingExercise = () => {
-        if (typeof EXERCISES !== 'undefined' && EXERCISES.caminar) return EXERCISES.caminar;
+        if (activityService && typeof activityService.getWalkingExercise === 'function') {
+            return activityService.getWalkingExercise({ exercisesMap: exercisesCatalog || {}, defaultStepsCfg });
+        }
+        if (exercisesCatalog && exercisesCatalog.caminar) return exercisesCatalog.caminar;
         return {
             name: 'Caminar',
             type: 'cardio',
@@ -58,216 +62,150 @@ function renderActivityPage() {
             technique: 'Actividad diaria basada en pasos.'
         };
     };
-
     const ensureWalkItem = (dayData) => {
         if (!dayData) return null;
-        if (!dayData.walk || typeof dayData.walk !== 'object') {
-            dayData.walk = { exercises: [], description: '' };
-        }
+        if (!dayData.walk || typeof dayData.walk !== 'object') dayData.walk = { exercises: [], description: '' };
         if (!Array.isArray(dayData.walk.exercises)) dayData.walk.exercises = [];
-        let item = dayData.walk.exercises.find(e => e && e.exerciseId === 'caminar');
+        let item = dayData.walk.exercises.find((entry) => entry && entry.exerciseId === 'caminar');
         if (!item) {
             item = { exerciseId: 'caminar', sets: 1, reps: 1, stepsPerMin: defaultStepsCfg.perMinute };
             dayData.walk.exercises.unshift(item);
         }
         return item;
     };
-
     const getWalkInfo = (dayData) => (
-        (typeof ActivityStore !== 'undefined' && ActivityStore.getWalkInfo)
-            ? ActivityStore.getWalkInfo(dayData, { defaultStepsCfg, walkingExercise: getWalkingExercise() })
-            : { steps: 0, stepsPerMin: defaultStepsCfg.perMinute, secPerRep: 0, cadenceBase: defaultStepsCfg.perMinute }
+        activityService && typeof activityService.getWalkInfo === 'function'
+            ? activityService.getWalkInfo(dayData, { defaultStepsCfg, walkingExercise: getWalkingExercise() })
+            : (ActivityStore && ActivityStore.getWalkInfo
+                ? ActivityStore.getWalkInfo(dayData, { defaultStepsCfg, walkingExercise: getWalkingExercise() })
+                : { steps: 0, stepsPerMin: defaultStepsCfg.perMinute, secPerRep: 0, cadenceBase: defaultStepsCfg.perMinute })
     );
-
-    const getGymExercises = (dayData) => {
-        if (!dayData || !dayData.gym || dayData.gym.type === 'rest') return [];
-        return Array.isArray(dayData.gym.exercises) ? dayData.gym.exercises : [];
-    };
-
-    const getExtraExercises = (dayData) => {
-        if (!dayData || !dayData.extra_activity || dayData.extra_activity.type === 'rest') return [];
-        return Array.isArray(dayData.extra_activity.exercises) ? dayData.extra_activity.exercises : [];
-    };
-
-    const dayHasExtra = (plan) => Array.isArray(plan) && plan.some(day => day && day.extra_activity && day.extra_activity.type !== 'rest'
-        && Array.isArray(day.extra_activity.exercises) && day.extra_activity.exercises.length);
-
+    const dayHasExtra = (plan) => Array.isArray(plan) && plan.some((day) => (
+        day && day.extra_activity && day.extra_activity.type !== 'rest' &&
+        Array.isArray(day.extra_activity.exercises) && day.extra_activity.exercises.length
+    ));
     const buildDefaultExercise = (section, sectionKey, exerciseId) => {
-        const forcedId = exerciseId || null;
-        const list = (section && Array.isArray(section.exercises)) ? section.exercises : [];
-        let baseId = forcedId || (list.length ? list[0].exerciseId : null);
-        if (!baseId && typeof EXERCISES !== 'undefined') {
+        const list = getSectionItems({ [sectionKey]: section }, sectionKey) || [];
+        let baseId = exerciseId || (list.length ? list[0].exerciseId : null);
+        if (!baseId && exercisesCatalog) {
             if (sectionKey === 'gym') {
-                if (EXERCISES.movilidad_articular) baseId = 'movilidad_articular';
+                if (exercisesCatalog.movilidad_articular) baseId = 'movilidad_articular';
                 else {
-                    const firstStrength = Object.values(EXERCISES).find(ex => ex && ex.type === 'fuerza');
+                    const firstStrength = Object.values(exercisesCatalog).find((entry) => entry && entry.type === 'fuerza');
                     baseId = firstStrength ? firstStrength.id : null;
                 }
             } else if (sectionKey === 'extra_activity') {
-                const firstStrength = Object.values(EXERCISES).find(ex => ex && ex.type === 'fuerza');
-                baseId = firstStrength ? firstStrength.id : (EXERCISES.caminar ? 'caminar' : null);
+                const firstStrength = Object.values(exercisesCatalog).find((entry) => entry && entry.type === 'fuerza');
+                baseId = firstStrength ? firstStrength.id : (exercisesCatalog.caminar ? 'caminar' : null);
             } else {
-                baseId = EXERCISES.movilidad_articular ? 'movilidad_articular' : (EXERCISES.caminar ? 'caminar' : null);
+                baseId = exercisesCatalog.movilidad_articular ? 'movilidad_articular' : (exercisesCatalog.caminar ? 'caminar' : null);
             }
         }
         if (!baseId) return null;
-        const ex = (typeof EXERCISES !== 'undefined') ? EXERCISES[baseId] : null;
-        if (!ex) return { exerciseId: baseId, sets: 3, reps: "10-12", secPerRep: 3 };
-        if (ex.type === 'cardio') return { exerciseId: baseId, sets: 1, reps: 1, secPerRep: 600 };
-        return { exerciseId: baseId, sets: 3, reps: "10-12", weightKg: 0, secPerRep: 3 };
+        const exercise = exercisesCatalog ? exercisesCatalog[baseId] : null;
+        if (!exercise) return { exerciseId: baseId, sets: 3, reps: '10-12', secPerRep: 3 };
+        return exercise.type === 'cardio'
+            ? { exerciseId: baseId, sets: 1, reps: 1, secPerRep: 600 }
+            : { exerciseId: baseId, sets: 3, reps: '10-12', weightKg: 0, secPerRep: 3 };
     };
 
     const formatMet = (value) => {
-        const n = parseFloat(value);
-        if (!Number.isFinite(n) || n <= 0) return '-';
-        const rounded = Math.round(n * 10) / 10;
-        return (rounded % 1 === 0) ? rounded.toFixed(0) : rounded.toFixed(1);
+        const numeric = parseFloat(value);
+        if (!Number.isFinite(numeric) || numeric <= 0) return '-';
+        const rounded = Math.round(numeric * 10) / 10;
+        return rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1);
     };
     const formatFactor = (value) => {
-        const n = parseFloat(value);
-        if (!Number.isFinite(n) || n <= 0) return '-';
-        return (Math.round(n * 100) / 100).toFixed(2);
+        const numeric = parseFloat(value);
+        return Number.isFinite(numeric) && numeric > 0 ? (Math.round(numeric * 100) / 100).toFixed(2) : '-';
     };
+
     const formatNumber = UI.formatNumber;
     const encodePayload = UI.encodePayload;
     const decodePayload = UI.decodePayload;
     const escapeHtml = UI.escapeHtml;
-
-    const ACTIVITY_METRIC_LABELS = {
-        stepsKcal: 'Kcal pasos',
-        trainingKcal: 'Kcal entrenamiento',
-        met: 'MET entrenamiento',
-        intensity: 'Intensidad'
-    };
-
-    const getDefaultMacroRatios = () => CoreBrowserDomain.getDefaultMacroRatios(formulas);
-    const getDailyMacroRatios = () => CoreBrowserDomain.getDailyMacroRatios(targets, { formulas });
-    const getSecondaryDefaults = () => CoreBrowserDomain.getSecondaryDefaults(targets);
-    const getSecondaryAdjustments = () => CoreBrowserDomain.getSecondaryAdjustments(targets);
-    const computeDailyTargets = (weeklyPlan, profile, adjustments, exercisesMap) => (
-        CoreBrowserDomain.computeDailyTargets(targets, formulas, weeklyPlan, profile, adjustments, exercisesMap)
+    const dataAttrs = (attrs = {}) => Object.entries(attrs)
+        .map(([key, value]) => ` data-${key}="${escapeHtml(String(value == null ? '' : value))}"`)
+        .join('');
+    const editInput = (attrs, value, { numeric = true } = {}) => (
+        `<input type="text"${numeric ? ' inputmode="numeric" pattern="[0-9]*"' : ''} class="input-base input-base--table-edit"${dataAttrs(attrs)} value="${escapeHtml(String(value == null ? '' : value))}">`
     );
-
-    const ensureDailyTargets = () => (
-        CoreBrowserDomain.ensureDailyTargets(targets, formulas, { needsKcal: true })
+    const kvRow = (label, valueHtml, valueClass = '') => `
+        <div class="activity-exercise__kv-row">
+            <div class="activity-exercise__kv-label">${label}</div>
+            <div class="activity-exercise__kv-value${valueClass ? ` ${valueClass}` : ''}">${valueHtml}</div>
+        </div>
+    `;
+    const pill = (label, value) => `<div class="activity-exercise__pill">${label} ${value}</div>`;
+    const splitRow = (left, right) => `<div class="activity-exercise__row activity-exercise__row--split">${left}${right}</div>`;
+    const cardHtml = ({ data = {}, nameHtml = '', kvRows = '', statRows = '', description = '', className = '' } = {}) => `
+        <div class="activity-exercise${className ? ` ${className}` : ''}"${dataAttrs(data)}>
+            ${nameHtml}
+            ${kvRows ? `<div class="activity-exercise__kv">${kvRows}</div>` : ''}
+            ${statRows}
+            <div class="meal-description">${description || ''}</div>
+        </div>
+    `;
+    const addButton = (sectionKey, dayIndex) => (
+        isEditMode
+            ? `<button type="button" class="activity-training__add"${dataAttrs({ 'ex-add-section': sectionKey, 'ex-add-day-index': dayIndex })}>A\u00F1adir</button>`
+            : ''
     );
-    const renderActivityScorePill = ({ stepsKcal, trainingKcal, met, intensity, targetKcal }) => {
-        if (typeof ActivityScore === 'undefined') return '';
-        const result = ActivityScore.calculate({
-            stepsKcal,
-            trainingKcal,
-            met,
-            intensity,
-            targetKcal
-        });
-        const scoreText = Number.isFinite(result.score) ? formatNumber(result.score, 1) : '-';
-        const statusClass = ActivityScore.getStatusClass(result.score);
-        const debugPayload = encodePayload({
-            score: result.score,
-            scores: result.scores,
-            targets: result.targets,
-            inputs: { stepsKcal, trainingKcal, met, intensity, targetKcal }
-        });
-        return `
-            <button type="button" class="stat-pill stat-pill--activity-score stat-pill--block pill-trigger activity-score-info-trigger" data-activity-score="${debugPayload}">
-                Score actividad: <span class="${statusClass}">${scoreText}</span>
-            </button>
-        `;
-    };
-
-    const generateActivityTotalsHtml = ({ totalKcal, trainingKcal, stepsKcal, min, metAvg, intensityAvg, scoreHtml = '' }) => {
-        return `
-            <div class="totals-stack">
-                <div class="stat-pill stat-pill--kcal stat-pill--sm stat-pill--block">
-                    🔥 ${Math.round(totalKcal)} kcal
+    const trainingCell = ({ title, sectionKey, dayIndex, description = '', body = '' } = {}) => `
+        <td>
+            <div class="activity-training">
+                <div class="activity-training__title-row">
+                    <div class="activity-training__title">${title}</div>
+                    ${addButton(sectionKey, dayIndex)}
                 </div>
-                <div class="totals-row totals-row--nowrap">
-                    <div class="stat-pill totals-pill stat-pill--sm">
-                        <div>👟 Pasos · ${Math.round(stepsKcal)} kcal</div>
-                    </div>
-                    <div class="stat-pill totals-pill stat-pill--sm">
-                        <div>🏋️ Entrenamiento · ${Math.round(trainingKcal)} kcal</div>
-                    </div>
-                </div>
-                <div class="totals-row">
-                    <div class="stat-pill totals-pill stat-pill--sm">
-                        <div class="totals-pill__label">⚡ MET</div>
-                        <div>${(Number.isFinite(metAvg) && metAvg > 0) ? `${formatMet(metAvg)} MET` : '-'}</div>
-                    </div>
-                    <div class="stat-pill totals-pill stat-pill--sm">
-                        <div class="totals-pill__label">✮ Intensidad</div>
-                        <div>${(Number.isFinite(intensityAvg) && intensityAvg > 0) ? `x${formatFactor(intensityAvg)}` : '-'}</div>
-                    </div>
-                    <div class="stat-pill totals-pill stat-pill--sm">
-                        <div class="totals-pill__label">⏱️ Tiempo</div>
-                        <div>${(Number.isFinite(min) && min > 0) ? `${UI.formatMinutes(min)} min` : '-'}</div>
-                    </div>
-                </div>
-                ${scoreHtml}
+                <div class="activity-training__meta">${description}</div>
+                ${body}
             </div>
-        `;
-    };
-
-    const showTechniqueModal = ({ name, type, focus, muscles, equipment, restSeconds, technique, kcal }) => {
-        UI.showModal({
-            titleHtml: `<h3 class="modal-title">${name}</h3>`,
-            bodyHtml: `
-                <div class="text-sm">
-                    <div><span class="text-muted">Tipo:</span> ${type || '-'}</div>
-                    <div><span class="text-muted">Enfoque:</span> ${focus || '-'}</div>
-                    <div><span class="text-muted">Músculos:</span> ${muscles || '-'}</div>
-                    <div><span class="text-muted">Equipo:</span> ${equipment || '-'}</div>
-                    ${restSeconds ? `<div><span class="text-muted">Descanso:</span> ${restSeconds} s</div>` : ''}
-                </div>
-                <p class="text-sm">${technique || 'Técnica no disponible.'}</p>
-                <div class="stats-pills stats-pills--center mt-lg">
-                    <div class="stat-pill stat-pill--kcal">🔥 ${Math.round(kcal)} kcal</div>
-                </div>
-            `
-        });
-    };
+        </td>
+    `;
+    const generateActivityTotalsHtml = (dayView) => activityPresenter.renderActivityTotals(dayView, {
+        formatNumber,
+        formatMet,
+        formatFactor,
+        formatMinutes: UI.formatMinutes,
+        getStatusClassFromCode: UI.getStatusClassFromCode,
+        encodePayload
+    });
+    const showTechniqueModal = (exercise) => UI.showModal(activityPresenter.buildTechniqueModal({ ...exercise, escapeHtml }));
 
     const buildPlanSelector = () => {
         const plans = getPlanFiles();
-        const h1 = document.querySelector('h1');
-        if (!h1) return;
-        h1.classList.add('header-with-controls');
-        let selectWrapper = document.getElementById(PLAN_KEY);
+        const title = document.querySelector('h1');
+        if (!title) return;
+        title.classList.add('header-with-controls');
+        let wrapper = document.getElementById(PLAN_KEY);
         if (!plans.length) {
-            if (selectWrapper) selectWrapper.remove();
+            if (wrapper) wrapper.remove();
             return;
         }
-        if (!selectWrapper) {
-            selectWrapper = document.createElement('span');
-            selectWrapper.id = PLAN_KEY;
-            h1.appendChild(selectWrapper);
+        if (!wrapper) {
+            wrapper = document.createElement('span');
+            wrapper.id = PLAN_KEY;
+            title.appendChild(wrapper);
         }
-        const selected = getSelectedFile();
-        const options = plans.map(plan =>
-            `<option value="${plan.file}" ${plan.file === selected ? 'selected' : ''}>${plan.label}</option>`
-        ).join('');
-        selectWrapper.innerHTML = `<select id="activity-plan-select" class="input-base input-select input-select--header">${options}</select>`;
-
+        wrapper.innerHTML = `<select id="activity-plan-select" class="input-base input-select input-select--header">${plans.map((plan) => (
+            `<option value="${plan.file}" ${plan.file === getSelectedFile() ? 'selected' : ''}>${plan.label}</option>`
+        )).join('')}</select>`;
         const select = document.getElementById('activity-plan-select');
         if (select) {
-            select.addEventListener('change', (e) => {
-                const file = e.target.value;
+            select.addEventListener('change', (event) => {
+                const file = event.target.value;
                 setSelectedFile(file);
-                loadPlanFile(file).then(() => renderTableContent());
+                loadPlanFile(file).then(renderTableContent);
             });
         }
     };
+    const loadPlanFile = (file) => CoreBrowserAdapter.resolveActivityPlanData(file)
+        .then((planData) => (currentPlanData = Array.isArray(planData) ? planData : null))
+        .catch(() => null);
 
-    const loadPlanFile = (file) => {
-        const safeId = String(file).replace(/[^a-z0-9_-]/gi, '_');
-        return UI.loadScript(`js/data/${file}`, `activity-plan-${safeId}`)
-            .catch((err) => {
-                console.error('Error cargando plan de actividad:', err);
-                return null;
-            });
-    };
     const renderTableContent = () => {
-        if (typeof EXERCISES === 'undefined') {
+        if (!exercisesCatalog) {
             tableBody.innerHTML = `<tr><td colspan="${errorColspan}" class="text-status--danger text-center">Error: datos de ejercicios no disponibles.</td></tr>`;
             return;
         }
@@ -278,347 +216,204 @@ function renderActivityPage() {
             return;
         }
 
-        const todayIndex = UI.getTodayIndex();
-        const walkingExercise = getWalkingExercise();
-        const storedTargets = ensureDailyTargets();
+        const pageModel = activityService.getActivityPageModel({
+            planData,
+            currentFile: getSelectedFile(),
+            exercisesMap: exercisesCatalog,
+            defaultStepsCfg,
+            targets,
+            formulas,
+            activityScoreEngine: ActivityScore,
+            browserDomain: CoreBrowserDomain
+        });
+        currentPlanData = pageModel.planData || planData;
 
-        const table = tableBody.closest('table');
-        const thead = table.querySelector('thead');
-        if (thead) {
-            let headerHtml = `<tr><th class="activity-row-header"></th>`;
-            WEEK_DAYS.forEach((dayLabel, index) => {
-                const isToday = index === todayIndex;
-                const activeClass = isToday ? 'text-status--ok' : '';
-                headerHtml += `
-                    <th class="${activeClass}">
-                        <div class="activity-day-header">
-                            <div class="activity-day-title">${dayLabel}</div>
-                        </div>
-                    </th>`;
-            });
-            headerHtml += '</tr>';
-            thead.innerHTML = headerHtml;
+        const dayViews = pageModel.days;
+        const todayIndex = UI.getTodayIndex();
+        const walkingExercise = pageModel.walkingExercise;
+
+        if (table) {
+            const thead = table.querySelector('thead');
+            if (thead) {
+                thead.innerHTML = `<tr><th class="activity-row-header"></th>${WEEK_DAYS.map((dayLabel, index) => `
+                    <th class="${index === todayIndex ? 'text-status--ok' : ''}">
+                        <div class="activity-day-header"><div class="activity-day-title">${dayLabel}</div></div>
+                    </th>
+                `).join('')}</tr>`;
+            }
         }
 
-        tableBody.innerHTML = '';
-
-        const movementRow = document.createElement('tr');
-        let movementHtml = `<td class="activity-row-header">Movimiento</td>`;
-
-        const userHeightCm = (typeof UI !== 'undefined' && UI.getUserHeightCm) ? UI.getUserHeightCm() : 0;
-        planData.forEach((dayData, dayIndex) => {
-            const walkInfo = getWalkInfo(dayData);
-            const stepsKcal = UI.calculateStepsKcal(walkInfo.steps, {
-                stepsConfig: {
-                    stepsPerMin: walkInfo.stepsPerMin,
-                    baseStepsPerMin: walkInfo.cadenceBase || parseFloat(walkingExercise.cadenceBase) || defaultStepsCfg.perMinute,
-                    met: walkingExercise.met || defaultStepsCfg.met
-                }
-            });
-            const totalMin = walkInfo.stepsPerMin > 0 ? (walkInfo.steps / walkInfo.stepsPerMin) : 0;
-            const distanceKm = UI.calculateStepsDistanceKm(walkInfo.steps, { heightCm: userHeightCm });
-            const dayStepsFactor = UI.calculateStepsIntensityFactor(walkInfo.stepsPerMin, {
-                baseStepsPerMin: walkInfo.cadenceBase || parseFloat(walkingExercise.cadenceBase) || defaultStepsCfg.perMinute,
-                a: 1,
-                b: 2
-            });
-            const dayStepsMet = (parseFloat(walkingExercise.met) || 0) * dayStepsFactor;
-
-            movementHtml += `
+        const renderMovementCell = (dayData, dayIndex, dayView) => {
+            const walkInfo = dayView ? dayView.walkInfo : getWalkInfo(dayData);
+            const movement = dayView ? dayView.movement : null;
+            const stepsKcal = movement ? movement.stepsKcal : 0;
+            const totalMin = movement ? movement.totalMin : 0;
+            const distanceKm = movement ? movement.distanceKm : 0;
+            const stepsMet = movement ? movement.stepsMet : 0;
+            return `
                 <td>
-                    <div class="activity-exercise"
-                        data-ex-name="${walkingExercise.name || 'Movimiento diario'}"
-                        data-ex-tech="${walkingExercise.technique || ''}"
-                        data-ex-kcal="${stepsKcal}"
-                        data-ex-type="${walkingExercise.type || ''}"
-                        data-ex-focus="${walkingExercise.focus || ''}"
-                        data-ex-muscles="${walkingExercise.muscles || ''}"
-                        data-ex-equipment="${walkingExercise.equipment || ''}">
-                        <div class="activity-exercise__name modal-trigger">${walkingExercise.name || 'Movimiento diario'}</div>
-                        <div class="activity-exercise__kv">
-                            <div class="activity-exercise__kv-row">
-                                <div class="activity-exercise__kv-label">Pasos</div>
-                                ${isEditMode ? `
-                                    <div class="activity-exercise__kv-value activity-exercise__kv-value--edit">
-                                        <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
-                                            data-walk-day-index="${dayIndex}" data-walk-field="steps" value="${walkInfo.steps}">
-                                    </div>
-                                ` : `
-                                    <div class="activity-exercise__kv-value">${walkInfo.steps}</div>
-                                `}
-                            </div>
-                            <div class="activity-exercise__kv-row">
-                                <div class="activity-exercise__kv-label">Ritmo (pasos/min)</div>
-                                ${isEditMode ? `
-                                    <div class="activity-exercise__kv-value activity-exercise__kv-value--edit">
-                                        <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
-                                            data-walk-day-index="${dayIndex}" data-walk-field="stepsPerMin" value="${walkInfo.stepsPerMin}">
-                                    </div>
-                                ` : `
-                                    <div class="activity-exercise__kv-value">${walkInfo.stepsPerMin > 0 ? `${walkInfo.stepsPerMin}` : '-'}</div>
-                                `}
-                            </div>
-                        </div>
-                        <div class="activity-exercise__row activity-exercise__row--split">
-                            <div class="activity-exercise__pill">🔥 ${Math.round(stepsKcal)} kcal</div>
-                            ${(parseFloat(dayStepsMet) > 0) ? `<div class="activity-exercise__pill">⚡ ${formatMet(dayStepsMet)} MET</div>` : '<div class="activity-exercise__pill">⚡ - MET</div>'}
-                        </div>
-                        <div class="activity-exercise__row activity-exercise__row--split">
-                            <div class="activity-exercise__pill">📏 ${(distanceKm > 0) ? `${UI.formatKm(distanceKm)} km` : '-'}</div>
-                            <div class="activity-exercise__pill">⏱️ ${UI.formatMinutes(totalMin)} min</div>
-                        </div>
-                        <div class="meal-description">${(dayData.walk && dayData.walk.description) ? dayData.walk.description : ''}</div>
-                    </div>
-                </td>`;
-        });
+                    ${cardHtml({
+                        data: {
+                            'ex-name': walkingExercise.name || 'Movimiento diario',
+                            'ex-tech': walkingExercise.technique || '',
+                            'ex-kcal': stepsKcal,
+                            'ex-type': walkingExercise.type || '',
+                            'ex-focus': walkingExercise.focus || '',
+                            'ex-muscles': walkingExercise.muscles || '',
+                            'ex-equipment': walkingExercise.equipment || ''
+                        },
+                        nameHtml: `<div class="activity-exercise__name modal-trigger">${walkingExercise.name || 'Movimiento diario'}</div>`,
+                        kvRows: [
+                            kvRow('Pasos', isEditMode
+                                ? editInput({ 'walk-day-index': dayIndex, 'walk-field': 'steps' }, walkInfo.steps)
+                                : walkInfo.steps, isEditMode ? 'activity-exercise__kv-value--edit' : ''),
+                            kvRow('Ritmo (pasos/min)', isEditMode
+                                ? editInput({ 'walk-day-index': dayIndex, 'walk-field': 'stepsPerMin' }, walkInfo.stepsPerMin)
+                                : (walkInfo.stepsPerMin > 0 ? walkInfo.stepsPerMin : '-'), isEditMode ? 'activity-exercise__kv-value--edit' : '')
+                        ].join(''),
+                        statRows: [
+                            splitRow(pill('Kcal', Math.round(stepsKcal)), pill('MET', parseFloat(stepsMet) > 0 ? formatMet(stepsMet) : '-')),
+                            splitRow(pill('Distancia', distanceKm > 0 ? `${UI.formatKm(distanceKm)} km` : '-'), pill('Tiempo', `${UI.formatMinutes(totalMin)} min`))
+                        ].join(''),
+                        description: movement ? movement.description : ((dayData.walk && dayData.walk.description) ? dayData.walk.description : '')
+                    })}
+                </td>
+            `;
+        };
 
-        movementRow.innerHTML = movementHtml;
-        tableBody.appendChild(movementRow);
+        const renderPendingAdd = (sectionKey, dayIndex) => {
+            if (!isEditMode || !pendingAdds[`${dayIndex}:${sectionKey}`]) return '';
+            const options = Object.values(exercisesCatalog || {}).map((exercise) => (
+                exercise && exercise.id ? `<option value="${exercise.id}">${exercise.name}</option>` : ''
+            )).join('');
+            return cardHtml({
+                className: 'activity-exercise--pending',
+                nameHtml: `
+                    <div class="activity-exercise__name-row">
+                        <div class="activity-exercise__name activity-exercise__name--select">
+                            <select class="input-base input-select input-select--sm"${dataAttrs({ 'ex-add-select-section': sectionKey, 'ex-add-select-day-index': dayIndex })}>${options}</select>
+                        </div>
+                        <button type="button" class="activity-exercise__add-done"${dataAttrs({ 'ex-add-done-section': sectionKey, 'ex-add-done-day-index': dayIndex })}>OK</button>
+                    </div>
+                `,
+                description: 'A\u00F1adiendo ejercicio...'
+            });
+        };
+
+        const renderExerciseCard = (sectionKey, dayIndex, item) => {
+            const exercise = exercisesCatalog[item.exerciseId];
+            if (!exercise) return `<div class="activity-exercise">Ejercicio no encontrado: ${item.exerciseId}</div>`;
+
+            const view = activityService && typeof activityService.buildExerciseView === 'function'
+                ? activityService.buildExerciseView({
+                    item,
+                    exerciseDefinition: exercise,
+                    weightKg: typeof UI.getEffectiveWeightKg === 'function' ? UI.getEffectiveWeightKg() : 70
+                })
+                : null;
+            const isTimeBased = view ? view.isTimeBased : UI.isTimedItem(item);
+            const numericWeight = view ? view.numericWeight : parseFloat(item.weightKg);
+            const showWeight = view ? view.showWeight : (exercise.type === 'fuerza' && !isTimeBased && Number.isFinite(numericWeight) && numericWeight > 0);
+            const canEditWeight = view ? view.canEditWeight : (exercise.type === 'fuerza' && !isTimeBased);
+            const effectiveSecPerRep = view ? view.effectiveSecPerRep : (isTimeBased ? (parseFloat(item.secPerRep) || 0) : 0);
+            const repetitionsDisplay = view ? view.repetitionsDisplay : ((item.sets && item.reps) ? `${item.sets} x ${item.reps}` : '-');
+            const kcal = view ? view.kcal : UI.calculateExerciseKcal(item, exercise);
+            const estimatedMin = view ? view.estimatedMin : UI.estimateExerciseMinutes(item, exercise);
+            const met = view ? view.met : parseFloat(exercise.met);
+            const showMet = view ? view.showMet : (Number.isFinite(met) && met > 0);
+            const intensityFactor = view ? view.intensityFactor : 0;
+            const showIntensity = view ? view.showIntensity : false;
+            const exerciseRest = view ? view.exerciseRest : (Number.isFinite(parseFloat(exercise.restSec)) ? exercise.restSec : '');
+            const sameTypeOptions = Object.values(exercisesCatalog)
+                .filter((entry) => entry && entry.type === exercise.type)
+                .map((entry) => `<option value="${entry.id}" ${entry.id === exercise.id ? 'selected' : ''}>${entry.name}</option>`)
+                .join('');
+
+            return cardHtml({
+                data: {
+                    'ex-name': exercise.name,
+                    'ex-tech': exercise.technique || '',
+                    'ex-kcal': kcal,
+                    'ex-type': exercise.type || '',
+                    'ex-focus': exercise.focus || '',
+                    'ex-muscles': exercise.muscles || '',
+                    'ex-equipment': exercise.equipment || '',
+                    'ex-rest': exerciseRest
+                },
+                nameHtml: isEditMode
+                    ? `
+                        <div class="activity-exercise__name-row">
+                            <div class="activity-exercise__name activity-exercise__name--select">
+                                <select class="input-base input-select input-select--sm"${dataAttrs({ 'ex-swap-section': sectionKey, 'ex-swap-day-index': dayIndex, 'ex-swap-id': item.exerciseId })}>${sameTypeOptions}</select>
+                            </div>
+                            <button type="button" class="activity-exercise__delete"${dataAttrs({ 'ex-delete-section': sectionKey, 'ex-delete-day-index': dayIndex, 'ex-delete-id': item.exerciseId })} title="Borrar">&times;</button>
+                        </div>
+                    `
+                    : `<div class="activity-exercise__name modal-trigger">${exercise.name}</div>`,
+                kvRows: [
+                    kvRow('Repeticiones', isEditMode
+                        ? `
+                            ${editInput({ 'ex-day-index': dayIndex, 'ex-section': sectionKey, 'ex-id': item.exerciseId, field: 'sets' }, item.sets || '')}
+                            <span class="activity-exercise__kv-sep">&times;</span>
+                            ${isTimeBased
+                                ? `${editInput({ 'ex-day-index': dayIndex, 'ex-section': sectionKey, 'ex-id': item.exerciseId, field: 'secPerRep' }, effectiveSecPerRep || '')}<span class="activity-exercise__kv-suffix">s</span>`
+                                : editInput({ 'ex-day-index': dayIndex, 'ex-section': sectionKey, 'ex-id': item.exerciseId, field: 'reps' }, item.reps || '', { numeric: false })}
+                        `
+                        : repetitionsDisplay, isEditMode ? 'activity-exercise__kv-value--edit activity-exercise__kv-value--inputs' : ''),
+                    kvRow('Carga', isEditMode && canEditWeight
+                        ? editInput({ 'ex-day-index': dayIndex, 'ex-section': sectionKey, 'ex-id': item.exerciseId, field: 'weightKg' }, Number.isFinite(numericWeight) ? numericWeight : '')
+                        : (showWeight ? `${numericWeight} kg` : '-'), isEditMode && canEditWeight ? 'activity-exercise__kv-value--edit' : '')
+                ].join(''),
+                statRows: [
+                    splitRow(pill('Kcal', Math.round(kcal)), pill('MET', showMet ? formatMet(met) : '-')),
+                    splitRow(pill('Intensidad', showIntensity ? `x${formatFactor(intensityFactor)}` : '-'), pill('Tiempo', `${UI.formatMinutes(estimatedMin)} min`))
+                ].join(''),
+                description: exercise.description || ''
+            });
+        };
 
         const renderExerciseGroups = (sectionKey, dayData, dayIndex) => {
             const section = dayData && dayData[sectionKey];
-            if (section && section.type === 'rest') {
-                return '';
-            }
-            const items = (section && Array.isArray(section.exercises)) ? section.exercises : [];
-            const pendingKey = `${dayIndex}:${sectionKey}`;
-            const pendingHtml = (isEditMode && pendingAdds[pendingKey]) ? (() => {
-                const allOptions = Object.values(EXERCISES || {}).map(opt => opt && opt.id
-                    ? `<option value="${opt.id}">${opt.name}</option>`
-                    : ''
-                ).join('');
-                return `
-                    <div class="activity-exercise activity-exercise--pending">
-                        <div class="activity-exercise__name-row">
-                            <div class="activity-exercise__name activity-exercise__name--select">
-                                <select class="input-base input-select input-select--sm"
-                                    data-ex-add-select-section="${sectionKey}" data-ex-add-select-day-index="${dayIndex}">
-                                    ${allOptions}
-                                </select>
-                            </div>
-                            <button type="button" class="activity-exercise__add-done"
-                                data-ex-add-done-section="${sectionKey}" data-ex-add-done-day-index="${dayIndex}">OK</button>
-                        </div>
-                    <div class="activity-exercise__pending-note">Añadiendo ejercicio…</div>
-                </div>
-            `;
-        })() : '';
-
-            if (!items.length) {
-                return pendingHtml || `<div class="activity-training__meta">Sin ejercicios definidos.</div>`;
-            }
-            const trainingBlock = { exercises: items };
-            const groupsHtml = UI.groupExercisesByTypeFocus(trainingBlock, EXERCISES).map(group => {
-                const groupHeader = `
-                    <div class="activity-exercise-group">
-                        <div class="activity-exercise-group__title">${UI.formatLabel(group.type)} · ${UI.formatLabel(group.focus)}</div>
-                    </div>
-                `;
-                const groupItems = group.items.map((item) => {
-                    const ex = EXERCISES[item.exerciseId];
-                    if (!ex) {
-                        return `<div class="activity-exercise">Ejercicio no encontrado: ${item.exerciseId}</div>`;
-                    }
-                    const isTimeBased = UI.isTimedItem(item);
-                    const numericWeight = parseFloat(item.weightKg);
-                    const showWeight = ex.type === 'fuerza' && !isTimeBased && Number.isFinite(numericWeight) && numericWeight > 0;
-                    const canEditWeight = ex.type === 'fuerza' && !isTimeBased;
-                    const effectiveSecPerRep = isTimeBased ? (parseFloat(item.secPerRep) || 0) : 0;
-                    const setsDisplay = Math.round(parseFloat(item.sets) || 0);
-                    const repetitionsDisplay = isTimeBased
-                        ? ((setsDisplay > 0 && effectiveSecPerRep > 0) ? `${setsDisplay} x ${Math.round(effectiveSecPerRep)}s` : '-')
-                        : ((item.sets && item.reps) ? `${item.sets} x ${item.reps}` : '-');
-                    const kcal = UI.calculateExerciseKcal(item, ex);
-                    const estimatedMin = UI.estimateExerciseMinutes(item, ex);
-                    const met = parseFloat(ex.met);
-                    const showMet = Number.isFinite(met) && met > 0;
-                    const repsAvg = UI.parseReps(item.reps);
-                    const intensityFactor = (ex.type === 'fuerza' && !isTimeBased && repsAvg > 0)
-                        ? UI.getIntensityFactorFromEpley(item.weightKg, repsAvg, null, ex.relativeLoad)
-                        : 0;
-                    const showIntensity = Number.isFinite(intensityFactor) && intensityFactor > 0 && ex.type === 'fuerza' && !isTimeBased;
-                    const exerciseRest = Number.isFinite(parseFloat(ex.restSec)) ? ex.restSec : '';
-                    const sameTypeOptions = Object.values(EXERCISES)
-                        .filter(opt => opt && opt.type === ex.type)
-                        .map(opt => `<option value="${opt.id}" ${opt.id === ex.id ? 'selected' : ''}>${opt.name}</option>`)
-                        .join('');
-
-                    return `
-                        <div class="activity-exercise"
-                            data-ex-name="${ex.name}"
-                            data-ex-tech="${ex.technique || ''}"
-                            data-ex-kcal="${kcal}"
-                            data-ex-type="${ex.type || ''}"
-                            data-ex-focus="${ex.focus || ''}"
-                            data-ex-muscles="${ex.muscles || ''}"
-                            data-ex-equipment="${ex.equipment || ''}"
-                            data-ex-rest="${exerciseRest}">
-                            ${isEditMode ? `
-                                <div class="activity-exercise__name-row">
-                                    <div class="activity-exercise__name activity-exercise__name--select">
-                                        <select class="input-base input-select input-select--sm"
-                                            data-ex-swap-section="${sectionKey}" data-ex-swap-day-index="${dayIndex}" data-ex-swap-id="${item.exerciseId}">
-                                            ${sameTypeOptions}
-                                        </select>
-                                    </div>
-                                    <button type="button" class="activity-exercise__delete"
-                                        data-ex-delete-section="${sectionKey}" data-ex-delete-day-index="${dayIndex}" data-ex-delete-id="${item.exerciseId}"
-                                        title="Borrar">🗑️</button>
-                                </div>
-                            ` : `
-                                <div class="activity-exercise__name modal-trigger">${ex.name}</div>
-                            `}
-                            <div class="activity-exercise__kv">
-                                <div class="activity-exercise__kv-row">
-                                    <div class="activity-exercise__kv-label">Repeticiones</div>
-                                    ${isEditMode ? `
-                                        <div class="activity-exercise__kv-value activity-exercise__kv-value--edit activity-exercise__kv-value--inputs">
-                                            <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
-                                                data-ex-day-index="${dayIndex}" data-ex-section="${sectionKey}" data-ex-id="${item.exerciseId}" data-field="sets" value="${item.sets || ''}">
-                                            <span class="activity-exercise__kv-sep">×</span>
-                                            ${isTimeBased ? `
-                                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
-                                                    data-ex-day-index="${dayIndex}" data-ex-section="${sectionKey}" data-ex-id="${item.exerciseId}" data-field="secPerRep" value="${effectiveSecPerRep || ''}">
-                                                <span class="activity-exercise__kv-suffix">s</span>
-                                            ` : `
-                                                <input type="text" class="input-base input-base--table-edit"
-                                                    data-ex-day-index="${dayIndex}" data-ex-section="${sectionKey}" data-ex-id="${item.exerciseId}" data-field="reps" value="${item.reps || ''}">
-                                            `}
-                                        </div>
-                                    ` : `
-                                        <div class="activity-exercise__kv-value">${repetitionsDisplay}</div>
-                                    `}
-                                </div>
-                                <div class="activity-exercise__kv-row">
-                                    <div class="activity-exercise__kv-label">Carga</div>
-                                    ${isEditMode && canEditWeight ? `
-                                        <div class="activity-exercise__kv-value activity-exercise__kv-value--edit">
-                                            <input type="text" inputmode="numeric" pattern="[0-9]*" class="input-base input-base--table-edit"
-                                                data-ex-day-index="${dayIndex}" data-ex-section="${sectionKey}" data-ex-id="${item.exerciseId}" data-field="weightKg" value="${(Number.isFinite(numericWeight) ? numericWeight : '')}">
-                                        </div>
-                                    ` : `
-                                        <div class="activity-exercise__kv-value">${showWeight ? `${numericWeight} kg` : '-'}</div>
-                                    `}
-                                </div>
-                            </div>
-                            <div class="activity-exercise__row activity-exercise__row--split">
-                                <div class="activity-exercise__pill">🔥 ${Math.round(kcal)} kcal</div>
-                                ${showMet ? `<div class="activity-exercise__pill">⚡ ${formatMet(met)} MET</div>` : '<div class="activity-exercise__pill">⚡ - MET</div>'}
-                            </div>
-                            <div class="activity-exercise__row activity-exercise__row--split">
-                                ${showIntensity ? `<div class="activity-exercise__pill">✮ x${formatFactor(intensityFactor)}</div>` : '<div class="activity-exercise__pill">✮ -</div>'}
-                                <div class="activity-exercise__pill">⏱️ ${UI.formatMinutes(estimatedMin)} min</div>
-                            </div>
-                            <div class="meal-description">${ex.description || ''}</div>
-                        </div>
-                    `;
-                }).join('');
-                return groupHeader + groupItems;
-            }).join('');
-            return pendingHtml + groupsHtml;
+            if (section && section.type === 'rest') return '';
+            const items = getSectionItems(dayData, sectionKey) || [];
+            const pendingHtml = renderPendingAdd(sectionKey, dayIndex);
+            if (!items.length) return pendingHtml || `<div class="activity-training__meta">Sin ejercicios definidos.</div>`;
+            return pendingHtml + UI.groupExercisesByTypeFocus({ exercises: items }, exercisesCatalog).map((group) => `
+                <div class="activity-exercise-group"><div class="activity-exercise-group__title">${UI.formatLabel(group.type)} \u00B7 ${UI.formatLabel(group.focus)}</div></div>
+                ${group.items.map((item) => renderExerciseCard(sectionKey, dayIndex, item)).join('')}
+            `).join('');
         };
 
-        const gymRow = document.createElement('tr');
-        let gymHtml = `<td class="activity-row-header">Gimnasio</td>`;
-        planData.forEach((dayData, dayIndex) => {
-            gymHtml += `
-                <td>
-                    <div class="activity-training">
-                        <div class="activity-training__title-row">
-                            <div class="activity-training__title">${(dayData.gym && dayData.gym.type === 'rest') ? 'Descanso' : 'Entrenamiento'}</div>
-                            ${isEditMode ? `
-                                <button type="button" class="activity-training__add"
-                                    data-ex-add-section="gym" data-ex-add-day-index="${dayIndex}">Añadir</button>
-                            ` : ''}
-                        </div>
-                        <div class="activity-training__meta">${(dayData.gym && dayData.gym.description) ? dayData.gym.description : ''}</div>
-                        ${renderExerciseGroups('gym', dayData, dayIndex)}
-                    </div>
-                </td>`;
-        });
-        gymRow.innerHTML = gymHtml;
-        tableBody.appendChild(gymRow);
-
-        if (dayHasExtra(planData) || isEditMode) {
-            const extraRow = document.createElement('tr');
-            let extraHtml = `<td class="activity-row-header">Extra</td>`;
-            planData.forEach((dayData, dayIndex) => {
-                extraHtml += `
-                    <td>
-                        <div class="activity-training">
-                        <div class="activity-training__title-row">
-                            <div class="activity-training__title">Extra</div>
-                            ${isEditMode ? `
-                                <button type="button" class="activity-training__add"
-                                    data-ex-add-section="extra_activity" data-ex-add-day-index="${dayIndex}">Añadir</button>
-                            ` : ''}
-                        </div>
-                        <div class="activity-training__meta">${(dayData.extra_activity && dayData.extra_activity.description) ? dayData.extra_activity.description : ''}</div>
-                        ${renderExerciseGroups('extra_activity', dayData, dayIndex)}
-                    </div>
-                </td>`;
-            });
-            extraRow.innerHTML = extraHtml;
-            tableBody.appendChild(extraRow);
+        tableBody.innerHTML = '';
+        tableBody.appendChild(Object.assign(document.createElement('tr'), {
+            innerHTML: `<td class="activity-row-header">Movimiento</td>${currentPlanData.map((dayData, dayIndex) => renderMovementCell(dayData, dayIndex, dayViews[dayIndex])).join('')}`
+        }));
+        tableBody.appendChild(Object.assign(document.createElement('tr'), {
+            innerHTML: `<td class="activity-row-header">Gimnasio</td>${currentPlanData.map((dayData, dayIndex) => trainingCell({
+                title: dayData.gym && dayData.gym.type === 'rest' ? 'Descanso' : 'Entrenamiento',
+                sectionKey: 'gym',
+                dayIndex,
+                description: dayData.gym && dayData.gym.description ? dayData.gym.description : '',
+                body: renderExerciseGroups('gym', dayData, dayIndex)
+            })).join('')}`
+        }));
+        if (dayHasExtra(currentPlanData) || isEditMode) {
+            tableBody.appendChild(Object.assign(document.createElement('tr'), {
+                innerHTML: `<td class="activity-row-header">Extra</td>${currentPlanData.map((dayData, dayIndex) => trainingCell({
+                    title: 'Extra',
+                    sectionKey: 'extra_activity',
+                    dayIndex,
+                    description: dayData.extra_activity && dayData.extra_activity.description ? dayData.extra_activity.description : '',
+                    body: renderExerciseGroups('extra_activity', dayData, dayIndex)
+                })).join('')}`
+            }));
         }
-        const totalsRow = document.createElement('tr');
-        let totalsHtml = `<td class="activity-row-header">Totales</td>`;
-
-        planData.forEach((dayData, dayIndex) => {
-            const walkInfo = getWalkInfo(dayData);
-            const stepsKcal = UI.calculateStepsKcal(walkInfo.steps, {
-                stepsConfig: {
-                    stepsPerMin: walkInfo.stepsPerMin,
-                    baseStepsPerMin: walkInfo.cadenceBase || parseFloat(walkingExercise.cadenceBase) || defaultStepsCfg.perMinute,
-                    met: walkingExercise.met || defaultStepsCfg.met
-                }
-            });
-            const stepsMin = walkInfo.stepsPerMin > 0 ? (walkInfo.steps / walkInfo.stepsPerMin) : 0;
-            const stepsFactor = UI.calculateStepsIntensityFactor(walkInfo.stepsPerMin, {
-                baseStepsPerMin: walkInfo.cadenceBase || parseFloat(walkingExercise.cadenceBase) || defaultStepsCfg.perMinute,
-                a: 1,
-                b: 2
-            });
-            const stepsMet = (parseFloat(walkingExercise.met) || 0) * stepsFactor;
-            const stepsMetMin = stepsMet * stepsMin;
-
-            const combined = [...getGymExercises(dayData), ...getExtraExercises(dayData)];
-            const trainingTotals = UI.calcTrainingTotals({ exercises: combined }, null, EXERCISES);
-            const totalKcal = trainingTotals.kcal + stepsKcal;
-            const totalMinForMet = (trainingTotals.min || 0) + stepsMin;
-            const metAvg = totalMinForMet > 0
-                ? (((trainingTotals.metMinSum || 0) + stepsMetMin) / totalMinForMet)
-                : 0;
-            const intensityAvg = trainingTotals.intensityAvg || 0;
-            const scoreHtml = renderActivityScorePill({
-                stepsKcal,
-                trainingKcal: trainingTotals.kcal,
-                met: metAvg,
-                intensity: intensityAvg,
-                targetKcal: (storedTargets[WEEK_DAYS[dayIndex]] && storedTargets[WEEK_DAYS[dayIndex]].kcal) || 0
-            });
-
-            totalsHtml += `
-                <td>
-                    ${generateActivityTotalsHtml({
-                        totalKcal,
-                        trainingKcal: trainingTotals.kcal,
-                        stepsKcal,
-                        min: trainingTotals.min + stepsMin,
-                        metAvg,
-                        intensityAvg,
-                        scoreHtml
-                    })}
-                </td>`;
-        });
-
-        totalsRow.innerHTML = totalsHtml;
-        tableBody.appendChild(totalsRow);
-
-        setTimeout(() => UI.scrollToTodayColumn(table, todayIndex), 100);
+        tableBody.appendChild(Object.assign(document.createElement('tr'), {
+            innerHTML: `<td class="activity-row-header">Totales</td>${dayViews.map((dayView) => `<td>${generateActivityTotalsHtml(dayView)}</td>`).join('')}`
+        }));
+        if (table) setTimeout(() => UI.scrollToTodayColumn(table, todayIndex), 100);
     };
 
-    const table = tableBody.closest('table');
     const renderControls = () => UI.renderEditResetControls({
         id: 'activity-controls-container',
         isEditMode,
@@ -632,84 +427,59 @@ function renderActivityPage() {
         onReset: confirmAndResetActivity
     });
 
-    if (container && !document.getElementById('activity-controls-container')) {
-        const controls = renderControls();
-        container.after(controls);
-    }
+    if (container && !document.getElementById('activity-controls-container')) container.after(renderControls());
 
-    if (table) table.addEventListener('change', (e) => {
-        if (e.target.matches('input[data-walk-day-index][data-walk-field]')) {
-            const dayIndex = parseInt(e.target.dataset.walkDayIndex, 10);
-            const field = e.target.dataset.walkField;
-            const rawVal = e.target.value;
+    if (table) table.addEventListener('change', (event) => {
+        const target = event.target;
+
+        if (target.matches('input[data-walk-day-index][data-walk-field]')) {
+            const dayIndex = parseInt(target.dataset.walkDayIndex, 10);
+            const field = target.dataset.walkField;
             const planData = getPlanData() || [];
             if (!planData[dayIndex]) planData[dayIndex] = { day: WEEK_DAYS[dayIndex] };
             const item = ensureWalkItem(planData[dayIndex]);
             const current = getWalkInfo(planData[dayIndex]);
-            const safeStepsPerMin = field === 'stepsPerMin'
-                ? (parseFloat(rawVal) || current.stepsPerMin)
-                : (parseFloat(item.stepsPerMin) || current.stepsPerMin);
-            const safeSteps = field === 'steps'
-                ? (parseInt(rawVal, 10) || current.steps)
-                : current.steps;
-            item.stepsPerMin = safeStepsPerMin;
-            item.secPerRep = Math.round((safeSteps / safeStepsPerMin) * 60);
+            const stepsPerMin = field === 'stepsPerMin' ? (parseFloat(target.value) || current.stepsPerMin) : (parseFloat(item.stepsPerMin) || current.stepsPerMin);
+            const steps = field === 'steps' ? (parseInt(target.value, 10) || current.steps) : current.steps;
+            item.stepsPerMin = stepsPerMin;
+            item.secPerRep = Math.round((steps / stepsPerMin) * 60);
             savePlanData(planData);
             renderTableContent();
             return;
         }
 
-        if (e.target.matches('input[data-ex-day-index][data-ex-section][data-ex-id][data-field]')) {
-            const dayIndex = parseInt(e.target.dataset.exDayIndex, 10);
-            const sectionKey = e.target.dataset.exSection;
-            const exerciseId = e.target.dataset.exId;
-            const field = e.target.dataset.field;
-            const rawVal = e.target.value;
+        if (target.matches('input[data-ex-day-index][data-ex-section][data-ex-id][data-field]')) {
             const planData = getPlanData() || [];
-            const dayData = planData[dayIndex];
-            if (!dayData || !dayData[sectionKey] || !Array.isArray(dayData[sectionKey].exercises)) return;
-            const item = dayData[sectionKey].exercises.find(e => e && e.exerciseId === exerciseId);
+            const item = getExerciseItem(planData, parseInt(target.dataset.exDayIndex, 10), target.dataset.exSection, target.dataset.exId);
             if (!item) return;
-            if (field === 'reps') {
-                item[field] = rawVal;
-            } else {
-                const val = parseFloat(rawVal);
-                item[field] = Number.isNaN(val) ? '' : val;
-            }
+            item[target.dataset.field] = target.dataset.field === 'reps' ? target.value : (Number.isNaN(parseFloat(target.value)) ? '' : parseFloat(target.value));
             savePlanData(planData);
             renderTableContent();
             return;
         }
 
-        if (e.target.matches('select[data-ex-swap-section][data-ex-swap-day-index][data-ex-swap-id]')) {
-            const dayIndex = parseInt(e.target.dataset.exSwapDayIndex, 10);
-            const sectionKey = e.target.dataset.exSwapSection;
-            const exerciseId = e.target.dataset.exSwapId;
-            const nextId = e.target.value;
+        if (target.matches('select[data-ex-swap-section][data-ex-swap-day-index][data-ex-swap-id]')) {
             const planData = getPlanData() || [];
-            const dayData = planData[dayIndex];
-            if (!dayData || !dayData[sectionKey] || !Array.isArray(dayData[sectionKey].exercises)) return;
-            const item = dayData[sectionKey].exercises.find(e => e && e.exerciseId === exerciseId);
-            if (!item || !nextId || item.exerciseId === nextId) return;
-            item.exerciseId = nextId;
+            const item = getExerciseItem(planData, parseInt(target.dataset.exSwapDayIndex, 10), target.dataset.exSwapSection, target.dataset.exSwapId);
+            if (!item || !target.value || item.exerciseId === target.value) return;
+            item.exerciseId = target.value;
             savePlanData(planData);
             renderTableContent();
         }
     });
 
-    if (table) table.addEventListener('click', (e) => {
-        if (e.target.matches('button[data-ex-add-section][data-ex-add-day-index]')) {
-            const dayIndex = parseInt(e.target.dataset.exAddDayIndex, 10);
-            const sectionKey = e.target.dataset.exAddSection;
-            const pendingKey = `${dayIndex}:${sectionKey}`;
-            pendingAdds[pendingKey] = true;
+    if (table) table.addEventListener('click', (event) => {
+        const target = event.target;
+
+        if (target.matches('button[data-ex-add-section][data-ex-add-day-index]')) {
+            pendingAdds[`${parseInt(target.dataset.exAddDayIndex, 10)}:${target.dataset.exAddSection}`] = true;
             renderTableContent();
             return;
         }
 
-        if (e.target.matches('button[data-ex-add-done-section][data-ex-add-done-day-index]')) {
-            const dayIndex = parseInt(e.target.dataset.exAddDoneDayIndex, 10);
-            const sectionKey = e.target.dataset.exAddDoneSection;
+        if (target.matches('button[data-ex-add-done-section][data-ex-add-done-day-index]')) {
+            const dayIndex = parseInt(target.dataset.exAddDoneDayIndex, 10);
+            const sectionKey = target.dataset.exAddDoneSection;
             const pendingKey = `${dayIndex}:${sectionKey}`;
             const select = document.querySelector(`select[data-ex-add-select-section="${sectionKey}"][data-ex-add-select-day-index="${dayIndex}"]`);
             const chosenId = select ? select.value : null;
@@ -719,78 +489,41 @@ function renderActivityPage() {
                 dayData[sectionKey] = { exercises: [], description: dayData[sectionKey] ? (dayData[sectionKey].description || '') : '' };
             }
             if (!Array.isArray(dayData[sectionKey].exercises)) dayData[sectionKey].exercises = [];
-            const newItem = buildDefaultExercise(dayData[sectionKey], sectionKey, chosenId);
-            if (newItem) dayData[sectionKey].exercises.push(newItem);
+            const item = buildDefaultExercise(dayData[sectionKey], sectionKey, chosenId);
+            if (item) dayData[sectionKey].exercises.push(item);
             delete pendingAdds[pendingKey];
             planData[dayIndex] = dayData;
             savePlanData(planData);
             renderTableContent();
             return;
         }
-        if (e.target.matches('button[data-ex-delete-section][data-ex-delete-day-index][data-ex-delete-id]')) {
-            const dayIndex = parseInt(e.target.dataset.exDeleteDayIndex, 10);
-            const sectionKey = e.target.dataset.exDeleteSection;
-            const exerciseId = e.target.dataset.exDeleteId;
+
+        if (target.matches('button[data-ex-delete-section][data-ex-delete-day-index][data-ex-delete-id]')) {
+            const dayIndex = parseInt(target.dataset.exDeleteDayIndex, 10);
+            const sectionKey = target.dataset.exDeleteSection;
+            const items = getSectionItems((getPlanData() || [])[dayIndex], sectionKey);
+            if (!items) return;
             const planData = getPlanData() || [];
-            const dayData = planData[dayIndex];
-            if (!dayData || !dayData[sectionKey] || !Array.isArray(dayData[sectionKey].exercises)) return;
-            const nextItems = dayData[sectionKey].exercises.filter(item => item && item.exerciseId !== exerciseId);
-            dayData[sectionKey].exercises = nextItems;
+            planData[dayIndex][sectionKey].exercises = items.filter((item) => item && item.exerciseId !== target.dataset.exDeleteId);
             savePlanData(planData);
             renderTableContent();
             return;
         }
 
-        if (e.target.matches('.activity-score-info-trigger')) {
-            const payload = decodePayload(e.target.dataset.activityScore || '');
+        if (target.matches('.activity-score-info-trigger')) {
+            const payload = decodePayload(target.dataset.activityScore || '');
             if (!payload) return;
-            const scoreText = Number.isFinite(payload.score) ? formatNumber(payload.score, 1) : '-';
-            const statusClass = (typeof ActivityScore !== 'undefined') ? ActivityScore.getStatusClass(payload.score) : '';
-            const rows = [
-                { label: ACTIVITY_METRIC_LABELS.stepsKcal, col2: formatNumber(payload.inputs.stepsKcal, 1), col3: 'Objetivo', col4: formatNumber(payload.targets.stepsKcalTarget, 1) },
-                { label: ACTIVITY_METRIC_LABELS.trainingKcal, col2: formatNumber(payload.inputs.trainingKcal, 1), col3: 'Objetivo', col4: formatNumber(payload.targets.trainingKcal, 1) },
-                { label: ACTIVITY_METRIC_LABELS.met, col2: formatNumber(payload.inputs.met, 1), col3: 'Objetivo', col4: formatNumber(payload.targets.met, 1) },
-                { label: ACTIVITY_METRIC_LABELS.intensity, col2: formatNumber(payload.inputs.intensity, 2), col3: 'Objetivo', col4: formatNumber(payload.targets.intensity, 2) }
-            ];
-
-            UI.showModal({
-                id: 'activity-score-modal',
-                titleHtml: '<h3 class="modal-title">Score de actividad</h3>',
-                bodyHtml: `
-                    <div class="activity-score-modal">
-                        <table class="activity-score-table">
-                            <thead>
-                                <tr>
-                                    <th>Metricas</th>
-                                    <th class="text-right">Actual</th>
-                                    <th class="text-right">Objetivo</th>
-                                    <th class="text-right">Valor</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rows.map(row => `
-                                    <tr>
-                                        <td>${escapeHtml(row.label)}</td>
-                                        <td class="text-right">${escapeHtml(row.col2)}</td>
-                                        <td class="text-right">${escapeHtml(row.col3)}</td>
-                                        <td class="text-right">${escapeHtml(row.col4)}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="stats-pills stats-pills--center mt-lg">
-                        <div class="stat-pill stat-pill--activity-score activity-score-modal-score-pill">
-                            Puntuación: <span class="${statusClass}">${scoreText}</span>
-                        </div>
-                    </div>
-                `
-            });
+            UI.showModal(activityPresenter.buildScoreModal({
+                payload,
+                formatNumber,
+                getStatusClassFromCode: UI.getStatusClassFromCode,
+                escapeHtml
+            }));
             return;
         }
 
-        if (e.target.closest('input, select, button, a')) return;
-        const exercise = e.target.closest('.activity-exercise');
+        if (target.closest('input, select, button, a')) return;
+        const exercise = target.closest('.activity-exercise');
         if (!exercise) return;
         showTechniqueModal({
             name: exercise.dataset.exName || 'Actividad',
@@ -809,28 +542,23 @@ function renderActivityPage() {
         requiredDeps: [
             { global: 'CoreBrowserAdapter', path: 'js/core/adapters/browser.adapter.js' },
             { global: 'ActivityScore', path: 'js/core/activity-score.js' },
-            { global: 'EXERCISES', path: 'js/data/exercises.js' }
+            { global: 'TargetsApplicationService', path: 'js/core/application/targets.service.js' },
+            { global: 'ActivityApplicationService', path: 'js/core/application/activity.service.js' },
+            { global: 'ActivityPresenter', path: 'js/core/presentation/activity.presenter.js' }
         ],
-        afterRequired: () => {
-            return (CoreBrowserAdapter && CoreBrowserAdapter.ensureCoreDomain
-                ? CoreBrowserAdapter.ensureCoreDomain()
-                : Promise.reject('CoreBrowserAdapter unavailable'))
-                .then(() => {
-                    formulas = window.FormulasEngine;
-                    targets = window.TargetsEngine;
-                    if (!formulas || !targets) {
-                        return Promise.reject('Core engines unavailable');
-                    }
-                    if (typeof CoreBrowserDomain !== 'undefined') {
-                        CoreBrowserDomain.applyMacroDefaults(formulas);
-                    }
-                    const plans = getPlanFiles();
-                    if (plans.length) {
-                        return loadPlanFile(getSelectedFile());
-                    }
-                    return Promise.resolve();
-                });
-        },
+        afterRequired: () => CoreBrowserAdapter.resolvePageContext({
+            globals: ['ActivityApplicationService', 'ActivityPresenter'],
+            exercises: true,
+            activityPlanFile: getPlanFiles().length ? getSelectedFile() : null
+        }).then((context) => {
+            formulas = context.formulas;
+            targets = context.targets;
+            activityService = context.ActivityApplicationService;
+            activityPresenter = context.ActivityPresenter;
+            exercisesCatalog = context.exercisesData || null;
+            currentPlanData = context.activityPlanData || null;
+            return true;
+        }),
         run: () => {
             buildPlanSelector();
             renderTableContent();
@@ -840,4 +568,3 @@ function renderActivityPage() {
         }
     });
 }
-

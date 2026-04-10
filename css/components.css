@@ -1,16 +1,8 @@
-/* =========================================
-   components.css - UI KIT & MODULES
-   ========================================= */
-
-/* --- 1. UI BASES & UTILITIES --- */
-
-/* --- 1. BASE CONTAINERS (GLASSMORPHISM) --- */
 .card {
     padding: var(--space-xl);
     text-align: center;
 }
 
-/* Panel: Sub-card for data (Replaces mini-card) */
 .card-panel {
     background: var(--glass-dark);
     border: 1px solid var(--border-faint);
@@ -51,7 +43,6 @@
     width: 100%;
 }
 
-/* --- 2. BUTTONS --- */
 .btn {
     display: block;
     width: 100%;
@@ -91,7 +82,7 @@
     color: var(--color-text-main);
     text-decoration: none;
     font-size: var(--font-size-body);
-    font-weight: 500;    
+    font-weight: 500;
     transition: all var(--ui-transition-fast) ease;
     cursor: pointer;
 }
@@ -110,8 +101,6 @@
     border-color: var(--color-primary);
 }
 
-
-/* --- 3. FORMS & INPUTS --- */
 .input-base {
     background: var(--glass-dark);
     border: 1px solid var(--border-light);
@@ -137,7 +126,6 @@
     box-shadow: var(--ui-focus-ring-md);
 }
 
-/* Select custom arrow */
 .input-select {
     appearance: none;
     -webkit-appearance: none;
@@ -175,9 +163,8 @@
     border-color: var(--border-light);
 }
 
-/* Numeric Inputs (Spinners & Metrics) */
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
     opacity: 0.4;
     margin-left: 4px;
 }
@@ -216,7 +203,6 @@ input[type=number]::-webkit-outer-spin-button {
     box-sizing: border-box;
 }
 
-/* --- 4. LISTS & ROWS --- */
 .row-item {
     display: flex;
     align-items: center;
@@ -284,27 +270,18 @@ input[type=number]::-webkit-outer-spin-button {
     background: rgba(var(--color-primary-rgb), 0.3);
 }
 
-/* --- 5. TABLES (MENU / ACTIVITY) --- */
-
 .table-scroller {
     overflow-x: auto;
     background: var(--glass-dark);
     border-radius: var(--ui-radius-md);
     margin-bottom: var(--space-lg);
-    position: relative; /* For the edit button */
+    position: relative;
     width: 100%;
 }
 
 @media (max-width: 640px) {
     .card { padding: var(--space-lg); }
     .calc-grid-2 { grid-template-columns: 1fr; }
-    .control-form-row { flex-wrap: wrap; }
-    .control-field--date,
-    .control-field--weight { width: calc(50% - 3px); }
-    .control-field--activity { flex: 1 1 100%; }
-    .btn-icon { width: 100%; justify-content: center; }
-    .history-header,
-    .history-row { font-size: 0.75rem; }
     .menu-table th,
     .menu-table td,
     .activity-table th,
@@ -332,7 +309,6 @@ input[type=number]::-webkit-outer-spin-button {
     vertical-align: top;
 }
 
-/* Sticky First Column */
 .menu-table .menu-row-header,
 .activity-table .activity-row-header {
     color: var(--color-primary);
@@ -386,9 +362,8 @@ input[type=number]::-webkit-outer-spin-button {
 .goals-table td:nth-child(even) { background: var(--glass-faint); }
 .menu-table tbody tr:last-child td,
 .activity-table tbody tr:last-child td,
-.goals-table tbody tr:last-child td,
+.goals-table tbody tr:last-child td { border-bottom: none; }
 
-/* Shared modal triggers (clickable labels with subtle underline + hover highlight) */
 .modal-trigger {
     cursor: pointer;
     border-bottom: 1px dotted var(--surface-white-30);
@@ -413,11 +388,10 @@ input[type=number]::-webkit-outer-spin-button {
     text-align: inherit;
 }
 
-/* Meal Items */
-.meal-list { 
-    list-style: none; 
-    padding: 0; 
-    margin: 0; 
+.meal-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
@@ -428,7 +402,7 @@ input[type=number]::-webkit-outer-spin-button {
     align-items: center;
     font-size: 1rem;
 }
-.meal-item__name { 
+.meal-item__name {
     margin-right: var(--space-sm);
 }
 .meal-item__food-select {
@@ -483,7 +457,6 @@ input[type=number]::-webkit-outer-spin-button {
 
 .day-total { background: var(--glass-dark) !important; padding: 10px; }
 
-/* Totals (Menu) */
 .totals-stack,
 .nutrition-stack { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; }
 .totals-row,
@@ -495,7 +468,6 @@ input[type=number]::-webkit-outer-spin-button {
 .nutrition-pill__label { opacity: 0.8; }
 .totals-secondary-grid { width: 100%; }
 
-/* --- 6. MODULES: ACTIVITY --- */
 .activity-day-header {
     display: flex;
     flex-direction: column;
@@ -653,67 +625,10 @@ input[type=number]::-webkit-outer-spin-button {
     font: inherit;
 }
 
-/* Stat pill modifiers */
 .stat-pill--sm { padding: 4px 8px; font-size: 0.85rem; }
 .stat-pill--xs { padding: 2px 8px; font-size: 0.75rem; }
 .stat-pill--block { width: 100%; text-align: center; }
 
-/* --- 6B. MODULES: CONTROL --- */
-.control-form-row { display: flex; gap: 6px; align-items: flex-end; }
-.control-field { flex: 0 0 auto; }
-.control-field--date { width: 105px; }
-.control-field--weight { width: 55px; }
-.control-field--activity { flex: 1; min-width: 0; }
-
-.control-label--compact { display: block; margin-bottom: 4px; font-size: 0.7rem; }
-
-.input-base--compact { padding: 6px 4px; font-size: 0.85rem; }
-.input-base--date { padding: 6px 2px; font-size: 0.85rem; }
-.input-base--center { text-align: center; }
-.input-base--compact-height { height: var(--ui-control-height); }
-
-.btn-icon {
-    cursor: pointer;
-    padding: 0 12px;
-    height: var(--ui-control-height);
-    font-size: 1.1rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1px;
-}
-
-.history-header,
-.history-row {
-    display: flex;
-    padding: 8px 4px;
-    border-bottom: 1px solid var(--border-light);
-    font-size: var(--font-size-caption);
-}
-
-.history-row {
-    align-items: center;
-    border-bottom: 1px solid var(--border-faint);
-    font-size: var(--font-size-sm);
-}
-
-.history-col--date { width: 70px; }
-.history-col--weight { width: 50px; text-align: center; }
-.history-col--activity { flex: 1; min-width: 0; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.history-col--actions { width: 30px; text-align: right; }
-
-.btn-ghost {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    opacity: 0.7;
-    padding: 0;
-}
-
-.history-empty { padding: 20px; }
-
-/* --- 7. MODULES: CALCULATOR & STATS --- */
 .calc-grid-2 {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -822,7 +737,6 @@ input[type=number]::-webkit-outer-spin-button {
 .adjustments-table__result-base { color: var(--color-text-muted); font-size: var(--font-size-caption); }
 .adjustments-table__result-objective { color: var(--color-primary); font-weight: 700; font-size: var(--font-size-body); }
 
-/* --- 8. MODALS --- */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -862,7 +776,6 @@ input[type=number]::-webkit-outer-spin-button {
 .modal-grid-2--compact { margin-top: 4px; }
 .modal-stat-pill-lg { font-size: var(--font-size-lg); padding: 6px 16px; text-align: center; }
 
-/* --- 9. UTILS & ANIMATIONS --- */
 .menu-controls { display: flex; justify-content: center; gap: var(--space-md); margin-top: var(--space-lg); flex-wrap: wrap; }
 .header-with-controls { display: flex; justify-content: center; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "app-cache-v16";
+const CACHE_NAME = "app-cache-v17";
 
 const FILES_TO_CACHE = [
   "index.html",
@@ -6,7 +6,6 @@ const FILES_TO_CACHE = [
 
   "views/activity.html",
   "views/calculator.html",
-  "views/tracking.html",
   "views/list.html",
   "views/menu.html",
 
@@ -32,7 +31,6 @@ const FILES_TO_CACHE = [
 
   "js/pages/activity.page.js",
   "js/pages/calculator.page.js",
-  "js/pages/tracking.page.js",
   "js/pages/list.page.js",
   "js/pages/menu.page.js",
 

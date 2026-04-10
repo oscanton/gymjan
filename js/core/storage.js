@@ -13,11 +13,27 @@ const DB = {
             return defaultValue;
         }
     },
-    clearAll: () => {
-        if (confirm("Borrar todos los datos de la aplicacin?")) {
-            Object.keys(localStorage).forEach(k => k.startsWith(APP_PREFIX) && localStorage.removeItem(k));
-            location.reload();
-        }
+    remove: (key) => localStorage.removeItem(APP_PREFIX + key),
+    getRawKey: (key) => APP_PREFIX + key,
+    listKeys: () => Object.keys(localStorage)
+        .filter(k => k.startsWith(APP_PREFIX))
+        .map(k => k.slice(APP_PREFIX.length)),
+    removeByPrefix: (prefix) => {
+        Object.keys(localStorage).forEach((key) => {
+            if (key.startsWith(APP_PREFIX + prefix)) {
+                localStorage.removeItem(key);
+            }
+        });
+    },
+    clearAll: ({
+        confirmReset = true,
+        confirmMessage = 'Borrar todos los datos de la aplicación?',
+        reload = true
+    } = {}) => {
+        if (confirmReset && !confirm(confirmMessage)) return false;
+        Object.keys(localStorage).forEach(k => k.startsWith(APP_PREFIX) && localStorage.removeItem(k));
+        if (reload) location.reload();
+        return true;
     }
 };
 

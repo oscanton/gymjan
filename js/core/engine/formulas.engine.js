@@ -1,191 +1,97 @@
-﻿/* =========================================
-   core/engine/formulas.engine.js - PURE NUTRITION CALCULATIONS
-   ========================================= */
-
+const __formulasRoot = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : this);
 const FormulasEngine = (() => {
     let defaultMacroRatios = { p: 0.30, c: 0.40, f: 0.30 };
+    const MEAL_KEYS = ['breakfast', 'lunch', 'dinner'];
+    const NUTRITION_KEYS = ['kcal', 'protein', 'carbs', 'fat', 'saturatedFat', 'fiber', 'sugar'];
+    const EMPTY_TOTALS = () => ({
+        kcal: 0, protein: 0, carbs: 0, fat: 0, saturatedFat: 0, fiber: 0, sugar: 0,
+        salt: 0, waterMl: 0, processingWeightedSum: 0, processingKcalBase: 0, processingAvg: 0
+    });
+    const number = (value, fallback = 0) => {
+        const parsed = parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    };
+    const sumInto = (target, source, keys) => keys.forEach((key) => { target[key] += source[key] || 0; });
 
     const setDefaultMacroRatios = (ratios) => {
-        const p = parseFloat(ratios && ratios.p);
-        const c = parseFloat(ratios && ratios.c);
-        const f = parseFloat(ratios && ratios.f);
-        if (Number.isFinite(p) && Number.isFinite(c) && Number.isFinite(f)) {
-            defaultMacroRatios = { p, c, f };
-        }
+        const next = { p: number(ratios && ratios.p, NaN), c: number(ratios && ratios.c, NaN), f: number(ratios && ratios.f, NaN) };
+        if (Number.isFinite(next.p) && Number.isFinite(next.c) && Number.isFinite(next.f)) defaultMacroRatios = next;
     };
-
     const getDefaultMacroRatios = () => ({ ...defaultMacroRatios });
-
     const calcBMI = (weight, height) => {
-        const heightMeters = height / 100;
-        return (heightMeters > 0) ? (weight / (heightMeters * heightMeters)).toFixed(1) : 0;
+        const meters = height / 100;
+        return meters > 0 ? (weight / (meters * meters)).toFixed(1) : 0;
     };
-
     const getBMICategory = (bmi) => {
-        const numericBmi = parseFloat(bmi);
-        if (numericBmi <= 0) return { label: '-', className: 'text-muted' };
-        if (numericBmi < 18.5) return { label: 'Bajo peso', className: 'color-blue' };
-        if (numericBmi < 25) return { label: 'Adecuado', className: 'color-success' };
-        if (numericBmi < 30) return { label: 'Sobrepeso', className: 'color-warning' };
-        if (numericBmi < 35) return { label: 'Obesidad', className: 'color-danger' };
+        const value = parseFloat(bmi);
+        if (value <= 0) return { label: '-', className: 'text-muted' };
+        if (value < 18.5) return { label: 'Bajo peso', className: 'color-blue' };
+        if (value < 25) return { label: 'Adecuado', className: 'color-success' };
+        if (value < 30) return { label: 'Sobrepeso', className: 'color-warning' };
+        if (value < 35) return { label: 'Obesidad', className: 'color-danger' };
         return { label: 'Gran obesidad', className: 'color-critical' };
     };
-
-    const calcBMR = (weight, height, age, sex) => {
-        let bmr = (10 * weight) + (6.25 * height) - (5 * age);
-        bmr += (sex === 'hombre') ? 5 : -161;
-        return Math.round(bmr);
-    };
-
+    const calcBMR = (weight, height, age, sex) => Math.round((10 * weight) + (6.25 * height) - (5 * age) + (sex === 'hombre' ? 5 : -161));
     const calcMacros = (kcal, macroContext, overrideDefaults = null) => {
-        const ctx = macroContext || {};
-        const explicitRatios = (ctx && ctx.macroRatios) ? ctx.macroRatios : ctx;
-        const hasValidRatios = explicitRatios
-            && typeof explicitRatios.p === 'number'
-            && typeof explicitRatios.c === 'number'
-            && typeof explicitRatios.f === 'number';
-        const fallback = overrideDefaults || defaultMacroRatios;
-        const macroRatios = hasValidRatios ? explicitRatios : fallback;
+        const source = macroContext && macroContext.macroRatios ? macroContext.macroRatios : macroContext || {};
+        const ratios = ['p', 'c', 'f'].every((key) => typeof source[key] === 'number') ? source : (overrideDefaults || defaultMacroRatios);
         return {
-            p: Math.round((kcal * macroRatios.p) / 4),
-            c: Math.round((kcal * macroRatios.c) / 4),
-            f: Math.round((kcal * macroRatios.f) / 9),
-            pct: { p: Math.round(macroRatios.p * 100), c: Math.round(macroRatios.c * 100), f: Math.round(macroRatios.f * 100) }
+            p: Math.round((kcal * ratios.p) / 4),
+            c: Math.round((kcal * ratios.c) / 4),
+            f: Math.round((kcal * ratios.f) / 9),
+            pct: { p: Math.round(ratios.p * 100), c: Math.round(ratios.c * 100), f: Math.round(ratios.f * 100) }
         };
     };
-
-    const createEmptyNutritionTotals = () => ({
-        kcal: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-        saturatedFat: 0,
-        fiber: 0,
-        sugar: 0,
-        salt: 0,
-        waterMl: 0,
-        processingWeightedSum: 0,
-        processingKcalBase: 0,
-        processingAvg: 0
-    });
-
-    const resolveMealKeys = (mealKeys, fallback = null) => {
-        if (Array.isArray(mealKeys) && mealKeys.length) return mealKeys;
-        if (Array.isArray(fallback) && fallback.length) return fallback;
-        return ['breakfast', 'lunch', 'dinner'];
-    };
+    const resolveMealKeys = (mealKeys, fallback = null) => Array.isArray(mealKeys) && mealKeys.length ? mealKeys : Array.isArray(fallback) && fallback.length ? fallback : MEAL_KEYS;
 
     const calculateMealDetails = (items, foods) => {
-        const totals = createEmptyNutritionTotals();
-        if (!items || !Array.isArray(items)) return totals;
-
+        const totals = EMPTY_TOTALS();
+        if (!Array.isArray(items)) return totals;
         const foodsData = foods || {};
-
-        items.forEach(item => {
+        items.forEach((item) => {
             const food = foodsData[item.foodId];
             if (!food) return;
-
-            let ratio = 0;
-            let nutrition = null;
-            if (food.nutritionPer100) {
-                ratio = (parseFloat(item.amount) || 0) / 100;
-                nutrition = food.nutritionPer100;
-            } else if (food.nutritionPerUnit) {
-                ratio = parseFloat(item.amount) || 0;
-                nutrition = food.nutritionPerUnit;
-            }
+            const per100 = !!food.nutritionPer100;
+            const nutrition = food.nutritionPer100 || food.nutritionPerUnit;
+            const ratio = per100 ? number(item.amount) / 100 : number(item.amount);
             if (!nutrition || ratio <= 0) return;
-
-            const itemKcal = (nutrition.kcal || 0) * ratio;
-            totals.kcal += itemKcal;
-            totals.protein += (nutrition.protein || 0) * ratio;
-            totals.carbs += (nutrition.carbs || 0) * ratio;
-            totals.fat += (nutrition.fat || 0) * ratio;
-            totals.saturatedFat += (nutrition.saturatedFat || 0) * ratio;
-            totals.fiber += (nutrition.fiber || 0) * ratio;
-            totals.sugar += (nutrition.sugar || 0) * ratio;
-            totals.salt += ((nutrition.sodiumMg || 0) * ratio * 2.5) / 1000;
-            if (food.waterMlPer100 && food.nutritionPer100) {
-                totals.waterMl += (food.waterMlPer100 || 0) * ratio;
-            } else if (food.waterMlPerUnit && food.nutritionPerUnit) {
-                totals.waterMl += (food.waterMlPerUnit || 0) * ratio;
-            }
-
+            const itemKcal = number(nutrition.kcal) * ratio;
+            NUTRITION_KEYS.forEach((key) => { totals[key] += number(nutrition[key]) * ratio; });
+            totals.salt += (number(nutrition.sodiumMg) * ratio * 2.5) / 1000;
+            totals.waterMl += number(per100 ? food.waterMlPer100 : food.waterMlPerUnit) * ratio;
             if (Number.isFinite(food.processed) && itemKcal > 0) {
                 totals.processingWeightedSum += food.processed * itemKcal;
                 totals.processingKcalBase += itemKcal;
             }
         });
-
-        totals.processingAvg = totals.processingKcalBase
-            ? (totals.processingWeightedSum / totals.processingKcalBase)
-            : 0;
-
+        totals.processingAvg = totals.processingKcalBase ? totals.processingWeightedSum / totals.processingKcalBase : 0;
         return totals;
     };
 
-    const calculateDayTotals = (dayData, foods, mealKeys = ['breakfast', 'lunch', 'dinner']) => {
-        const safeMealKeys = resolveMealKeys(mealKeys);
-        const dayTotals = createEmptyNutritionTotals();
-        if (!dayData || !Array.isArray(safeMealKeys)) return dayTotals;
-
-        const mealKeysWithHydration = (dayData.hydration && !safeMealKeys.includes('hydration'))
-            ? ['hydration', ...safeMealKeys]
-            : safeMealKeys;
-
-        mealKeysWithHydration.forEach(mealKey => {
-            const items = dayData && dayData[mealKey] ? dayData[mealKey].items : [];
-            const mealTotals = calculateMealDetails(items, foods);
-            dayTotals.kcal += mealTotals.kcal;
-            dayTotals.protein += mealTotals.protein;
-            dayTotals.carbs += mealTotals.carbs;
-            dayTotals.fat += mealTotals.fat;
-            dayTotals.saturatedFat += mealTotals.saturatedFat;
-            dayTotals.fiber += mealTotals.fiber;
-            dayTotals.sugar += mealTotals.sugar;
-            dayTotals.salt += mealTotals.salt;
-            dayTotals.waterMl += mealTotals.waterMl;
-            dayTotals.processingWeightedSum += mealTotals.processingWeightedSum;
-            dayTotals.processingKcalBase += mealTotals.processingKcalBase;
-        });
-
-        dayTotals.processingAvg = dayTotals.processingKcalBase
-            ? (dayTotals.processingWeightedSum / dayTotals.processingKcalBase)
-            : 0;
-        return dayTotals;
+    const calculateDayTotals = (dayData, foods, mealKeys = MEAL_KEYS) => {
+        const totals = EMPTY_TOTALS();
+        if (!dayData) return totals;
+        const keys = dayData.hydration && !resolveMealKeys(mealKeys).includes('hydration') ? ['hydration', ...resolveMealKeys(mealKeys)] : resolveMealKeys(mealKeys);
+        keys.forEach((mealKey) => sumInto(totals, calculateMealDetails(dayData[mealKey] ? dayData[mealKey].items : [], foods), Object.keys(totals)));
+        totals.processingAvg = totals.processingKcalBase ? totals.processingWeightedSum / totals.processingKcalBase : 0;
+        return totals;
     };
 
     const calculateMeal = (items, foods) => {
         const details = calculateMealDetails(items, foods);
-        return {
-            kcal: details.kcal,
-            protein: details.protein,
-            carbs: details.carbs,
-            fat: details.fat
-        };
+        return { kcal: details.kcal, protein: details.protein, carbs: details.carbs, fat: details.fat };
     };
 
-    const calculateShoppingTotals = (menuData, mealKeys = ['breakfast', 'lunch', 'dinner']) => {
-        const safeMealKeys = resolveMealKeys(mealKeys);
+    const calculateShoppingTotals = (menuData, mealKeys = MEAL_KEYS) => {
         const totals = {};
         if (!Array.isArray(menuData)) return totals;
-
-        menuData.forEach(day => {
-            const mealKeysWithHydration = (day && day.hydration && !safeMealKeys.includes('hydration'))
-                ? ['hydration', ...safeMealKeys]
-                : safeMealKeys;
-            mealKeysWithHydration.forEach(mealKey => {
-                const mealItems = day && day[mealKey] && Array.isArray(day[mealKey].items)
-                    ? day[mealKey].items
-                    : [];
-                mealItems.forEach(item => {
-                    if (!item || !item.foodId) return;
-                    const amount = Number.parseFloat(item.amount) || 0;
-                    totals[item.foodId] = (totals[item.foodId] || 0) + amount;
-                });
-            });
+        menuData.forEach((day) => {
+            const keys = day && day.hydration && !resolveMealKeys(mealKeys).includes('hydration') ? ['hydration', ...resolveMealKeys(mealKeys)] : resolveMealKeys(mealKeys);
+            keys.forEach((mealKey) => (Array.isArray(day && day[mealKey] && day[mealKey].items) ? day[mealKey].items : []).forEach((item) => {
+                if (!item || !item.foodId) return;
+                totals[item.foodId] = (totals[item.foodId] || 0) + number(item.amount);
+            }));
         });
-
         return totals;
     };
 
@@ -196,7 +102,7 @@ const FormulasEngine = (() => {
         getBMICategory,
         calcBMR,
         calcMacros,
-        createEmptyNutritionTotals,
+        createEmptyNutritionTotals: EMPTY_TOTALS,
         calculateMealDetails,
         calculateDayTotals,
         calculateMeal,
@@ -205,11 +111,5 @@ const FormulasEngine = (() => {
     };
 })();
 
-var __root = (typeof globalThis !== 'undefined')
-    ? globalThis
-    : (typeof window !== 'undefined' ? window : this);
-__root.FormulasEngine = FormulasEngine;
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = FormulasEngine;
-}
+__formulasRoot.FormulasEngine = FormulasEngine;
+if (typeof module !== 'undefined' && module.exports) module.exports = FormulasEngine;

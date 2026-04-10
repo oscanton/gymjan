@@ -1,130 +1,89 @@
-/* =========================================
-   app.js - BOOTSTRAP (Initialization)
-   ========================================= */
-
 window.addEventListener('DOMContentLoaded', () => {
-    const prefix = (typeof APP_PREFIX === 'string' && APP_PREFIX) ? APP_PREFIX : 'myfitpwa_';
+    const prefix = typeof APP_PREFIX === 'string' && APP_PREFIX ? APP_PREFIX : 'myfitpwa_';
     const lastPageKey = `${prefix}last_opened_page`;
+    const navigablePages = new Set(['views/calculator.html', 'views/activity.html', 'views/menu.html', 'views/list.html']);
     const path = window.location.pathname.replace(/\\/g, '/');
     const viewMatch = path.match(/\/views\/([^/]+\.html)$/i);
     const isIndexPath = /\/$|\/index\.html$/i.test(path);
     const params = new URLSearchParams(window.location.search);
+    const currentView = viewMatch ? `views/${viewMatch[1]}` : '';
+    const currentPageKey = viewMatch ? currentView.toLowerCase() : (isIndexPath ? 'index.html' : '');
+    const pageRegistry = [
+        ['menu-body', window.renderMenuPage],
+        ['lista-container', window.renderShoppingListPage],
+        ['actividad-container', window.renderActivityPage],
+        ['calculadora-container', window.renderCalculatorPage]
+    ];
+    const navItems = [
+        ['index.html', 'index.html?home=1', 'Inicio'],
+        ['views/calculator.html', 'views/calculator.html', 'Calculadora'],
+        ['views/activity.html', 'views/activity.html', 'Actividad'],
+        ['views/menu.html', 'views/menu.html', 'Men\u00FA'],
+        ['views/list.html', 'views/list.html', 'Lista']
+    ];
+    const buildIndexContent = ({ basePrefix = '', title = '\u00CDndice' } = {}) => `
+        <div class="index-modal__header"><div class="index-modal__title">${title}</div></div>
+        <nav class="stack-vertical">
+            ${navItems.map(([key, href, label]) => {
+                const isActive = currentPageKey === key;
+                return `<a class="btn btn--primary index-modal__link${isActive ? ' is-active' : ''}" href="${basePrefix}${href}"${isActive ? ' aria-current="page"' : ''}>${label}</a>`;
+            }).join('')}
+        </nav>
+    `;
+    const ensureTitleSpan = (headerTitle) => {
+        let titleSpan = headerTitle.querySelector('.page-title-text');
+        if (titleSpan) return titleSpan;
+        const textNodes = Array.from(headerTitle.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+        titleSpan = document.createElement('span');
+        titleSpan.className = 'page-title-text';
+        titleSpan.textContent = textNodes.map((node) => node.textContent.trim()).join(' ') || headerTitle.textContent.trim();
+        textNodes.forEach((node) => node.remove());
+        headerTitle.insertBefore(titleSpan, headerTitle.firstChild);
+        return titleSpan;
+    };
+    const ensureIndexModal = () => {
+        let modal = document.getElementById('global-index-modal');
+        if (modal) return modal;
+        modal = document.createElement('div');
+        modal.id = 'global-index-modal';
+        modal.className = 'index-modal-backdrop';
+        modal.innerHTML = `<div class="index-modal" role="dialog" aria-modal="true" aria-label="Navegaci\u00F3n">${buildIndexContent({ basePrefix: viewMatch ? '../' : '', title: '\u00CDndice' })}</div>`;
+        modal.addEventListener('click', (event) => { if (event.target === modal) modal.classList.remove('is-open'); });
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape') modal.classList.remove('is-open'); });
+        document.body.appendChild(modal);
+        return modal;
+    };
 
+    localStorage.removeItem(`${prefix}weight_history`);
     if (viewMatch) {
-        localStorage.setItem(lastPageKey, `views/${viewMatch[1]}`);
+        if (navigablePages.has(currentView)) localStorage.setItem(lastPageKey, currentView);
+        else localStorage.removeItem(lastPageKey);
     } else if (isIndexPath && !params.has('home')) {
         const lastPage = localStorage.getItem(lastPageKey);
-        const isValidLastPage = /^views\/[a-z0-9_-]+\.html$/i.test(lastPage || '');
-        if (isValidLastPage) {
+        if (navigablePages.has(lastPage || '')) {
             window.location.replace(lastPage);
             return;
         }
+        localStorage.removeItem(lastPageKey);
     }
 
-    const pageRegistry = [
-        { rootId: 'menu-body', render: window.renderMenuPage },
-        { rootId: 'lista-container', render: window.renderShoppingListPage },
-        { rootId: 'actividad-container', render: window.renderActivityPage },
-        { rootId: 'control-container', render: window.renderControlPage },
-        { rootId: 'calculadora-container', render: window.renderCalculatorPage }
-    ];
-
-    pageRegistry.forEach(({ rootId, render }) => {
-        if (!document.getElementById(rootId)) return;
-        if (typeof render === 'function') render();
+    pageRegistry.forEach(([rootId, render]) => {
+        if (document.getElementById(rootId) && typeof render === 'function') render();
     });
-    const currentPageKey = viewMatch
-        ? `views/${viewMatch[1].toLowerCase()}`
-        : (isIndexPath ? 'index.html' : '');
-    const buildIndexContent = ({ basePrefix = '', title = 'Índice' } = {}) => {
-        const items = [
-            { key: 'index.html', href: `${basePrefix}index.html?home=1`, label: 'Inicio', emoji: '🏠' },
-            { key: 'views/calculator.html', href: `${basePrefix}views/calculator.html`, label: 'Calculadora', emoji: '🧮' },
-            { key: 'views/activity.html', href: `${basePrefix}views/activity.html`, label: 'Actividad', emoji: '💪' },
-            { key: 'views/menu.html', href: `${basePrefix}views/menu.html`, label: 'Menú', emoji: '🍽️' },
-            { key: 'views/list.html', href: `${basePrefix}views/list.html`, label: 'Lista', emoji: '🛒' },
-            { key: 'views/tracking.html', href: `${basePrefix}views/tracking.html`, label: 'Control', emoji: '📈' }
-        ];
-        return `
-            <div class="index-modal__header">
-                <div class="index-modal__title">${title}</div>
-            </div>
-            <nav class="stack-vertical">
-                ${items.map((item) => {
-                    const isActive = currentPageKey === item.key;
-                    const activeClass = isActive ? ' is-active' : '';
-                    const activeAttr = isActive ? ' aria-current="page"' : '';
-                    return `<a class="btn btn--primary index-modal__link${activeClass}" href="${item.href}"${activeAttr}>${item.emoji} ${item.label}</a>`;
-                }).join('')}
-            </nav>
-        `;
-    };
 
-    const renderIndexCard = () => {
-        const card = document.getElementById('index-card');
-        if (!card) return;
-        card.innerHTML = buildIndexContent({ basePrefix: '', title: 'Índice' });
-    };
-
-    const buildIndexModal = () => {
-        if (document.getElementById('global-index-modal')) return;
-        const basePrefix = viewMatch ? '../' : '';
-        const modal = document.createElement('div');
-        modal.id = 'global-index-modal';
-        modal.className = 'index-modal-backdrop';
-        modal.innerHTML = `
-            <div class="index-modal" role="dialog" aria-modal="true" aria-label="Navegación">
-                ${buildIndexContent({ basePrefix, title: 'Índice' })}
-            </div>
-        `;
-        document.body.appendChild(modal);
-        const closeModal = () => modal.classList.remove('is-open');
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
-        });
-    };
-
-    renderIndexCard();
-
-    const openIndexModal = () => {
-        buildIndexModal();
-        const modal = document.getElementById('global-index-modal');
-        if (modal) modal.classList.add('is-open');
-    };
+    const indexCard = document.getElementById('index-card');
+    if (indexCard) indexCard.innerHTML = buildIndexContent({ title: '\u00CDndice' });
 
     const header = document.querySelector('.page-header');
     const headerTitle = header ? header.querySelector('h1') : null;
-    if (headerTitle) {
-        let titleSpan = headerTitle.querySelector('.page-title-text');
-        if (!titleSpan) {
-            const textNodes = Array.from(headerTitle.childNodes).filter(
-                (node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== ''
-            );
-            const titleText = textNodes.map(node => node.textContent.trim()).join(' ');
-            textNodes.forEach(node => node.remove());
-            titleSpan = document.createElement('span');
-            titleSpan.className = 'page-title-text';
-            titleSpan.textContent = titleText || headerTitle.textContent.trim();
-            headerTitle.insertBefore(titleSpan, headerTitle.firstChild);
-        }
-    }
-
+    if (headerTitle) ensureTitleSpan(headerTitle);
     if (header && !header.querySelector('.page-menu-trigger')) {
         const trigger = document.createElement('button');
         trigger.type = 'button';
         trigger.className = 'page-menu-trigger';
-        trigger.setAttribute('aria-label', 'Abrir índice');
-        trigger.addEventListener('click', openIndexModal);
+        trigger.setAttribute('aria-label', 'Abrir \u00EDndice');
+        trigger.addEventListener('click', () => ensureIndexModal().classList.add('is-open'));
         header.classList.add('page-header--with-menu');
         header.insertBefore(trigger, header.firstChild);
     }
 });
-
-
-
-
-
-

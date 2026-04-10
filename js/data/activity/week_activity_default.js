@@ -1,140 +1,17 @@
-/* =========================================
-   data/activity/week_activity_default.js - WEEKLY PLAN
-   ========================================= */
-
-window.ACTIVITY_DATA = [
-  {
-    day: "Lunes",
-    walk: {
-      exercises: [
-        { exerciseId: "caminar", sets: 1, reps: 1, stepsPerMin: 100, secPerRep: 4800 }
-      ],
-      description: "Actividad base diaria"
-    },
-    gym: {
-      exercises: [
-        { exerciseId: "movilidad_articular", sets: 1, reps: 1, secPerRep: 360 },
-        { exerciseId: "sentadilla", sets: 4, reps: "6-10", weightKg: 40, secPerRep: 5 },
-        { exerciseId: "press_banca", sets: 4, reps: "6-10", weightKg: 30, secPerRep: 4 },
-        { exerciseId: "remo_barra", sets: 4, reps: "8-12", weightKg: 30, secPerRep: 4 },
-        { exerciseId: "press_militar", sets: 3, reps: "8-10", weightKg: 20, secPerRep: 4 },
-        { exerciseId: "peso_muerto_rumano", sets: 3, reps: "8-12", weightKg: 40, secPerRep: 4 },
-        { exerciseId: "elevacion_gemelos", sets: 3, reps: "12-15", weightKg: 30, secPerRep: 3 },
-        { exerciseId: "plancha", sets: 1, reps: 1, secPerRep: 180 },
-        { exerciseId: "crunch", sets: 3, reps: "12-20", secPerRep: 2 },
-        { exerciseId: "estiramientos", sets: 1, reps: 1, secPerRep: 240 }
-      ],
-      description: "Recorrido completo con énfasis en básicos."
-    }
-  },
-  {
-    day: "Martes",
-    walk: {
-      exercises: [
-        { exerciseId: "caminar", sets: 1, reps: 1, stepsPerMin: 100, secPerRep: 4800 }
-      ],
-      description: "Actividad base diaria"
-    },
-    gym: {
-      type: "rest",
-      description: "Sin actividad de fuerza o cardio intenso en gimnasio"
-    }
-  },
-  {
-    day: "Miércoles",
-    walk: {
-      exercises: [
-        { exerciseId: "caminar", sets: 1, reps: 1, stepsPerMin: 100, secPerRep: 4800 }
-      ],
-      description: "Actividad base diaria"
-    },
-    gym: {
-      exercises: [
-        { exerciseId: "movilidad_articular", sets: 1, reps: 1, secPerRep: 360 },
-        { exerciseId: "press_inclinado", sets: 4, reps: "6-10", weightKg: 30, secPerRep: 4 },
-        { exerciseId: "remo_mancuernas", sets: 3, reps: "8-12", weightKg: 20, secPerRep: 4 },
-        { exerciseId: "press_militar", sets: 3, reps: "8-10", weightKg: 20, secPerRep: 4 },
-        { exerciseId: "elevaciones_laterales", sets: 3, reps: "12-15", weightKg: 8, secPerRep: 3 },
-        { exerciseId: "curl_biceps", sets: 3, reps: "10-12", weightKg: 10, secPerRep: 3 },
-        { exerciseId: "extension_triceps", sets: 3, reps: "10-12", weightKg: 15, secPerRep: 3 },
-        { exerciseId: "plancha_lateral", sets: 1, reps: 1, secPerRep: 240 },
-        { exerciseId: "russian_twist", sets: 3, reps: "16-24", weightKg: 5, secPerRep: 2 },
-        { exerciseId: "estiramientos", sets: 1, reps: 1, secPerRep: 240 }
-      ],
-      description: "Empuje y tracción de tren superior con accesorios."
-    }
-  },
-  {
-    day: "Jueves",
-    walk: {
-      exercises: [
-        { exerciseId: "caminar", sets: 1, reps: 1, stepsPerMin: 100, secPerRep: 4800 }
-      ],
-      description: "Actividad base diaria"
-    },
-    gym: {
-      exercises: [
-        { exerciseId: "movilidad_articular", sets: 1, reps: 1, secPerRep: 360 },
-        { exerciseId: "estiramientos", sets: 1, reps: 1, secPerRep: 480 }
-      ],
-      description: "Día libre o recuperación activa suave."
-    }
-  },
-  {
-    day: "Viernes",
-    walk: {
-      exercises: [
-        { exerciseId: "caminar", sets: 1, reps: 1, stepsPerMin: 100, secPerRep: 4800 }
-      ],
-      description: "Actividad base diaria"
-    },
-    gym: {
-      exercises: [
-        { exerciseId: "movilidad_articular", sets: 1, reps: 1, secPerRep: 360 },
-        { exerciseId: "sentadilla_goblet", sets: 4, reps: "8-12", weightKg: 20, secPerRep: 4 },
-        { exerciseId: "peso_muerto", sets: 4, reps: "6-8", weightKg: 50, secPerRep: 5 },
-        { exerciseId: "zancadas", sets: 3, reps: "10-12", weightKg: 12, secPerRep: 4 },
-        { exerciseId: "hip_thrust", sets: 3, reps: "8-12", weightKg: 40, secPerRep: 4 },
-        { exerciseId: "prensa_piernas", sets: 3, reps: "10-12", weightKg: 80, secPerRep: 4 },
-        { exerciseId: "elevacion_gemelos", sets: 3, reps: "12-15", weightKg: 30, secPerRep: 3 },
-        { exerciseId: "plancha", sets: 1, reps: 1, secPerRep: 180 },
-        { exerciseId: "elevaciones_piernas", sets: 3, reps: "10-15", weightKg: 0, secPerRep: 2 },
-        { exerciseId: "estiramientos", sets: 1, reps: 1, secPerRep: 240 }
-      ],
-      description: "Tren inferior + full body con énfasis en bisagra."
-    }
-  },
-  {
-    day: "Sábado",
-    walk: {
-      exercises: [
-        { exerciseId: "caminar", sets: 1, reps: 1, stepsPerMin: 100, secPerRep: 4800 }
-      ],
-      description: "Actividad base diaria"
-    },
-    gym: {
-      type: "rest",
-      description: "Descanso completo sin actividad programada."
-    },
-    extra_activity: {
-      exercises: [
-        { exerciseId: "spinning", sets: 1, reps: 1, secPerRep: 1800 }
-      ],
-      description: "Spinning suave para evaluar el flujo de actividad extra."
-    }
-  },
-  {
-    day: "Domingo",
-    walk: {
-      exercises: [
-        { exerciseId: "caminar", sets: 1, reps: 1, stepsPerMin: 100, secPerRep: 4800 }
-      ],
-      description: "Actividad base diaria"
-    },
-    gym: {
-      type: "rest",
-      description: "Descanso completo sin actividad programada."
-    }
-  }
+(() => {
+const x=(exerciseId,sets=1,reps=1,extra=null)=>extra?{exerciseId,sets,reps,...extra}:{exerciseId,sets,reps};
+const w=()=>({exercises:[x("caminar",1,1,{stepsPerMin:100,secPerRep:4800})],description:"Actividad base diaria"});
+const s=(exercises,description)=>({exercises,description});
+const r=(description)=>({type:"rest",description});
+const d=(day,gym,extra_activity=null)=>extra_activity?{day,walk:w(),gym,extra_activity}:{day,walk:w(),gym};
+const WEEK_ACTIVITY_DEFAULT=[
+d("Lunes",s([x("movilidad_articular",1,1,{secPerRep:360}),x("sentadilla",4,"6-10",{weightKg:40,secPerRep:5}),x("press_banca",4,"6-10",{weightKg:30,secPerRep:4}),x("remo_barra",4,"8-12",{weightKg:30,secPerRep:4}),x("press_militar",3,"8-10",{weightKg:20,secPerRep:4}),x("peso_muerto_rumano",3,"8-12",{weightKg:40,secPerRep:4}),x("elevacion_gemelos",3,"12-15",{weightKg:30,secPerRep:3}),x("plancha",1,1,{secPerRep:180}),x("crunch",3,"12-20",{secPerRep:2}),x("estiramientos",1,1,{secPerRep:240})],"Recorrido completo con énfasis en básicos.")),
+d("Martes",r("Sin actividad de fuerza o cardio intenso en gimnasio")),
+d("Miércoles",s([x("movilidad_articular",1,1,{secPerRep:360}),x("press_inclinado",4,"6-10",{weightKg:30,secPerRep:4}),x("remo_mancuernas",3,"8-12",{weightKg:20,secPerRep:4}),x("press_militar",3,"8-10",{weightKg:20,secPerRep:4}),x("elevaciones_laterales",3,"12-15",{weightKg:8,secPerRep:3}),x("curl_biceps",3,"10-12",{weightKg:10,secPerRep:3}),x("extension_triceps",3,"10-12",{weightKg:15,secPerRep:3}),x("plancha_lateral",1,1,{secPerRep:240}),x("russian_twist",3,"16-24",{weightKg:5,secPerRep:2}),x("estiramientos",1,1,{secPerRep:240})],"Empuje y tracción de tren superior con accesorios.")),
+d("Jueves",s([x("movilidad_articular",1,1,{secPerRep:360}),x("estiramientos",1,1,{secPerRep:480})],"Día libre o recuperación activa suave.")),
+d("Viernes",s([x("movilidad_articular",1,1,{secPerRep:360}),x("sentadilla_goblet",4,"8-12",{weightKg:20,secPerRep:4}),x("peso_muerto",4,"6-8",{weightKg:50,secPerRep:5}),x("zancadas",3,"10-12",{weightKg:12,secPerRep:4}),x("hip_thrust",3,"8-12",{weightKg:40,secPerRep:4}),x("prensa_piernas",3,"10-12",{weightKg:80,secPerRep:4}),x("elevacion_gemelos",3,"12-15",{weightKg:30,secPerRep:3}),x("plancha",1,1,{secPerRep:180}),x("elevaciones_piernas",3,"10-15",{weightKg:0,secPerRep:2}),x("estiramientos",1,1,{secPerRep:240})],"Tren inferior + full body con énfasis en bisagra.")),
+d("Sábado",r("Descanso completo sin actividad programada."),s([x("spinning",1,1,{secPerRep:1800})],"Spinning suave para evaluar el flujo de actividad extra.")),
+d("Domingo",r("Descanso completo sin actividad programada."))
 ];
-
+window.CoreDataRegistry.registerActivityPlan("activity/week_activity_default.js", WEEK_ACTIVITY_DEFAULT);
+})();

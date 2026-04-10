@@ -1,58 +1,39 @@
-/* =========================================
-   core/ui.js - UI UTILITIES
-   ========================================= */
+const STATUS_CLASSES = { ok: 'text-status--ok', warning: 'text-status--warning', danger: 'text-status--danger', critical: 'color-critical' };
+const resolveMaybe = (fn) => (typeof fn === 'function' ? Promise.resolve().then(fn) : Promise.resolve());
+const getProfileNumber = (key, fallback) => {
+    if (typeof UserStore === 'undefined' || typeof UserStore.getProfile !== 'function') return fallback;
+    const value = parseFloat(UserStore.getProfile({})?.[key]);
+    return Number.isFinite(value) && value > 0 ? value : fallback;
+};
+const activityCall = (method, args = [], fallback = null) => (
+    typeof ActivityEngine !== 'undefined' && typeof ActivityEngine[method] === 'function'
+        ? ActivityEngine[method](...args)
+        : fallback
+);
+const asContext = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
 
 const UI = {
-    // Detect if we are in the views/ subdirectory
     isInViews: () => window.location.pathname.includes('/views/'),
-
-    // Resolve relative path from the project root
-    resolvePath: (path) => {
-        const prefix = UI.isInViews() ? '../' : '';
-        return prefix + path;
-    },
-
-    // Load script dynamically (Promise)
-    loadScript: (path, id = null) => {
-        return new Promise((resolve, reject) => {
-            const resolvedPath = UI.resolvePath(path) + `?v=${Date.now()}`;
-            if (id) {
-                const old = document.getElementById(id);
-                if (old) old.remove();
-            }
-            const script = document.createElement('script');
-            if (id) script.id = id;
-            script.src = resolvedPath;
-            script.onload = resolve;
-            script.onerror = () => reject(path);
-            document.body.appendChild(script);
-        });
-    },
-
-    // Load dependencies with condition
+    resolvePath: (path) => `${UI.isInViews() ? '../' : ''}${path}`,
+    loadScript: (path, id = null) => new Promise((resolve, reject) => {
+        if (id) document.getElementById(id)?.remove();
+        const script = document.createElement('script');
+        if (id) script.id = id;
+        script.src = `${UI.resolvePath(path)}?v=${Date.now()}`;
+        script.onload = () => resolve(path);
+        script.onerror = () => reject(path);
+        document.body.appendChild(script);
+    }),
     loadDependencies: (deps, { settled = false } = {}) => {
-        const loads = (deps || []).filter(dep => {
-            if (typeof dep.when === 'function') return dep.when();
-            if (typeof dep.when === 'boolean') return dep.when;
-            return true;
-        }).map(dep => UI.loadScript(dep.path, dep.id));
-
+        const loads = (deps || [])
+            .filter((dep) => typeof dep.when === 'function' ? dep.when() : dep.when !== false)
+            .map(({ path, id }) => UI.loadScript(path, id));
         return settled ? Promise.allSettled(loads) : Promise.all(loads);
     },
-
-    ensureDependencies: (deps, { settled = false } = {}) => {
-        const normalizedDeps = (deps || []).map(dep => {
-            const globalName = dep && dep.global;
-            const shouldLoad = () => !globalName || typeof window[globalName] === 'undefined';
-            return {
-                when: shouldLoad,
-                path: dep.path,
-                id: dep.id
-            };
-        });
-        return UI.loadDependencies(normalizedDeps, { settled });
-    },
-
+    ensureDependencies: (deps, options = {}) => UI.loadDependencies((deps || []).map(({ global, ...dep }) => ({
+        ...dep,
+        when: () => !global || typeof window[global] === 'undefined'
+    })), options),
     bootstrapPage: ({
         rootId,
         requiredDeps = [],
@@ -64,111 +45,60 @@ const UI = {
     } = {}) => {
         const root = document.getElementById(rootId);
         if (!root || typeof run !== 'function') return Promise.resolve(false);
-
-        const callMaybe = (fn) => (typeof fn === 'function' ? Promise.resolve().then(fn) : Promise.resolve());
-
+        const context = {};
         return UI.ensureDependencies(requiredDeps)
-            .then(() => callMaybe(afterRequired))
+            .then(() => resolveMaybe(afterRequired).then((value) => Object.assign(context, asContext(value))))
             .then(() => UI.ensureDependencies(optionalDeps, { settled: true }))
-            .then(() => callMaybe(afterOptional))
-            .then(() => {
-                run(root);
-                return true;
-            })
+            .then(() => resolveMaybe(afterOptional).then((value) => Object.assign(context, asContext(value))))
+            .then(() => Promise.resolve(run(root, context)).then(() => true))
             .catch((err) => {
-                if (typeof onError === 'function') {
-                    onError(root, err);
-                } else {
-                    UI.showError(root, 'Error cargando dependencias.');
-                }
+                if (typeof onError === 'function') onError(root, err);
+                else UI.showError(root, 'Error cargando dependencias.');
                 return false;
             });
     },
-
-    // Render error message inside container
     showError: (container, message) => {
         container.innerHTML = `<div class="glass-card card"><p class="text-status--danger">${message}</p></div>`;
     },
-
-    // Status class for totals (target compliance indicator)
     getStatusClass: (current, target) => {
-        if (!target || target === 0) return '';
+        if (!target) return '';
         const pct = (current / target) * 100;
-        if (pct > 110) return 'text-status--danger';
-        if (pct < 90) return 'text-status--warning';
-        return 'text-status--ok';
+        return pct > 110 ? STATUS_CLASSES.danger : pct < 90 ? STATUS_CLASSES.warning : STATUS_CLASSES.ok;
     },
-
     getStatusClassByRule: (current, target, { rule = 'target', tolerancePct = 10 } = {}) => {
-        const currentValue = parseFloat(current);
-        const targetValue = parseFloat(target);
-        if (!Number.isFinite(currentValue) || !Number.isFinite(targetValue) || targetValue <= 0) return '';
-
-        if (rule === 'min') {
-            if (currentValue >= targetValue) return 'text-status--ok';
-            if (currentValue >= targetValue * (1 - (tolerancePct / 100))) return 'text-status--warning';
-            return 'text-status--danger';
-        }
-
-        if (rule === 'max') {
-            if (currentValue <= targetValue) return 'text-status--ok';
-            if (currentValue <= targetValue * (1 + (tolerancePct / 100))) return 'text-status--warning';
-            return 'text-status--danger';
-        }
-
-        return UI.getStatusClass(currentValue, targetValue);
+        const value = parseFloat(current);
+        const goal = parseFloat(target);
+        if (!Number.isFinite(value) || !Number.isFinite(goal) || goal <= 0) return '';
+        if (rule === 'min') return value >= goal ? STATUS_CLASSES.ok : value >= goal * (1 - tolerancePct / 100) ? STATUS_CLASSES.warning : STATUS_CLASSES.danger;
+        if (rule === 'max') return value <= goal ? STATUS_CLASSES.ok : value <= goal * (1 + tolerancePct / 100) ? STATUS_CLASSES.warning : STATUS_CLASSES.danger;
+        return UI.getStatusClass(value, goal);
     },
+    getStatusClassFromCode: (status) => STATUS_CLASSES[status] || '',
     showModal: ({ id = null, titleHtml = '', bodyHtml = '' } = {}) => {
-        const existing = id ? document.getElementById(id) : document.querySelector('.modal-overlay');
-        if (existing) existing.remove();
-
+        (id ? document.getElementById(id) : document.querySelector('.modal-overlay'))?.remove();
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         if (id) overlay.id = id;
-
-        overlay.innerHTML = `
-            <div class="modal-content">
-                ${titleHtml}
-                ${bodyHtml}
-            </div>
-        `;
-
+        overlay.innerHTML = `<div class="modal-content">${titleHtml}${bodyHtml}</div>`;
         const close = () => {
             document.removeEventListener('keydown', onKey);
             overlay.remove();
         };
-        const onKey = (e) => {
-            if (e.key === 'Escape') close();
-        };
+        const onKey = (event) => event.key === 'Escape' && close();
         overlay.addEventListener('click', close);
         document.addEventListener('keydown', onKey);
-
         document.body.appendChild(overlay);
         return overlay;
     },
-
     getTodayIndex: () => DateUtils.getTodayIndex(),
-
     scrollToTodayColumn: (table, todayIndex) => {
-        if (!table || !table.parentElement) return;
-        const targetTh = table.querySelectorAll('thead th')[todayIndex + 1];
-        const stickyTh = table.querySelector('thead th');
-        if (!targetTh || !stickyTh) return;
-        const scroller = table.parentElement;
-        const scrollLeft = targetTh.offsetLeft - stickyTh.offsetWidth;
-        scroller.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+        if (!table?.parentElement) return;
+        const [stickyTh, targetTh] = [table.querySelector('thead th'), table.querySelectorAll('thead th')[todayIndex + 1]];
+        if (!stickyTh || !targetTh) return;
+        table.parentElement.scrollTo({ left: targetTh.offsetLeft - stickyTh.offsetWidth, behavior: 'smooth' });
     },
-
-    formatLabel: (value) => {
-        if (!value) return '-';
-        return String(value)
-            .replace(/_/g, ' ')
-            .replace(/\b\w/g, l => l.toUpperCase());
-    },
-    formatNumber: (value, decimals = 1) => {
-        const numeric = Number.isFinite(value) ? value : 0;
-        return numeric.toFixed(decimals).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
-    },
+    formatLabel: (value) => value ? String(value).replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()) : '-',
+    formatNumber: (value, decimals = 1) => (Number.isFinite(value) ? value : 0).toFixed(decimals).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1'),
     formatInt: (value) => `${Math.round(Number.parseFloat(value) || 0)}`,
     formatKcal: (value) => `${UI.formatInt(value)} kcal`,
     formatMl: (value) => `${UI.formatInt(value)} ml`,
@@ -182,285 +112,91 @@ const UI = {
         .replace(/'/g, '&#39;'),
     encodePayload: (payload) => encodeURIComponent(JSON.stringify(payload || {})),
     decodePayload: (encodedPayload) => {
-        try {
-            return JSON.parse(decodeURIComponent(encodedPayload || ''));
-        } catch (err) {
-            console.error('Error parseando payload:', err);
-            return null;
-        }
+        try { return JSON.parse(decodeURIComponent(encodedPayload || '')); } catch { return null; }
     },
-
-    formatMinutes: (minutes) => {
-        const val = Math.round(minutes * 10) / 10;
-        return `${val}`;
-    },
-
-    parseReps: (reps) => {
-        if (!reps) return 0;
-        if (typeof reps === 'number') return reps;
-        const str = String(reps).trim();
-        if (str.includes('-')) {
-            const parts = str.split('-').map(v => parseFloat(v));
-            if (parts.length === 2 && !Number.isNaN(parts[0]) && !Number.isNaN(parts[1])) {
-                return (parts[0] + parts[1]) / 2;
-            }
-        }
-        const val = parseFloat(str);
-        return Number.isNaN(val) ? 0 : val;
-    },
-    isTimedItem: (item) => {
-        if (!item) return false;
-        const sets = parseFloat(item.sets);
-        const reps = parseFloat(item.reps);
-        const secPerRep = parseFloat(item.secPerRep);
-        return Number.isFinite(sets)
-            && sets > 0
-            && Number.isFinite(reps)
-            && reps === 1
-            && Number.isFinite(secPerRep)
-            && secPerRep >= 30;
-    },
-
-
-    getExerciseTimeBreakdown: (item, ex, { routineTimes = null } = {}) => {
-        if (!ex || !item) return { workMin: 0, restMin: 0, totalMin: 0 };
-
-        const repsAvg = UI.parseReps(item.reps);
-        const sets = item.sets || 0;
-        if (!sets || !repsAvg) return { workMin: 0, restMin: 0, totalMin: 0 };
-        const secPerRep = Number.isFinite(parseFloat(item.secPerRep)) ? parseFloat(item.secPerRep) : 0;
-        const restSeconds = Number.isFinite(parseFloat(ex.restSec)) ? parseFloat(ex.restSec) : 0;
-        const workSec = repsAvg * sets * secPerRep;
-        const restSec = sets > 1 ? (sets - 1) * restSeconds : 0;
-        const workMin = workSec / 60;
-        const restMin = restSec / 60;
-        return { workMin, restMin, totalMin: workMin + restMin };
-    },
-
-    estimateExerciseMinutes: (item, ex, { routineTimes = null } = {}) => {
-        return UI.getExerciseTimeBreakdown(item, ex, { routineTimes }).totalMin;
-    },
-
-    getEstimatedOneRmEpley: (weightKg, reps) => {
-        const weight = parseFloat(weightKg);
-        const repsVal = parseFloat(reps);
-        if (!Number.isFinite(weight) || weight <= 0) return null;
-        if (!Number.isFinite(repsVal) || repsVal <= 0) return null;
-        return weight * (1 + (repsVal / 30));
-    },
-
-    calculateEpleyLikeFactor: (value, base, { a = 1, b = 2 } = {}) => {
-        const v = parseFloat(value);
-        const baseVal = Number.isFinite(parseFloat(base)) && base > 0 ? parseFloat(base) : 0;
-        if (!Number.isFinite(v) || v <= 0 || baseVal <= 0) return 1;
-        const ratio = baseVal / v;
-        const intensity = 1 / (1 + ((ratio - 1) / b));
-        return 1 + (a * (intensity - 1));
-    },
-
-    getIntensityFactorFromEpley: (weightKg, reps, bodyWeightKg = null, relativeLoad = null) => {
-        const repsVal = parseFloat(reps);
-        if (!Number.isFinite(repsVal) || repsVal <= 0) return 1;
-
-        // Epley: 1RM = w * (1 + reps/30)  =>  w/1RM = 1/(1 + reps/30)
-        const intensity = Math.min(Math.max(1 / (1 + (repsVal / 30)), 0), 1);
-        const repsFactor = 0.7 + (0.8 * intensity);
-
-        const weightVal = parseFloat(weightKg);
-        const bw = Number.isFinite(bodyWeightKg) && bodyWeightKg > 0
-            ? bodyWeightKg
-            : UI.getEffectiveWeightKg();
-        if (!Number.isFinite(weightVal) || weightVal <= 0 || !Number.isFinite(bw) || bw <= 0) {
-            return repsFactor;
-        }
-
-        const baseRelative = Number.isFinite(parseFloat(relativeLoad)) && relativeLoad > 0
-            ? parseFloat(relativeLoad)
-            : 0.35;
-        const value = (weightVal / bw) * intensity;
-        const loadFactor = UI.calculateEpleyLikeFactor(value, baseRelative, { a: 1, b: 2 });
-        return repsFactor * loadFactor;
-    },
-    getExerciseKcalCoef: (item, ex, { routineTimes = null } = {}) => {
-        if (!ex || !item) return 0;
-        const met = ex.met || 0;
-        if (!met) return 0;
-
-        const { workMin, restMin } = UI.getExerciseTimeBreakdown(item, ex, { routineTimes });
-        if (!workMin && !restMin) return 0;
-        const restMet = 1.5;
-        let workCoef = (met / 60) * workMin;
-        const restCoef = (restMet / 60) * restMin;
-        if (ex.type === 'fuerza' && !UI.isTimedItem(item)) {
-            const repsAvg = UI.parseReps(item.reps);
-            const intensityFactor = UI.getIntensityFactorFromEpley(item.weightKg, repsAvg, null, ex.relativeLoad);
-            return (workCoef * intensityFactor) + restCoef;
-        }
-        if (ex.type === 'cardio') {
-            const cadence = parseFloat(item.cadencePerMin ?? item.cadence ?? item.rpm);
-            const baseCadence = parseFloat(ex.cadenceBase);
-            if (Number.isFinite(cadence) && cadence > 0 && Number.isFinite(baseCadence) && baseCadence > 0) {
-                const cadenceFactor = UI.calculateEpleyLikeFactor(cadence, baseCadence, { a: 1, b: 2 });
-                workCoef *= cadenceFactor;
-            }
-        }
-        return workCoef + restCoef;
-    },
-
-    calculateExerciseKcal: (item, ex, { weightKg = null, routineTimes = null } = {}) => {
-        if (!ex || !item) return 0;
+    formatMinutes: (minutes) => `${Math.round(minutes * 10) / 10}`,
+    callActivityEngine: activityCall,
+    parseReps: (reps) => activityCall('parseReps', [reps], 0),
+    isTimedItem: (item) => activityCall('isTimedItem', [item], false),
+    getExerciseTimeBreakdown: (item, ex) => activityCall('getExerciseTimeBreakdown', [item, ex], { workMin: 0, restMin: 0, totalMin: 0 }),
+    estimateExerciseMinutes: (item, ex) => activityCall('estimateExerciseMinutes', [item, ex], 0),
+    getEstimatedOneRmEpley: (weightKg, reps) => activityCall('getEstimatedOneRmEpley', [weightKg, reps], null),
+    calculateEpleyLikeFactor: (value, base, options = {}) => activityCall('calculateEpleyLikeFactor', [value, base, options], 1),
+    getIntensityFactorFromEpley: (weightKg, reps, bodyWeightKg = null, relativeLoad = null) => activityCall('getIntensityFactorFromEpley', [weightKg, reps, {
+        bodyWeightKg: Number.isFinite(parseFloat(bodyWeightKg)) && bodyWeightKg > 0 ? parseFloat(bodyWeightKg) : UI.getEffectiveWeightKg(),
+        relativeLoad
+    }], 1),
+    getExerciseKcalCoef: (item, ex) => activityCall('getExerciseKcalCoef', [item, ex, { bodyWeightKg: UI.getEffectiveWeightKg() }], 0),
+    calculateExerciseKcal: (item, ex, { weightKg = null } = {}) => {
         const effectiveWeight = UI.getEffectiveWeightKg(weightKg);
-        const coef = UI.getExerciseKcalCoef(item, ex, { routineTimes });
-        if (!coef) return 0;
-        return coef * effectiveWeight;
+        return activityCall('calculateExerciseKcal', [item, ex, { weightKg: effectiveWeight, bodyWeightKg: effectiveWeight }], 0);
     },
-
-    getEffectiveWeightKg: (weightKg = null) => {
-        if (weightKg && weightKg > 0) return weightKg;
-        if (typeof DB === 'undefined') return 70;
-        const profile = DB.get('user_profile', {});
-        const val = parseFloat(profile.weight);
-        return val > 0 ? val : 70;
-    },
-
+    getEffectiveWeightKg: (weightKg = null) => (weightKg && weightKg > 0 ? weightKg : getProfileNumber('weight', 70)),
     getUserHeightCm: (heightCm = null) => {
         const direct = parseFloat(heightCm);
-        if (Number.isFinite(direct) && direct > 0) return direct;
-        if (typeof DB === 'undefined') return 0;
-        const profile = DB.get('user_profile', {});
-        const val = parseFloat(profile.height);
-        return (Number.isFinite(val) && val > 0) ? val : 0;
+        return Number.isFinite(direct) && direct > 0 ? direct : getProfileNumber('height', 0);
     },
-
-    calculateStepsDistanceKm: (steps = 0, { heightCm = null } = {}) => {
-        const safeSteps = Math.max(0, parseInt(steps, 10) || 0);
-        if (!safeSteps) return 0;
-        const h = UI.getUserHeightCm(heightCm);
-        if (!h) return 0;
-        const stepLengthM = (h / 100) * 0.415;
-        return (safeSteps * stepLengthM) / 1000;
-    },
-
+    calculateStepsDistanceKm: (steps = 0, { heightCm = null } = {}) => activityCall('calculateStepsDistanceKm', [steps, { heightCm: UI.getUserHeightCm(heightCm) }], 0),
     formatKm: (km) => {
-        const n = parseFloat(km);
-        if (!Number.isFinite(n) || n <= 0) return '-';
-        const rounded = Math.round(n * 10) / 10;
-        return (rounded % 1 === 0) ? rounded.toFixed(0) : rounded.toFixed(1);
+        const value = parseFloat(km);
+        if (!Number.isFinite(value) || value <= 0) return '-';
+        const rounded = Math.round(value * 10) / 10;
+        return rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1);
     },
-
-    calculateStepsIntensityFactor: (stepsPerMin = 0, { baseStepsPerMin = 100, a = 1, b = 2 } = {}) => {
-        const spm = parseFloat(stepsPerMin);
-        const base = Number.isFinite(parseFloat(baseStepsPerMin)) && baseStepsPerMin > 0
-            ? parseFloat(baseStepsPerMin)
-            : 100;
-        if (!Number.isFinite(spm) || spm <= 0) return 1;
-        return UI.calculateEpleyLikeFactor(spm, base, { a, b });
-    },
-
-    calculateStepsKcal: (steps = 0, { weightKg = null, stepsConfig = null } = {}) => {
-        const safeSteps = Math.max(0, parseInt(steps, 10) || 0);
-        if (!safeSteps) return 0;
-        const cfg = stepsConfig || {};
-        const effectiveWeight = UI.getEffectiveWeightKg(weightKg);
-        const stepsPerMin = cfg.stepsPerMin || 100;
-        const baseStepsPerMin = cfg.baseStepsPerMin || 100;
-        const baseMet = cfg.met || ((typeof EXERCISES !== 'undefined' && EXERCISES.caminar) ? EXERCISES.caminar.met : 3.5) || 3.5;
-        const intensityFactor = UI.calculateStepsIntensityFactor(stepsPerMin, { baseStepsPerMin, a: 1, b: 2 });
-        const met = baseMet * intensityFactor;
-        const minutes = safeSteps / stepsPerMin;
-        return (met * effectiveWeight / 60) * minutes;
-    },
-
+    calculateStepsIntensityFactor: (stepsPerMin = 0, { baseStepsPerMin = 100, a = 1, b = 2 } = {}) => activityCall('calculateStepsIntensityFactor', [stepsPerMin, { baseStepsPerMin, a, b }], 1),
+    calculateStepsKcal: (steps = 0, { weightKg = null, stepsConfig = null } = {}) => activityCall('calculateStepsKcal', [steps, {
+        weightKg: UI.getEffectiveWeightKg(weightKg),
+        stepsConfig
+    }], 0),
     calcTrainingTotals: (exerciseBlock, exerciseOverrides, exercisesMap, { weightKg = null } = {}) => {
-        let totalKcal = 0;
-        let totalMin = 0;
-        let totalEj = 0;
-        let metMinSum = 0;
-        let intensityWorkMinSum = 0;
-        let intensityWorkMin = 0;
-
-        if (!exerciseBlock) return { kcal: 0, min: 0, exerciseCount: 0, metAvg: 0, metMinSum: 0, intensityAvg: 0 };
-        const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : {});
-        exerciseBlock.exercises.forEach(item => {
-            const override = (exerciseOverrides && exerciseOverrides[item.exerciseId]) || {};
-            const effectiveItem = { ...item, ...override };
-            const ex = exercises[item.exerciseId];
-            if (!ex) return;
-            totalEj += 1;
-            const breakdown = UI.getExerciseTimeBreakdown(effectiveItem, ex);
-            totalMin += breakdown.totalMin;
-            totalKcal += UI.calculateExerciseKcal(effectiveItem, ex, { weightKg });
-
-            const met = parseFloat(ex.met);
-            if (Number.isFinite(met) && met > 0 && breakdown.totalMin > 0) {
-                metMinSum += met * breakdown.totalMin;
-            }
-
-            if (ex.type === 'fuerza' && !UI.isTimedItem(effectiveItem) && breakdown.workMin > 0) {
-                const repsAvg = UI.parseReps(effectiveItem.reps);
-                const intensityFactor = UI.getIntensityFactorFromEpley(effectiveItem.weightKg, repsAvg, null, ex.relativeLoad);
-                if (Number.isFinite(intensityFactor) && intensityFactor > 0) {
-                    intensityWorkMinSum += intensityFactor * breakdown.workMin;
-                    intensityWorkMin += breakdown.workMin;
-                }
-            }
-        });
-
-        const metAvg = totalMin > 0 ? (metMinSum / totalMin) : 0;
-        const intensityAvg = intensityWorkMin > 0 ? (intensityWorkMinSum / intensityWorkMin) : 0;
-        return { kcal: totalKcal, min: totalMin, exerciseCount: totalEj, metAvg, metMinSum, intensityAvg, intensityWorkMinSum, intensityWorkMin };
+        const effectiveWeight = UI.getEffectiveWeightKg(weightKg);
+        return activityCall('calculateTrainingTotals', [exerciseBlock, exerciseOverrides, exercisesMap || {}, {
+            weightKg: effectiveWeight,
+            bodyWeightKg: effectiveWeight
+        }], { kcal: 0, min: 0, exerciseCount: 0, metAvg: 0, metMinSum: 0, intensityAvg: 0 });
     },
-
-    groupExercisesByTypeFocus: (exerciseBlock, exercisesMap, { typeOrder = null, focusOrder = null } = {}) => {
-        if (!exerciseBlock || !exerciseBlock.exercises) return [];
-        const exercises = exercisesMap || (typeof EXERCISES !== 'undefined' ? EXERCISES : {});
+    groupExercisesByTypeFocus: (exerciseBlock, exercisesMap, {
+        typeOrder = ['fuerza', 'cardio', 'recuperacion', 'otros'],
+        focusOrder = ['tren_superior', 'tren_inferior', 'core', 'full_body', 'movilidad', 'recuperacion', 'general']
+    } = {}) => {
+        if (!exerciseBlock?.exercises) return [];
         const groups = new Map();
-
-        exerciseBlock.exercises.forEach(item => {
-            const ex = exercises[item.exerciseId];
+        exerciseBlock.exercises.forEach((item) => {
+            const ex = (exercisesMap || {})[item.exerciseId];
             if (!ex) return;
-            const exerciseType = ex.type || 'otros';
-            const exerciseFocus = ex.focus || 'general';
-            const key = `${exerciseType}__${exerciseFocus}`;
-            if (!groups.has(key)) groups.set(key, { type: exerciseType, focus: exerciseFocus, items: [] });
+            const type = ex.type || 'otros';
+            const focus = ex.focus || 'general';
+            const key = `${type}__${focus}`;
+            if (!groups.has(key)) groups.set(key, { type, focus, items: [] });
             groups.get(key).items.push(item);
         });
-
-        const resolvedTypeOrder = typeOrder || ['fuerza', 'cardio', 'recuperacion', 'otros'];
-        const resolvedFocusOrder = focusOrder || ['tren_superior', 'tren_inferior', 'core', 'full_body', 'movilidad', 'recuperacion', 'general'];
-
-        return Array.from(groups.values()).sort((a, b) => {
-            const ta = resolvedTypeOrder.indexOf(a.type);
-            const tb = resolvedTypeOrder.indexOf(b.type);
-            if (ta !== tb) return (ta === -1 ? 999 : ta) - (tb === -1 ? 999 : tb);
-            const ea = resolvedFocusOrder.indexOf(a.focus);
-            const eb = resolvedFocusOrder.indexOf(b.focus);
-            if (ea !== eb) return (ea === -1 ? 999 : ea) - (eb === -1 ? 999 : eb);
-            return a.focus.localeCompare(b.focus);
-        });
+        const getOrder = (list, value) => {
+            const index = list.indexOf(value);
+            return index === -1 ? 999 : index;
+        };
+        return [...groups.values()].sort((a, b) => (
+            getOrder(typeOrder, a.type) - getOrder(typeOrder, b.type)
+            || getOrder(focusOrder, a.focus) - getOrder(focusOrder, b.focus)
+            || a.focus.localeCompare(b.focus)
+        ));
     },
-
     renderEditResetControls: ({ id, isEditMode, onToggle, onReset }) => {
-        const btnContainer = document.createElement('div');
-        btnContainer.id = id;
-        btnContainer.className = 'menu-controls';
-
-        const editBtn = document.createElement('button');
-        editBtn.className = 'btn-back';
-        editBtn.innerHTML = isEditMode ? ' Listo' : ' Editar';
-        editBtn.classList.toggle('btn-back--active', isEditMode);
-        editBtn.onclick = onToggle;
-
-        const resetBtn = document.createElement('button');
-        resetBtn.className = 'btn-back';
-        resetBtn.innerHTML = '🔄 Reset';
-        resetBtn.onclick = onReset;
-
-        btnContainer.appendChild(editBtn);
-        btnContainer.appendChild(resetBtn);
-        return btnContainer;
+        const controls = document.createElement('div');
+        controls.id = id;
+        controls.className = 'menu-controls';
+        [
+            { text: isEditMode ? 'Listo' : 'Editar', active: isEditMode, action: onToggle },
+            { text: 'Reset', action: onReset }
+        ].forEach(({ text, active = false, action }) => {
+            const button = document.createElement('button');
+            button.className = 'btn-back';
+            button.textContent = text;
+            button.classList.toggle('btn-back--active', active);
+            button.onclick = action;
+            controls.appendChild(button);
+        });
+        return controls;
     }
 };
+
 window.UI = UI;
-
-
