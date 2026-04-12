@@ -5,7 +5,10 @@
   window.addEventListener('load', () => {
     try {
       const src = document.currentScript?.src;
-      navigator.serviceWorker.register(src ? new URL('../../sw.js', src).toString() : new URL('sw.js', href).toString()).catch(() => {});
+      navigator.serviceWorker
+        .register(src ? new URL('../../sw.js', src).toString() : new URL('sw.js', href).toString())
+        .then((registration) => registration.update().catch(() => {}))
+        .catch(() => {});
     } catch {}
   });
 })();

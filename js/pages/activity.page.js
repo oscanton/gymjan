@@ -2,6 +2,7 @@ function renderActivityPage() {
     const tableBody = document.getElementById('actividad-body');
     if (!tableBody) return;
 
+    const activityT = (key, params = {}, fallback = '') => window.I18n?.t?.(key, params, fallback) || fallback || String(key || '');
     let formulas = null;
     let targets = null;
     let activityService = null;
@@ -9,6 +10,7 @@ function renderActivityPage() {
     let currentPlanData = null;
     let exercisesCatalog = null;
     let isEditMode = false;
+    const metrics = window.MetricsRegistry || null;
 
     const pendingAdds = {};
     const PLAN_KEY = 'activity_plan_selector';
@@ -19,94 +21,31 @@ function renderActivityPage() {
     if (!container && table) container = table.parentElement;
 
     const getPlanFiles = () => Array.isArray(AVAILABLE_ACTIVITY_PLAN_FILES) ? AVAILABLE_ACTIVITY_PLAN_FILES : [];
-    const getSelectedFile = () => ActivityStore.getSelectedFile();
-    const setSelectedFile = (file) => ActivityStore.setSelectedFile(file);
+    let currentFile = getPlanFiles().length ? getPlanFiles()[0].file : null;
     const getPlanData = () => currentPlanData;
-    const getSectionItems = (dayData, sectionKey) => (
-        dayData && dayData[sectionKey] && Array.isArray(dayData[sectionKey].exercises) ? dayData[sectionKey].exercises : null
-    );
-    const getExerciseItem = (planData, dayIndex, sectionKey, exerciseId) => {
-        const items = getSectionItems(planData[dayIndex], sectionKey);
-        return items && items.find((item) => item && item.exerciseId === exerciseId);
-    };
-    const savePlanData = (data) => {
-        currentPlanData = ActivityStore.normalizeActivityData(data);
-        ActivityStore.savePlanData(getSelectedFile(), currentPlanData);
-    };
+    const setPlanData = (planData) => (currentPlanData = planData);
     const clearPlanData = () => {
-        currentPlanData = null;
-        ActivityStore.clearSavedPlanData(getSelectedFile());
+        setPlanData(null);
+        activityService.clearSavedPlanData({ currentFile });
     };
     const resetActivityData = () => clearPlanData();
     const confirmAndResetActivity = () => {
-        if (!confirm("\u00BFRestablecer actividad por defecto? Se perder\u00E1n los cambios.")) return;
+        if (!confirm(activityT('activity.states.reset_confirm', {}, 'Restablecer actividad por defecto? Se perderan los cambios.'))) return;
         resetActivityData();
         if (isEditMode) isEditMode = false;
-        loadPlanFile(getSelectedFile()).then(renderTableContent);
+        loadPlanFile(currentFile).then(renderTableContent);
     };
 
-    const getWalkingExercise = () => {
-        if (activityService && typeof activityService.getWalkingExercise === 'function') {
-            return activityService.getWalkingExercise({ exercisesMap: exercisesCatalog || {}, defaultStepsCfg });
-        }
-        if (exercisesCatalog && exercisesCatalog.caminar) return exercisesCatalog.caminar;
-        return {
-            name: 'Caminar',
-            type: 'cardio',
-            focus: 'full_body',
-            muscles: 'piernas, core',
-            equipment: 'ninguno',
-            cadenceBase: defaultStepsCfg.perMinute,
-            met: defaultStepsCfg.met,
-            description: 'Actividad base de baja intensidad.',
-            technique: 'Actividad diaria basada en pasos.'
-        };
-    };
-    const ensureWalkItem = (dayData) => {
-        if (!dayData) return null;
-        if (!dayData.walk || typeof dayData.walk !== 'object') dayData.walk = { exercises: [], description: '' };
-        if (!Array.isArray(dayData.walk.exercises)) dayData.walk.exercises = [];
-        let item = dayData.walk.exercises.find((entry) => entry && entry.exerciseId === 'caminar');
-        if (!item) {
-            item = { exerciseId: 'caminar', sets: 1, reps: 1, stepsPerMin: defaultStepsCfg.perMinute };
-            dayData.walk.exercises.unshift(item);
-        }
-        return item;
-    };
-    const getWalkInfo = (dayData) => (
-        activityService && typeof activityService.getWalkInfo === 'function'
-            ? activityService.getWalkInfo(dayData, { defaultStepsCfg, walkingExercise: getWalkingExercise() })
-            : (ActivityStore && ActivityStore.getWalkInfo
-                ? ActivityStore.getWalkInfo(dayData, { defaultStepsCfg, walkingExercise: getWalkingExercise() })
-                : { steps: 0, stepsPerMin: defaultStepsCfg.perMinute, secPerRep: 0, cadenceBase: defaultStepsCfg.perMinute })
-    );
-    const dayHasExtra = (plan) => Array.isArray(plan) && plan.some((day) => (
-        day && day.extra_activity && day.extra_activity.type !== 'rest' &&
-        Array.isArray(day.extra_activity.exercises) && day.extra_activity.exercises.length
-    ));
-    const buildDefaultExercise = (section, sectionKey, exerciseId) => {
-        const list = getSectionItems({ [sectionKey]: section }, sectionKey) || [];
-        let baseId = exerciseId || (list.length ? list[0].exerciseId : null);
-        if (!baseId && exercisesCatalog) {
-            if (sectionKey === 'gym') {
-                if (exercisesCatalog.movilidad_articular) baseId = 'movilidad_articular';
-                else {
-                    const firstStrength = Object.values(exercisesCatalog).find((entry) => entry && entry.type === 'fuerza');
-                    baseId = firstStrength ? firstStrength.id : null;
-                }
-            } else if (sectionKey === 'extra_activity') {
-                const firstStrength = Object.values(exercisesCatalog).find((entry) => entry && entry.type === 'fuerza');
-                baseId = firstStrength ? firstStrength.id : (exercisesCatalog.caminar ? 'caminar' : null);
-            } else {
-                baseId = exercisesCatalog.movilidad_articular ? 'movilidad_articular' : (exercisesCatalog.caminar ? 'caminar' : null);
-            }
-        }
-        if (!baseId) return null;
-        const exercise = exercisesCatalog ? exercisesCatalog[baseId] : null;
-        if (!exercise) return { exerciseId: baseId, sets: 3, reps: '10-12', secPerRep: 3 };
-        return exercise.type === 'cardio'
-            ? { exerciseId: baseId, sets: 1, reps: 1, secPerRep: 600 }
-            : { exerciseId: baseId, sets: 3, reps: '10-12', weightKg: 0, secPerRep: 3 };
+    const getWalkingExercise = () => activityService.getWalkingExercise({ exercisesMap: exercisesCatalog || {}, defaultStepsCfg });
+    const mutatePlan = (method, payload = {}, { rerender = true } = {}) => {
+        setPlanData(activityService[method]({
+            currentFile,
+            planData: getPlanData() || [],
+            persist: true,
+            ...payload
+        }));
+        if (rerender) renderTableContent();
+        return getPlanData();
     };
 
     const formatMet = (value) => {
@@ -124,6 +63,23 @@ function renderActivityPage() {
     const encodePayload = UI.encodePayload;
     const decodePayload = UI.decodePayload;
     const escapeHtml = UI.escapeHtml;
+    const getWeekDayLabel = (value, fallback = '') => (
+        typeof DateUtils !== 'undefined' && typeof DateUtils.getWeekDayLabel === 'function'
+            ? DateUtils.getWeekDayLabel(value, fallback)
+            : (fallback || String(value || ''))
+    );
+    const formatTaxonomyFallback = (value = '') => UI.formatLabel(String(value || '').trim());
+    const getTaxonomyLabel = (group, value, fallback = '') => (
+        activityT(`activity.taxonomy.${group}.${value}`, {}, fallback || formatTaxonomyFallback(value))
+    );
+    const getExerciseName = (exerciseId, fallback = '') => window.ContentI18n?.exerciseName?.(exerciseId, fallback || exerciseId) || fallback || exerciseId;
+    const getExerciseDescription = (exerciseId, fallback = '') => window.ContentI18n?.exerciseDescription?.(exerciseId, fallback) || fallback;
+    const getExerciseTechnique = (exerciseId, fallback = '') => window.ContentI18n?.exerciseTechnique?.(exerciseId, fallback) || fallback;
+    const getMetricLabel = (key, options = {}) => (
+        metrics && typeof metrics.getLabel === 'function'
+            ? metrics.getLabel(key, options)
+            : String(key || '')
+    );
     const dataAttrs = (attrs = {}) => Object.entries(attrs)
         .map(([key, value]) => ` data-${key}="${escapeHtml(String(value == null ? '' : value))}"`)
         .join('');
@@ -148,7 +104,7 @@ function renderActivityPage() {
     `;
     const addButton = (sectionKey, dayIndex) => (
         isEditMode
-            ? `<button type="button" class="activity-training__add"${dataAttrs({ 'ex-add-section': sectionKey, 'ex-add-day-index': dayIndex })}>A\u00F1adir</button>`
+            ? `<button type="button" class="activity-training__add"${dataAttrs({ 'ex-add-section': sectionKey, 'ex-add-day-index': dayIndex })}>${activityT('activity.actions.add_exercise', {}, 'Añadir')}</button>`
             : ''
     );
     const trainingCell = ({ title, sectionKey, dayIndex, description = '', body = '' } = {}) => `
@@ -172,6 +128,18 @@ function renderActivityPage() {
         encodePayload
     });
     const showTechniqueModal = (exercise) => UI.showModal(activityPresenter.buildTechniqueModal({ ...exercise, escapeHtml }));
+    const showScoreModal = (payload) => UI.showModal(activityPresenter.buildScoreModal({
+        payload,
+        formatNumber,
+        getStatusClassFromCode: UI.getStatusClassFromCode,
+        escapeHtml
+    }));
+    const setTableMessage = (message, status = 'danger') => {
+        tableBody.innerHTML = `<tr><td colspan="${errorColspan}" class="text-status--${status} text-center">${message}</td></tr>`;
+    };
+    const appendTableRow = (label, cellsHtml) => tableBody.appendChild(Object.assign(document.createElement('tr'), {
+        innerHTML: `<td class="activity-row-header">${label}</td>${cellsHtml}`
+    }));
 
     const buildPlanSelector = () => {
         const plans = getPlanFiles();
@@ -189,42 +157,40 @@ function renderActivityPage() {
             title.appendChild(wrapper);
         }
         wrapper.innerHTML = `<select id="activity-plan-select" class="input-base input-select input-select--header">${plans.map((plan) => (
-            `<option value="${plan.file}" ${plan.file === getSelectedFile() ? 'selected' : ''}>${plan.label}</option>`
+            `<option value="${plan.file}" ${plan.file === currentFile ? 'selected' : ''}>${escapeHtml(activityT(`activity.plans.${plan.label}`, {}, plan.label))}</option>`
         )).join('')}</select>`;
         const select = document.getElementById('activity-plan-select');
         if (select) {
             select.addEventListener('change', (event) => {
-                const file = event.target.value;
-                setSelectedFile(file);
-                loadPlanFile(file).then(renderTableContent);
+                currentFile = activityService.setSelectedPlanFile({ file: event.target.value, availableFiles: plans });
+                loadPlanFile(currentFile).then(renderTableContent);
             });
         }
     };
     const loadPlanFile = (file) => CoreBrowserAdapter.resolveActivityPlanData(file)
-        .then((planData) => (currentPlanData = Array.isArray(planData) ? planData : null))
+        .then((planData) => setPlanData(Array.isArray(planData) ? planData : null))
         .catch(() => null);
 
     const renderTableContent = () => {
         if (!exercisesCatalog) {
-            tableBody.innerHTML = `<tr><td colspan="${errorColspan}" class="text-status--danger text-center">Error: datos de ejercicios no disponibles.</td></tr>`;
+            setTableMessage(activityT('activity.states.missing_exercises', {}, 'Error: datos de ejercicios no disponibles.'));
             return;
         }
 
         const planData = getPlanData();
         if (!Array.isArray(planData) || !planData.length) {
-            tableBody.innerHTML = `<tr><td colspan="${errorColspan}" class="text-status--warning text-center">No hay plan semanal seleccionado o disponible.</td></tr>`;
+            setTableMessage(activityT('activity.states.no_plan', {}, 'No hay plan semanal seleccionado o disponible.'), 'warning');
             return;
         }
 
         const pageModel = activityService.getActivityPageModel({
             planData,
-            currentFile: getSelectedFile(),
+            currentFile,
             exercisesMap: exercisesCatalog,
             defaultStepsCfg,
             targets,
             formulas,
-            activityScoreEngine: ActivityScore,
-            browserDomain: CoreBrowserDomain
+            activityScoreEngine: ActivityScore
         });
         currentPlanData = pageModel.planData || planData;
 
@@ -235,47 +201,50 @@ function renderActivityPage() {
         if (table) {
             const thead = table.querySelector('thead');
             if (thead) {
-                thead.innerHTML = `<tr><th class="activity-row-header"></th>${WEEK_DAYS.map((dayLabel, index) => `
+                thead.innerHTML = `<tr><th class="activity-row-header"></th>${WEEK_DAYS.map((dayKey, index) => `
                     <th class="${index === todayIndex ? 'text-status--ok' : ''}">
-                        <div class="activity-day-header"><div class="activity-day-title">${dayLabel}</div></div>
+                        <div class="activity-day-header"><div class="activity-day-title">${getWeekDayLabel(dayKey, dayKey)}</div></div>
                     </th>
                 `).join('')}</tr>`;
             }
         }
 
         const renderMovementCell = (dayData, dayIndex, dayView) => {
-            const walkInfo = dayView ? dayView.walkInfo : getWalkInfo(dayData);
-            const movement = dayView ? dayView.movement : null;
-            const stepsKcal = movement ? movement.stepsKcal : 0;
-            const totalMin = movement ? movement.totalMin : 0;
-            const distanceKm = movement ? movement.distanceKm : 0;
-            const stepsMet = movement ? movement.stepsMet : 0;
+            const walkInfo = dayView.walkInfo;
+            const movement = dayView.movement || {};
+            const currentWalkingExercise = dayView.walkingExercise || walkingExercise;
+            const movementName = getExerciseName(currentWalkingExercise.id, currentWalkingExercise.name || activityT('activity.titles.daily_movement', {}, 'Movimiento diario'));
+            const movementTechnique = getExerciseTechnique(currentWalkingExercise.id, currentWalkingExercise.technique || '');
+            const stepsKcal = movement.stepsKcal || 0;
+            const totalMin = movement.totalMin || 0;
+            const distanceKm = movement.distanceKm || 0;
+            const stepsMet = movement.stepsMet || 0;
             return `
                 <td>
                     ${cardHtml({
                         data: {
-                            'ex-name': walkingExercise.name || 'Movimiento diario',
-                            'ex-tech': walkingExercise.technique || '',
+                            'ex-name': movementName,
+                            'ex-tech': movementTechnique,
                             'ex-kcal': stepsKcal,
-                            'ex-type': walkingExercise.type || '',
-                            'ex-focus': walkingExercise.focus || '',
-                            'ex-muscles': walkingExercise.muscles || '',
-                            'ex-equipment': walkingExercise.equipment || ''
+                            'ex-type': currentWalkingExercise.type || '',
+                            'ex-focus': currentWalkingExercise.focus || '',
+                            'ex-muscles': currentWalkingExercise.muscles || '',
+                            'ex-equipment': currentWalkingExercise.equipment || ''
                         },
-                        nameHtml: `<div class="activity-exercise__name modal-trigger">${walkingExercise.name || 'Movimiento diario'}</div>`,
+                        nameHtml: `<div class="activity-exercise__name modal-trigger">${movementName}</div>`,
                         kvRows: [
-                            kvRow('Pasos', isEditMode
+                            kvRow(activityT('activity.labels.steps', {}, 'Pasos'), isEditMode
                                 ? editInput({ 'walk-day-index': dayIndex, 'walk-field': 'steps' }, walkInfo.steps)
                                 : walkInfo.steps, isEditMode ? 'activity-exercise__kv-value--edit' : ''),
-                            kvRow('Ritmo (pasos/min)', isEditMode
+                            kvRow(activityT('activity.labels.steps_per_min', {}, 'Ritmo (pasos/min)'), isEditMode
                                 ? editInput({ 'walk-day-index': dayIndex, 'walk-field': 'stepsPerMin' }, walkInfo.stepsPerMin)
                                 : (walkInfo.stepsPerMin > 0 ? walkInfo.stepsPerMin : '-'), isEditMode ? 'activity-exercise__kv-value--edit' : '')
                         ].join(''),
                         statRows: [
-                            splitRow(pill('Kcal', Math.round(stepsKcal)), pill('MET', parseFloat(stepsMet) > 0 ? formatMet(stepsMet) : '-')),
-                            splitRow(pill('Distancia', distanceKm > 0 ? `${UI.formatKm(distanceKm)} km` : '-'), pill('Tiempo', `${UI.formatMinutes(totalMin)} min`))
+                            splitRow(pill(getMetricLabel('kcal'), Math.round(stepsKcal)), pill(getMetricLabel('met', { short: true }), parseFloat(stepsMet) > 0 ? formatMet(stepsMet) : '-')),
+                            splitRow(pill(activityT('activity.labels.distance', {}, 'Distancia'), distanceKm > 0 ? `${UI.formatKm(distanceKm)} km` : '-'), pill(activityT('activity.labels.time', {}, 'Tiempo'), `${UI.formatMinutes(totalMin)} min`))
                         ].join(''),
-                        description: movement ? movement.description : ((dayData.walk && dayData.walk.description) ? dayData.walk.description : '')
+                        description: movement.description || ((dayData.walk && dayData.walk.description) ? dayData.walk.description : '')
                     })}
                 </td>
             `;
@@ -284,7 +253,7 @@ function renderActivityPage() {
         const renderPendingAdd = (sectionKey, dayIndex) => {
             if (!isEditMode || !pendingAdds[`${dayIndex}:${sectionKey}`]) return '';
             const options = Object.values(exercisesCatalog || {}).map((exercise) => (
-                exercise && exercise.id ? `<option value="${exercise.id}">${exercise.name}</option>` : ''
+                exercise && exercise.id ? `<option value="${exercise.id}">${getExerciseName(exercise.id, exercise.name || exercise.id)}</option>` : ''
             )).join('');
             return cardHtml({
                 className: 'activity-exercise--pending',
@@ -293,46 +262,43 @@ function renderActivityPage() {
                         <div class="activity-exercise__name activity-exercise__name--select">
                             <select class="input-base input-select input-select--sm"${dataAttrs({ 'ex-add-select-section': sectionKey, 'ex-add-select-day-index': dayIndex })}>${options}</select>
                         </div>
-                        <button type="button" class="activity-exercise__add-done"${dataAttrs({ 'ex-add-done-section': sectionKey, 'ex-add-done-day-index': dayIndex })}>OK</button>
+                        <button type="button" class="activity-exercise__add-done"${dataAttrs({ 'ex-add-done-section': sectionKey, 'ex-add-done-day-index': dayIndex })}>${activityT('common.ok', {}, 'OK')}</button>
                     </div>
                 `,
-                description: 'A\u00F1adiendo ejercicio...'
+                description: activityT('activity.states.adding_exercise', {}, 'Añadiendo ejercicio...')
             });
         };
 
-        const renderExerciseCard = (sectionKey, dayIndex, item) => {
-            const exercise = exercisesCatalog[item.exerciseId];
-            if (!exercise) return `<div class="activity-exercise">Ejercicio no encontrado: ${item.exerciseId}</div>`;
+        const renderExerciseCard = (sectionKey, dayIndex, view) => {
+            const exercise = view && view.definition ? view.definition : null;
+            const item = view && view.item ? view.item : null;
+            if (!exercise || !item) return '';
 
-            const view = activityService && typeof activityService.buildExerciseView === 'function'
-                ? activityService.buildExerciseView({
-                    item,
-                    exerciseDefinition: exercise,
-                    weightKg: typeof UI.getEffectiveWeightKg === 'function' ? UI.getEffectiveWeightKg() : 70
-                })
-                : null;
-            const isTimeBased = view ? view.isTimeBased : UI.isTimedItem(item);
-            const numericWeight = view ? view.numericWeight : parseFloat(item.weightKg);
-            const showWeight = view ? view.showWeight : (exercise.type === 'fuerza' && !isTimeBased && Number.isFinite(numericWeight) && numericWeight > 0);
-            const canEditWeight = view ? view.canEditWeight : (exercise.type === 'fuerza' && !isTimeBased);
-            const effectiveSecPerRep = view ? view.effectiveSecPerRep : (isTimeBased ? (parseFloat(item.secPerRep) || 0) : 0);
-            const repetitionsDisplay = view ? view.repetitionsDisplay : ((item.sets && item.reps) ? `${item.sets} x ${item.reps}` : '-');
-            const kcal = view ? view.kcal : UI.calculateExerciseKcal(item, exercise);
-            const estimatedMin = view ? view.estimatedMin : UI.estimateExerciseMinutes(item, exercise);
-            const met = view ? view.met : parseFloat(exercise.met);
-            const showMet = view ? view.showMet : (Number.isFinite(met) && met > 0);
-            const intensityFactor = view ? view.intensityFactor : 0;
-            const showIntensity = view ? view.showIntensity : false;
-            const exerciseRest = view ? view.exerciseRest : (Number.isFinite(parseFloat(exercise.restSec)) ? exercise.restSec : '');
+            const isTimeBased = view.isTimeBased;
+            const numericWeight = view.numericWeight;
+            const showWeight = !!view.showWeight;
+            const canEditWeight = !!view.canEditWeight;
+            const effectiveSecPerRep = view.effectiveSecPerRep || 0;
+            const repetitionsDisplay = view.repetitionsDisplay || '-';
+            const kcal = view.kcal || 0;
+            const estimatedMin = view.estimatedMin || 0;
+            const met = view.met;
+            const showMet = !!view.showMet;
+            const intensityFactor = view.intensityFactor || 0;
+            const showIntensity = !!view.showIntensity;
+            const exerciseRest = view.exerciseRest || '';
+            const localizedName = getExerciseName(exercise.id, exercise.name || item.exerciseId || '');
+            const localizedDescription = getExerciseDescription(exercise.id, exercise.description || '');
+            const localizedTechnique = getExerciseTechnique(exercise.id, exercise.technique || '');
             const sameTypeOptions = Object.values(exercisesCatalog)
                 .filter((entry) => entry && entry.type === exercise.type)
-                .map((entry) => `<option value="${entry.id}" ${entry.id === exercise.id ? 'selected' : ''}>${entry.name}</option>`)
+                .map((entry) => `<option value="${entry.id}" ${entry.id === exercise.id ? 'selected' : ''}>${getExerciseName(entry.id, entry.name || entry.id)}</option>`)
                 .join('');
 
             return cardHtml({
                 data: {
-                    'ex-name': exercise.name,
-                    'ex-tech': exercise.technique || '',
+                    'ex-name': localizedName,
+                    'ex-tech': localizedTechnique,
                     'ex-kcal': kcal,
                     'ex-type': exercise.type || '',
                     'ex-focus': exercise.focus || '',
@@ -346,12 +312,12 @@ function renderActivityPage() {
                             <div class="activity-exercise__name activity-exercise__name--select">
                                 <select class="input-base input-select input-select--sm"${dataAttrs({ 'ex-swap-section': sectionKey, 'ex-swap-day-index': dayIndex, 'ex-swap-id': item.exerciseId })}>${sameTypeOptions}</select>
                             </div>
-                            <button type="button" class="activity-exercise__delete"${dataAttrs({ 'ex-delete-section': sectionKey, 'ex-delete-day-index': dayIndex, 'ex-delete-id': item.exerciseId })} title="Borrar">&times;</button>
+                            <button type="button" class="activity-exercise__delete"${dataAttrs({ 'ex-delete-section': sectionKey, 'ex-delete-day-index': dayIndex, 'ex-delete-id': item.exerciseId })} title="${escapeHtml(activityT('activity.actions.remove_exercise', {}, 'Borrar'))}">&times;</button>
                         </div>
                     `
-                    : `<div class="activity-exercise__name modal-trigger">${exercise.name}</div>`,
+                    : `<div class="activity-exercise__name modal-trigger">${localizedName}</div>`,
                 kvRows: [
-                    kvRow('Repeticiones', isEditMode
+                    kvRow(activityT('activity.labels.reps', {}, 'Repeticiones'), isEditMode
                         ? `
                             ${editInput({ 'ex-day-index': dayIndex, 'ex-section': sectionKey, 'ex-id': item.exerciseId, field: 'sets' }, item.sets || '')}
                             <span class="activity-exercise__kv-sep">&times;</span>
@@ -360,57 +326,49 @@ function renderActivityPage() {
                                 : editInput({ 'ex-day-index': dayIndex, 'ex-section': sectionKey, 'ex-id': item.exerciseId, field: 'reps' }, item.reps || '', { numeric: false })}
                         `
                         : repetitionsDisplay, isEditMode ? 'activity-exercise__kv-value--edit activity-exercise__kv-value--inputs' : ''),
-                    kvRow('Carga', isEditMode && canEditWeight
+                    kvRow(activityT('activity.labels.load', {}, 'Carga'), isEditMode && canEditWeight
                         ? editInput({ 'ex-day-index': dayIndex, 'ex-section': sectionKey, 'ex-id': item.exerciseId, field: 'weightKg' }, Number.isFinite(numericWeight) ? numericWeight : '')
                         : (showWeight ? `${numericWeight} kg` : '-'), isEditMode && canEditWeight ? 'activity-exercise__kv-value--edit' : '')
                 ].join(''),
                 statRows: [
-                    splitRow(pill('Kcal', Math.round(kcal)), pill('MET', showMet ? formatMet(met) : '-')),
-                    splitRow(pill('Intensidad', showIntensity ? `x${formatFactor(intensityFactor)}` : '-'), pill('Tiempo', `${UI.formatMinutes(estimatedMin)} min`))
+                    splitRow(pill(getMetricLabel('kcal'), Math.round(kcal)), pill(getMetricLabel('met', { short: true }), showMet ? formatMet(met) : '-')),
+                    splitRow(pill(getMetricLabel('intensity'), showIntensity ? `x${formatFactor(intensityFactor)}` : '-'), pill(activityT('activity.labels.time', {}, 'Tiempo'), `${UI.formatMinutes(estimatedMin)} min`))
                 ].join(''),
-                description: exercise.description || ''
+                description: localizedDescription
             });
         };
 
-        const renderExerciseGroups = (sectionKey, dayData, dayIndex) => {
-            const section = dayData && dayData[sectionKey];
-            if (section && section.type === 'rest') return '';
-            const items = getSectionItems(dayData, sectionKey) || [];
+        const renderExerciseGroups = (sectionKey, dayView, dayIndex) => {
+            const sectionView = dayView && dayView.sections ? dayView.sections[sectionKey] : null;
+            if (sectionView && sectionView.isRest) return '';
             const pendingHtml = renderPendingAdd(sectionKey, dayIndex);
-            if (!items.length) return pendingHtml || `<div class="activity-training__meta">Sin ejercicios definidos.</div>`;
-            return pendingHtml + UI.groupExercisesByTypeFocus({ exercises: items }, exercisesCatalog).map((group) => `
-                <div class="activity-exercise-group"><div class="activity-exercise-group__title">${UI.formatLabel(group.type)} \u00B7 ${UI.formatLabel(group.focus)}</div></div>
+            const groups = sectionView && Array.isArray(sectionView.groups) ? sectionView.groups : [];
+            if (!groups.length) return pendingHtml || `<div class="activity-training__meta">${activityT('activity.states.no_exercises_defined', {}, 'Sin ejercicios definidos.')}</div>`;
+            return pendingHtml + groups.map((group) => `
+                <div class="activity-exercise-group"><div class="activity-exercise-group__title">${getTaxonomyLabel('types', group.type)} · ${getTaxonomyLabel('focuses', group.focus)}</div></div>
                 ${group.items.map((item) => renderExerciseCard(sectionKey, dayIndex, item)).join('')}
             `).join('');
         };
 
         tableBody.innerHTML = '';
-        tableBody.appendChild(Object.assign(document.createElement('tr'), {
-            innerHTML: `<td class="activity-row-header">Movimiento</td>${currentPlanData.map((dayData, dayIndex) => renderMovementCell(dayData, dayIndex, dayViews[dayIndex])).join('')}`
-        }));
-        tableBody.appendChild(Object.assign(document.createElement('tr'), {
-            innerHTML: `<td class="activity-row-header">Gimnasio</td>${currentPlanData.map((dayData, dayIndex) => trainingCell({
-                title: dayData.gym && dayData.gym.type === 'rest' ? 'Descanso' : 'Entrenamiento',
-                sectionKey: 'gym',
+        appendTableRow(activityT('activity.sections.movement', {}, 'Movimiento'), currentPlanData.map((dayData, dayIndex) => renderMovementCell(dayData, dayIndex, dayViews[dayIndex])).join(''));
+        appendTableRow(activityT('activity.sections.gym', {}, 'Gimnasio'), currentPlanData.map((dayData, dayIndex) => trainingCell({
+            title: dayData.gym && dayData.gym.type === 'rest' ? activityT('activity.titles.rest', {}, 'Descanso') : activityT('activity.titles.training', {}, 'Entrenamiento'),
+            sectionKey: 'gym',
+            dayIndex,
+            description: dayData.gym && dayData.gym.description ? dayData.gym.description : '',
+            body: renderExerciseGroups('gym', dayViews[dayIndex], dayIndex)
+        })).join(''));
+        if (activityService.hasExtraActivity(currentPlanData) || isEditMode) {
+            appendTableRow(activityT('activity.sections.extra', {}, 'Extra'), currentPlanData.map((dayData, dayIndex) => trainingCell({
+                title: activityT('activity.titles.extra', {}, 'Extra'),
+                sectionKey: 'extra_activity',
                 dayIndex,
-                description: dayData.gym && dayData.gym.description ? dayData.gym.description : '',
-                body: renderExerciseGroups('gym', dayData, dayIndex)
-            })).join('')}`
-        }));
-        if (dayHasExtra(currentPlanData) || isEditMode) {
-            tableBody.appendChild(Object.assign(document.createElement('tr'), {
-                innerHTML: `<td class="activity-row-header">Extra</td>${currentPlanData.map((dayData, dayIndex) => trainingCell({
-                    title: 'Extra',
-                    sectionKey: 'extra_activity',
-                    dayIndex,
-                    description: dayData.extra_activity && dayData.extra_activity.description ? dayData.extra_activity.description : '',
-                    body: renderExerciseGroups('extra_activity', dayData, dayIndex)
-                })).join('')}`
-            }));
+                description: dayData.extra_activity && dayData.extra_activity.description ? dayData.extra_activity.description : '',
+                body: renderExerciseGroups('extra_activity', dayViews[dayIndex], dayIndex)
+            })).join(''));
         }
-        tableBody.appendChild(Object.assign(document.createElement('tr'), {
-            innerHTML: `<td class="activity-row-header">Totales</td>${dayViews.map((dayView) => `<td>${generateActivityTotalsHtml(dayView)}</td>`).join('')}`
-        }));
+        appendTableRow(activityT('activity.sections.totals', {}, 'Totales'), dayViews.map((dayView) => `<td>${generateActivityTotalsHtml(dayView)}</td>`).join(''));
         if (table) setTimeout(() => UI.scrollToTodayColumn(table, todayIndex), 100);
     };
 
@@ -433,38 +391,34 @@ function renderActivityPage() {
         const target = event.target;
 
         if (target.matches('input[data-walk-day-index][data-walk-field]')) {
-            const dayIndex = parseInt(target.dataset.walkDayIndex, 10);
-            const field = target.dataset.walkField;
-            const planData = getPlanData() || [];
-            if (!planData[dayIndex]) planData[dayIndex] = { day: WEEK_DAYS[dayIndex] };
-            const item = ensureWalkItem(planData[dayIndex]);
-            const current = getWalkInfo(planData[dayIndex]);
-            const stepsPerMin = field === 'stepsPerMin' ? (parseFloat(target.value) || current.stepsPerMin) : (parseFloat(item.stepsPerMin) || current.stepsPerMin);
-            const steps = field === 'steps' ? (parseInt(target.value, 10) || current.steps) : current.steps;
-            item.stepsPerMin = stepsPerMin;
-            item.secPerRep = Math.round((steps / stepsPerMin) * 60);
-            savePlanData(planData);
-            renderTableContent();
+            mutatePlan('updateWalkField', {
+                dayIndex: parseInt(target.dataset.walkDayIndex, 10),
+                field: target.dataset.walkField,
+                value: target.value,
+                defaultStepsCfg,
+                walkingExercise: getWalkingExercise()
+            });
             return;
         }
 
         if (target.matches('input[data-ex-day-index][data-ex-section][data-ex-id][data-field]')) {
-            const planData = getPlanData() || [];
-            const item = getExerciseItem(planData, parseInt(target.dataset.exDayIndex, 10), target.dataset.exSection, target.dataset.exId);
-            if (!item) return;
-            item[target.dataset.field] = target.dataset.field === 'reps' ? target.value : (Number.isNaN(parseFloat(target.value)) ? '' : parseFloat(target.value));
-            savePlanData(planData);
-            renderTableContent();
+            mutatePlan('updateExerciseField', {
+                dayIndex: parseInt(target.dataset.exDayIndex, 10),
+                sectionKey: target.dataset.exSection,
+                exerciseId: target.dataset.exId,
+                field: target.dataset.field,
+                value: target.value
+            });
             return;
         }
 
         if (target.matches('select[data-ex-swap-section][data-ex-swap-day-index][data-ex-swap-id]')) {
-            const planData = getPlanData() || [];
-            const item = getExerciseItem(planData, parseInt(target.dataset.exSwapDayIndex, 10), target.dataset.exSwapSection, target.dataset.exSwapId);
-            if (!item || !target.value || item.exerciseId === target.value) return;
-            item.exerciseId = target.value;
-            savePlanData(planData);
-            renderTableContent();
+            mutatePlan('replaceExercise', {
+                dayIndex: parseInt(target.dataset.exSwapDayIndex, 10),
+                sectionKey: target.dataset.exSwapSection,
+                exerciseId: target.dataset.exSwapId,
+                nextExerciseId: target.value
+            });
         }
     });
 
@@ -482,43 +436,29 @@ function renderActivityPage() {
             const sectionKey = target.dataset.exAddDoneSection;
             const pendingKey = `${dayIndex}:${sectionKey}`;
             const select = document.querySelector(`select[data-ex-add-select-section="${sectionKey}"][data-ex-add-select-day-index="${dayIndex}"]`);
-            const chosenId = select ? select.value : null;
-            const planData = getPlanData() || [];
-            const dayData = planData[dayIndex] || { day: WEEK_DAYS[dayIndex] };
-            if (!dayData[sectionKey] || dayData[sectionKey].type === 'rest') {
-                dayData[sectionKey] = { exercises: [], description: dayData[sectionKey] ? (dayData[sectionKey].description || '') : '' };
-            }
-            if (!Array.isArray(dayData[sectionKey].exercises)) dayData[sectionKey].exercises = [];
-            const item = buildDefaultExercise(dayData[sectionKey], sectionKey, chosenId);
-            if (item) dayData[sectionKey].exercises.push(item);
+            mutatePlan('addExercise', {
+                dayIndex,
+                sectionKey,
+                chosenId: select ? select.value : null,
+                exercisesMap: exercisesCatalog
+            });
             delete pendingAdds[pendingKey];
-            planData[dayIndex] = dayData;
-            savePlanData(planData);
-            renderTableContent();
             return;
         }
 
         if (target.matches('button[data-ex-delete-section][data-ex-delete-day-index][data-ex-delete-id]')) {
-            const dayIndex = parseInt(target.dataset.exDeleteDayIndex, 10);
-            const sectionKey = target.dataset.exDeleteSection;
-            const items = getSectionItems((getPlanData() || [])[dayIndex], sectionKey);
-            if (!items) return;
-            const planData = getPlanData() || [];
-            planData[dayIndex][sectionKey].exercises = items.filter((item) => item && item.exerciseId !== target.dataset.exDeleteId);
-            savePlanData(planData);
-            renderTableContent();
+            mutatePlan('removeExercise', {
+                dayIndex: parseInt(target.dataset.exDeleteDayIndex, 10),
+                sectionKey: target.dataset.exDeleteSection,
+                exerciseId: target.dataset.exDeleteId
+            });
             return;
         }
 
         if (target.matches('.activity-score-info-trigger')) {
             const payload = decodePayload(target.dataset.activityScore || '');
             if (!payload) return;
-            UI.showModal(activityPresenter.buildScoreModal({
-                payload,
-                formatNumber,
-                getStatusClassFromCode: UI.getStatusClassFromCode,
-                escapeHtml
-            }));
+            showScoreModal(payload);
             return;
         }
 
@@ -526,9 +466,9 @@ function renderActivityPage() {
         const exercise = target.closest('.activity-exercise');
         if (!exercise) return;
         showTechniqueModal({
-            name: exercise.dataset.exName || 'Actividad',
-            type: exercise.dataset.exType || '',
-            focus: exercise.dataset.exFocus || '',
+            name: exercise.dataset.exName || activityT('pages.activity.heading', {}, 'Actividad'),
+            type: getTaxonomyLabel('types', exercise.dataset.exType || '', exercise.dataset.exType || ''),
+            focus: getTaxonomyLabel('focuses', exercise.dataset.exFocus || '', exercise.dataset.exFocus || ''),
             muscles: exercise.dataset.exMuscles || '',
             equipment: exercise.dataset.exEquipment || '',
             restSeconds: exercise.dataset.exRest || '',
@@ -542,29 +482,37 @@ function renderActivityPage() {
         requiredDeps: [
             { global: 'CoreBrowserAdapter', path: 'js/core/adapters/browser.adapter.js' },
             { global: 'ActivityScore', path: 'js/core/activity-score.js' },
+            { global: 'ProfileApplicationService', path: 'js/core/application/profile.service.js' },
             { global: 'TargetsApplicationService', path: 'js/core/application/targets.service.js' },
+            { global: 'AssessmentApplicationService', path: 'js/core/application/assessment.service.js' },
             { global: 'ActivityApplicationService', path: 'js/core/application/activity.service.js' },
             { global: 'ActivityPresenter', path: 'js/core/presentation/activity.presenter.js' }
         ],
         afterRequired: () => CoreBrowserAdapter.resolvePageContext({
             globals: ['ActivityApplicationService', 'ActivityPresenter'],
             exercises: true,
-            activityPlanFile: getPlanFiles().length ? getSelectedFile() : null
+            selectedActivityPlanData: true
         }).then((context) => {
             formulas = context.formulas;
             targets = context.targets;
             activityService = context.ActivityApplicationService;
             activityPresenter = context.ActivityPresenter;
+            currentFile = activityService.getSelectedPlanFile({ availableFiles: getPlanFiles(), selectedFile: currentFile });
             exercisesCatalog = context.exercisesData || null;
             currentPlanData = context.activityPlanData || null;
             return true;
         }),
         run: () => {
+            currentFile = activityService.getSelectedPlanFile({ availableFiles: getPlanFiles(), selectedFile: currentFile });
             buildPlanSelector();
-            renderTableContent();
+            if (!currentFile) {
+                renderTableContent();
+                return;
+            }
+            return Array.isArray(currentPlanData) && currentPlanData.length ? renderTableContent() : loadPlanFile(currentFile).then(renderTableContent);
         },
         onError: () => {
-            tableBody.innerHTML = `<tr><td colspan="${errorColspan}" class="text-status--danger text-center">Error cargando dependencias (ejercicios/actividad).</td></tr>`;
+            setTableMessage(activityT('activity.states.dependencies_error', {}, 'Error cargando dependencias (ejercicios/actividad).'));
         }
     });
 }

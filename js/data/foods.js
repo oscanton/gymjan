@@ -4,37 +4,37 @@
 // - processed: 0-10 (0 raw/direct; 10 ultra-processed).
 
 const CAT = {
-  VEGETABLES: "🥔 Vegetables",
-  FRUIT: "🍎 Fruit",
-  PROTEINS: "🥩 Proteins",
-  DAIRY: "🥛 Dairy",
-  GRAINS_LEGUMES_AND_TUBERS: "🌾 Grains, legumes and tubers",
-  FATS_NUTS_AND_SEEDS: "🥑 Fats, nuts and seeds",
-  CONDIMENTS_AND_SPICES: "🧂 Condiments and spices",
-  SWEETS_AND_CHOCOLATE: "🍫 Sweets and chocolate",
-  DRINKS: "☕ Drinks",
-  OTHER_PROCESSED: "📦 Other / Processed",
-  SUPPLEMENTS: "💊 Supplements",
+  VEGETABLES: "vegetables",
+  FRUIT: "fruit",
+  PROTEINS: "proteins",
+  DAIRY: "dairy",
+  GRAINS_LEGUMES_AND_TUBERS: "grains_legumes_tubers",
+  FATS_NUTS_AND_SEEDS: "fats_nuts_seeds",
+  CONDIMENTS_AND_SPICES: "condiments_spices",
+  SWEETS_AND_CHOCOLATE: "sweets_chocolate",
+  DRINKS: "drinks",
+  OTHER_PROCESSED: "other_processed",
+  SUPPLEMENTS: "supplements",
 };
 
 const FOOD_CATEGORIES = [
-  { id: CAT.VEGETABLES, label: "🥔 Verduras" },
-  { id: CAT.FRUIT, label: "🍎 Fruta" },
-  { id: CAT.PROTEINS, label: "🥩 Proteínas" },
-  { id: CAT.DAIRY, label: "🥛 Lácteos" },
-  { id: CAT.GRAINS_LEGUMES_AND_TUBERS, label: "🌾 Cereales, legumbres y tubérculos" },
-  { id: CAT.FATS_NUTS_AND_SEEDS, label: "🥑 Grasas, frutos secos y semillas" },
-  { id: CAT.CONDIMENTS_AND_SPICES, label: "🧂 Condimentos y especias" },
-  { id: CAT.SWEETS_AND_CHOCOLATE, label: "🍫 Dulces y chocolate" },
-  { id: CAT.DRINKS, label: "☕ Bebidas" },
-  { id: CAT.OTHER_PROCESSED, label: "📦 Otros / Procesados" },
-  { id: CAT.SUPPLEMENTS, label: "💊 Suplementos" },
+  { id: CAT.VEGETABLES },
+  { id: CAT.FRUIT },
+  { id: CAT.PROTEINS },
+  { id: CAT.DAIRY },
+  { id: CAT.GRAINS_LEGUMES_AND_TUBERS },
+  { id: CAT.FATS_NUTS_AND_SEEDS },
+  { id: CAT.CONDIMENTS_AND_SPICES },
+  { id: CAT.SWEETS_AND_CHOCOLATE },
+  { id: CAT.DRINKS },
+  { id: CAT.OTHER_PROCESSED },
+  { id: CAT.SUPPLEMENTS },
 ];
 
 const FOOD_FALLBACK_CATEGORY = CAT.OTHER_PROCESSED;
 
-const f100 = (name, category, waterMlPer100, nutritionPer100, processed = 0, unit = "g") => ({ name, category, unit, waterMlPer100, nutritionPer100, processed });
-const fUnit = (name, category, unit, waterMlPerUnit, nutritionPerUnit, processed = 0) => ({ name, category, unit, waterMlPerUnit, nutritionPerUnit, processed });
+const f100 = (name, categoryId, waterMlPer100, nutritionPer100, processed = 0, unit = "g") => ({ name, categoryId, unit, waterMlPer100, nutritionPer100, processed });
+const fUnit = (name, categoryId, unit, waterMlPerUnit, nutritionPerUnit, processed = 0) => ({ name, categoryId, unit, waterMlPerUnit, nutritionPerUnit, processed });
 
 const FOODS = Object.fromEntries([
   ["artichoke", f100("Alcachofa", CAT.VEGETABLES, 92, {"kcal":47,"protein":3.3,"carbs":10.5,"fat":0.2,"saturatedFat":0,"fiber":5.4,"sugar":1,"sodiumMg":94}, 0)],

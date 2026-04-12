@@ -2,6 +2,12 @@ const __activityRoot = typeof globalThis !== 'undefined' ? globalThis : (typeof 
 const ActivityEngine = (() => {
     const EMPTY_BREAKDOWN = { workMin: 0, restMin: 0, totalMin: 0 };
     const EMPTY_TOTALS = { kcal: 0, min: 0, exerciseCount: 0, metAvg: 0, metMinSum: 0, intensityAvg: 0, intensityWorkMinSum: 0, intensityWorkMin: 0 };
+    const EXERCISE_TYPE_ALIASES = {
+        strength: ['strength', 'fuerza'],
+        cardio: ['cardio'],
+        recovery: ['recovery', 'recuperacion'],
+        other: ['other', 'otros']
+    };
     const number = (value, fallback = 0) => {
         const parsed = parseFloat(value);
         return Number.isFinite(parsed) ? parsed : fallback;
@@ -9,6 +15,11 @@ const ActivityEngine = (() => {
     const positive = (value, fallback = NaN) => {
         const parsed = number(value, fallback);
         return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    };
+    const normalizeExerciseType = (value = '') => {
+        const token = String(value || '').trim().toLowerCase();
+        const match = Object.entries(EXERCISE_TYPE_ALIASES).find(([, aliases]) => aliases.includes(token));
+        return match ? match[0] : token;
     };
 
     const parseReps = (reps) => {
@@ -60,10 +71,10 @@ const ActivityEngine = (() => {
         if (!Number.isFinite(met) || breakdown.totalMin <= 0) return 0;
         let workCoef = (met / 60) * breakdown.workMin;
         const restCoef = (1.5 / 60) * breakdown.restMin;
-        if (ex.type === 'fuerza' && !isTimedItem(item)) {
+        if (normalizeExerciseType(ex.type) === 'strength' && !isTimedItem(item)) {
             return (workCoef * getIntensityFactorFromEpley(item.weightKg, parseReps(item.reps), { bodyWeightKg, relativeLoad: ex.relativeLoad })) + restCoef;
         }
-        if (ex.type === 'cardio') {
+        if (normalizeExerciseType(ex.type) === 'cardio') {
             const cadence = positive(item.cadencePerMin ?? item.cadence ?? item.rpm);
             const baseCadence = positive(ex.cadenceBase);
             if (Number.isFinite(cadence) && Number.isFinite(baseCadence)) workCoef *= calculateEpleyLikeFactor(cadence, baseCadence, { a: 1, b: 2 });
@@ -109,7 +120,7 @@ const ActivityEngine = (() => {
             totals.min += breakdown.totalMin;
             totals.kcal += calculateExerciseKcal(effectiveItem, ex, { weightKg, bodyWeightKg: bodyWeightKg || weightKg });
             if (Number.isFinite(met) && breakdown.totalMin > 0) totals.metMinSum += met * breakdown.totalMin;
-            if (ex.type === 'fuerza' && !isTimedItem(effectiveItem) && breakdown.workMin > 0) {
+            if (normalizeExerciseType(ex.type) === 'strength' && !isTimedItem(effectiveItem) && breakdown.workMin > 0) {
                 const intensity = getIntensityFactorFromEpley(effectiveItem.weightKg, parseReps(effectiveItem.reps), {
                     bodyWeightKg: bodyWeightKg || weightKg,
                     relativeLoad: ex.relativeLoad

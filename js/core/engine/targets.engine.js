@@ -2,19 +2,26 @@ const TargetsEngine = (() => {
     const DEFAULT_MACRO_RATIOS = { p: 0.30, c: 0.40, f: 0.30 };
     const SECONDARY_DEFAULTS = { saltMaxG: 5, fiberPer1000Kcal: 14, sugarMaxPctKcal: 0.10, satFatMaxPctKcal: 0.10, processingMaxScore: 3.5 };
     const HYDRATION_DEFAULTS = { minMlPerKg: 30, maxMlPerKg: 35, activityMlPerMin: 10 };
-    const SECONDARY_MAP = [['salt', 'saltMaxG', 2], ['fiber', 'fiberPer1000Kcal', 1], ['sugar', 'sugarMaxPctKcal', 1], ['saturatedFat', 'satFatMaxPctKcal', 1], ['processing', 'processingMaxScore', 1]];
-    const OBJECTIVE_DESCRIPTIONS = {
-        kcal: 'Define la energía diaria total. Un exceso sostenido puede favorecer ganancia de grasa; un déficit excesivo puede reducir rendimiento y recuperación.',
-        p: 'La proteína ayuda a conservar y construir masa muscular, y mejora la saciedad. Un aporte bajo sostenido puede limitar recuperación y mantenimiento muscular.',
-        c: 'Los carbohidratos son el combustible principal para entrenar y recuperar glucógeno. Un aporte muy bajo puede reducir energía, rendimiento e intensidad.',
-        f: 'Las grasas son clave para función hormonal, absorción de vitaminas y salud celular. Un aporte muy bajo puede afectar hormonas y bienestar general.',
-        salt: 'Controla el sodio total aproximado (expresado como sal). Un exceso mantenido puede empeorar retención de líquidos y tensión arterial en personas sensibles.',
-        fiber: 'La fibra mejora salud digestiva, saciedad y control glucémico. Un aporte bajo suele empeorar tránsito intestinal y calidad global de la dieta.',
-        sugar: 'Limita azúcares libres para mejorar calidad nutricional y estabilidad energética. Regla base: máximo % de kcal y conversión a gramos con (kcal x %)/4. Un exceso sostenido facilita picos de apetito y desplazamiento de alimentos de calidad.',
-        saturatedFat: 'Limita grasas saturadas para proteger perfil lipídico y salud cardiovascular. Un exceso habitual puede empeorar marcadores cardiometabólicos.',
-        processing: 'Refleja el grado medio de procesado de la dieta. Cuanto más alto, mayor riesgo de baja densidad nutricional y peor adherencia a largo plazo.',
-        hydration: 'Define la hidratación diaria base según peso (30-35 ml/kg) y el extra por actividad (ml/min).'
+    const METRICS = typeof MetricsRegistry !== 'undefined' ? MetricsRegistry : null;
+    const SECONDARY_KEYS = ['salt', 'fiber', 'sugar', 'saturatedFat', 'processing'];
+    const SECONDARY_CONFIG_FALLBACKS = {
+        salt: 'saltMaxG',
+        fiber: 'fiberPer1000Kcal',
+        sugar: 'sugarMaxPctKcal',
+        saturatedFat: 'satFatMaxPctKcal',
+        processing: 'processingMaxScore'
     };
+    const SECONDARY_DECIMALS_FALLBACKS = { salt: 2, fiber: 1, sugar: 1, saturatedFat: 1, processing: 1 };
+    const SECONDARY_MAP = SECONDARY_KEYS.map((key) => {
+        const definition = METRICS && typeof METRICS.get === 'function' ? METRICS.get(key) : null;
+        return [
+            key,
+            definition && definition.secondaryConfigKey ? definition.secondaryConfigKey : SECONDARY_CONFIG_FALLBACKS[key],
+            definition && Number.isFinite(definition.decimals) ? definition.decimals : SECONDARY_DECIMALS_FALLBACKS[key]
+        ];
+    });
+    const OBJECTIVE_KEYS = ['kcal', 'p', 'c', 'f', 'salt', 'fiber', 'sugar', 'saturatedFat', 'processing', 'hydration'];
+    const WALK_EXERCISE_IDS = ['walk', 'caminar'];
 
     const toNumber = (value, fallback = 0) => {
         const parsed = parseFloat(value);
@@ -45,8 +52,15 @@ const TargetsEngine = (() => {
         }, { kcal: 0, minutes: 0 });
     };
 
-    const getObjectiveDescriptions = () => OBJECTIVE_DESCRIPTIONS;
-    const getObjectiveDescription = (key) => OBJECTIVE_DESCRIPTIONS[key] || '';
+    const getObjectiveDescription = (key) => {
+        const normalizedKey = METRICS && typeof METRICS.normalizeKey === 'function' ? METRICS.normalizeKey(key) : key;
+        if (METRICS && typeof METRICS.getDescription === 'function') {
+            const registryDescription = METRICS.getDescription(normalizedKey, '');
+            if (registryDescription) return registryDescription;
+        }
+        return '';
+    };
+    const getObjectiveDescriptions = () => Object.fromEntries(OBJECTIVE_KEYS.map((key) => [key, getObjectiveDescription(key)]));
     const normalizeMacroRatios = (ratios, fallback = null) => {
         const normalized = ['p', 'c', 'f'].reduce((acc, key) => ({ ...acc, [key]: toNumber(ratios && ratios[key], NaN) }), {});
         const sum = normalized.p + normalized.c + normalized.f;
@@ -82,12 +96,14 @@ const TargetsEngine = (() => {
         };
         return Object.fromEntries(SECONDARY_MAP.map(([targetKey, sourceKey, decimals]) => [targetKey, round(scale(base[sourceKey], adj[sourceKey]), decimals)]));
     };
-    const getMacroContext = ({ activityKey = 'actividad', macroRatios = null } = {}) => ({ activityKey, macroRatios });
+    const getMacroContext = ({ activityKey = 'activity', macroRatios = null } = {}) => ({ activityKey, macroRatios });
     const getAdjustedValues = (baseKcal, macroContext, customAdj, { calcMacros, defaultMacroRatios } = {}) => {
         const adj = { kcal: 0, p: 0, c: 0, f: 0, ...(customAdj || {}) };
         const ratios = defaultMacroRatios || DEFAULT_MACRO_RATIOS;
         const targetKcal = baseKcal * (1 + adj.kcal);
-        const context = typeof macroContext === 'string' ? { activityKey: macroContext, macroRatios: ratios } : { ...(macroContext || {}), macroRatios: (macroContext && macroContext.macroRatios) || ratios };
+        const context = typeof macroContext === 'string'
+            ? { activityKey: macroContext, macroRatios: ratios }
+            : { ...(macroContext || {}), macroRatios: (macroContext && macroContext.macroRatios) || ratios };
         const macros = typeof calcMacros === 'function'
             ? calcMacros(targetKcal, context)
             : { p: Math.round((targetKcal * ratios.p) / 4), c: Math.round((targetKcal * ratios.c) / 4), f: Math.round((targetKcal * ratios.f) / 9) };
@@ -125,13 +141,13 @@ const TargetsEngine = (() => {
         const safeDaysCount = Number.isFinite(daysCount) ? daysCount : 7;
         const safeWeekDays = Array.isArray(weekDays) && weekDays.length
             ? weekDays.slice(0, safeDaysCount)
-            : Array.from({ length: safeDaysCount }, (_, idx) => `Día ${idx + 1}`);
+            : Array.from({ length: safeDaysCount }, (_, idx) => `day_${idx + 1}`);
         const weekly = Array.isArray(weeklyPlan) ? weeklyPlan.slice(0, safeDaysCount) : [];
         const dailyRatios = Array.isArray(dailyMacroRatios) ? dailyMacroRatios.slice(0, safeDaysCount) : [];
         const exercises = exercisesMap || null;
-        const restKcal = calcBMR(userProfile.weight, userProfile.height, userProfile.age, userProfile.sex || 'hombre') * (Number.isFinite(restBmrFactor) ? restBmrFactor : 1.2);
+        const restKcal = calcBMR(userProfile.weight, userProfile.height, userProfile.age, userProfile.sex || 'male') * (Number.isFinite(restBmrFactor) ? restBmrFactor : 1.2);
         const stepsCfg = stepsDefaults || { target: 8000, perMinute: 100, met: 3.5 };
-        const walkingExercise = (exercises && exercises.caminar) || { met: stepsCfg.met, cadenceBase: stepsCfg.perMinute };
+        const walkingExercise = (WALK_EXERCISE_IDS.map((id) => exercises && exercises[id]).find(Boolean)) || { met: stepsCfg.met, cadenceBase: stepsCfg.perMinute };
         const baseCadence = parseInt(walkingExercise.cadenceBase, 10) || stepsCfg.perMinute;
         const stepBaseConfig = { targetSteps: stepsCfg.target, stepsPerMin: baseCadence, met: walkingExercise.met || stepsCfg.met, baseStepsPerMin: baseCadence };
         const secDefaults = secondaryDefaults || getSecondaryDefaults();

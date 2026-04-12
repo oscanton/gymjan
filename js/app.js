@@ -1,4 +1,7 @@
 window.addEventListener('DOMContentLoaded', () => {
+    window.I18n?.apply?.(document);
+
+    const t = (key, params = {}, fallback = '') => window.I18n?.t?.(key, params, fallback) || fallback || String(key || '');
     const prefix = typeof APP_PREFIX === 'string' && APP_PREFIX ? APP_PREFIX : 'myfitpwa_';
     const lastPageKey = `${prefix}last_opened_page`;
     const navigablePages = new Set(['views/calculator.html', 'views/activity.html', 'views/menu.html', 'views/list.html']);
@@ -15,18 +18,24 @@ window.addEventListener('DOMContentLoaded', () => {
         ['calculadora-container', window.renderCalculatorPage]
     ];
     const navItems = [
-        ['index.html', 'index.html?home=1', 'Inicio'],
-        ['views/calculator.html', 'views/calculator.html', 'Calculadora'],
-        ['views/activity.html', 'views/activity.html', 'Actividad'],
-        ['views/menu.html', 'views/menu.html', 'Men\u00FA'],
-        ['views/list.html', 'views/list.html', 'Lista']
+        ['index.html', 'index.html?home=1', 'nav.home'],
+        ['views/calculator.html', 'views/calculator.html', 'nav.calculator'],
+        ['views/activity.html', 'views/activity.html', 'nav.activity'],
+        ['views/menu.html', 'views/menu.html', 'nav.menu'],
+        ['views/list.html', 'views/list.html', 'nav.list']
     ];
-    const buildIndexContent = ({ basePrefix = '', title = '\u00CDndice' } = {}) => `
-        <div class="index-modal__header"><div class="index-modal__title">${title}</div></div>
+    const buildLocaleSelect = (className = 'input-base input-select input-select--header') => (
+        `<select class="${className}" data-role="locale-select" aria-label="${UI.escapeHtml(t('common.language_aria', {}, 'Cambiar idioma'))}"></select>`
+    );
+    const buildIndexContent = ({ basePrefix = '', title = t('common.index', {}, 'Indice') } = {}) => `
+        <div class="index-modal__header">
+            <div class="index-modal__title">${title}</div>
+            ${buildLocaleSelect()}
+        </div>
         <nav class="stack-vertical">
-            ${navItems.map(([key, href, label]) => {
+            ${navItems.map(([key, href, labelKey]) => {
                 const isActive = currentPageKey === key;
-                return `<a class="btn btn--primary index-modal__link${isActive ? ' is-active' : ''}" href="${basePrefix}${href}"${isActive ? ' aria-current="page"' : ''}>${label}</a>`;
+                return `<a class="btn btn--primary index-modal__link${isActive ? ' is-active' : ''}" href="${basePrefix}${href}"${isActive ? ' aria-current="page"' : ''}>${t(labelKey)}</a>`;
             }).join('')}
         </nav>
     `;
@@ -41,16 +50,29 @@ window.addEventListener('DOMContentLoaded', () => {
         headerTitle.insertBefore(titleSpan, headerTitle.firstChild);
         return titleSpan;
     };
+    const ensureHeaderLocaleSelect = (header) => {
+        if (!header) return null;
+        let wrapper = header.querySelector('.page-locale-select');
+        if (!wrapper) {
+            wrapper = document.createElement('span');
+            wrapper.className = 'page-locale-select';
+            wrapper.innerHTML = buildLocaleSelect();
+            header.appendChild(wrapper);
+        }
+        UI.bindLocaleSelect(wrapper);
+        return wrapper;
+    };
     const ensureIndexModal = () => {
         let modal = document.getElementById('global-index-modal');
         if (modal) return modal;
         modal = document.createElement('div');
         modal.id = 'global-index-modal';
         modal.className = 'index-modal-backdrop';
-        modal.innerHTML = `<div class="index-modal" role="dialog" aria-modal="true" aria-label="Navegaci\u00F3n">${buildIndexContent({ basePrefix: viewMatch ? '../' : '', title: '\u00CDndice' })}</div>`;
+        modal.innerHTML = `<div class="index-modal" role="dialog" aria-modal="true" aria-label="${UI.escapeHtml(t('common.index', {}, 'Indice'))}">${buildIndexContent({ basePrefix: viewMatch ? '../' : '', title: t('common.index', {}, 'Indice') })}</div>`;
         modal.addEventListener('click', (event) => { if (event.target === modal) modal.classList.remove('is-open'); });
         document.addEventListener('keydown', (event) => { if (event.key === 'Escape') modal.classList.remove('is-open'); });
         document.body.appendChild(modal);
+        UI.bindLocaleSelect(modal);
         return modal;
     };
 
@@ -72,16 +94,20 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     const indexCard = document.getElementById('index-card');
-    if (indexCard) indexCard.innerHTML = buildIndexContent({ title: '\u00CDndice' });
+    if (indexCard) {
+        indexCard.innerHTML = buildIndexContent({ title: t('common.index', {}, 'Indice') });
+        UI.bindLocaleSelect(indexCard);
+    }
 
     const header = document.querySelector('.page-header');
     const headerTitle = header ? header.querySelector('h1') : null;
     if (headerTitle) ensureTitleSpan(headerTitle);
+    if (header) ensureHeaderLocaleSelect(header);
     if (header && !header.querySelector('.page-menu-trigger')) {
         const trigger = document.createElement('button');
         trigger.type = 'button';
         trigger.className = 'page-menu-trigger';
-        trigger.setAttribute('aria-label', 'Abrir \u00EDndice');
+        trigger.setAttribute('aria-label', t('common.open_index_aria', {}, 'Abrir indice'));
         trigger.addEventListener('click', () => ensureIndexModal().classList.add('is-open'));
         header.classList.add('page-header--with-menu');
         header.insertBefore(trigger, header.firstChild);

@@ -1,16 +1,7 @@
 const STATUS_CLASSES = { ok: 'text-status--ok', warning: 'text-status--warning', danger: 'text-status--danger', critical: 'color-critical' };
 const resolveMaybe = (fn) => (typeof fn === 'function' ? Promise.resolve().then(fn) : Promise.resolve());
-const getProfileNumber = (key, fallback) => {
-    if (typeof UserStore === 'undefined' || typeof UserStore.getProfile !== 'function') return fallback;
-    const value = parseFloat(UserStore.getProfile({})?.[key]);
-    return Number.isFinite(value) && value > 0 ? value : fallback;
-};
-const activityCall = (method, args = [], fallback = null) => (
-    typeof ActivityEngine !== 'undefined' && typeof ActivityEngine[method] === 'function'
-        ? ActivityEngine[method](...args)
-        : fallback
-);
 const asContext = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
+const translate = (key, params = {}, fallback = '') => window.I18n?.t?.(key, params, fallback) || fallback || String(key || '');
 
 const UI = {
     isInViews: () => window.location.pathname.includes('/views/'),
@@ -53,25 +44,12 @@ const UI = {
             .then(() => Promise.resolve(run(root, context)).then(() => true))
             .catch((err) => {
                 if (typeof onError === 'function') onError(root, err);
-                else UI.showError(root, 'Error cargando dependencias.');
+                else UI.showError(root, translate('errors.loading_dependencies', {}, 'Error cargando dependencias.'));
                 return false;
             });
     },
     showError: (container, message) => {
         container.innerHTML = `<div class="glass-card card"><p class="text-status--danger">${message}</p></div>`;
-    },
-    getStatusClass: (current, target) => {
-        if (!target) return '';
-        const pct = (current / target) * 100;
-        return pct > 110 ? STATUS_CLASSES.danger : pct < 90 ? STATUS_CLASSES.warning : STATUS_CLASSES.ok;
-    },
-    getStatusClassByRule: (current, target, { rule = 'target', tolerancePct = 10 } = {}) => {
-        const value = parseFloat(current);
-        const goal = parseFloat(target);
-        if (!Number.isFinite(value) || !Number.isFinite(goal) || goal <= 0) return '';
-        if (rule === 'min') return value >= goal ? STATUS_CLASSES.ok : value >= goal * (1 - tolerancePct / 100) ? STATUS_CLASSES.warning : STATUS_CLASSES.danger;
-        if (rule === 'max') return value <= goal ? STATUS_CLASSES.ok : value <= goal * (1 + tolerancePct / 100) ? STATUS_CLASSES.warning : STATUS_CLASSES.danger;
-        return UI.getStatusClass(value, goal);
     },
     getStatusClassFromCode: (status) => STATUS_CLASSES[status] || '',
     showModal: ({ id = null, titleHtml = '', bodyHtml = '' } = {}) => {
@@ -115,78 +93,36 @@ const UI = {
         try { return JSON.parse(decodeURIComponent(encodedPayload || '')); } catch { return null; }
     },
     formatMinutes: (minutes) => `${Math.round(minutes * 10) / 10}`,
-    callActivityEngine: activityCall,
-    parseReps: (reps) => activityCall('parseReps', [reps], 0),
-    isTimedItem: (item) => activityCall('isTimedItem', [item], false),
-    getExerciseTimeBreakdown: (item, ex) => activityCall('getExerciseTimeBreakdown', [item, ex], { workMin: 0, restMin: 0, totalMin: 0 }),
-    estimateExerciseMinutes: (item, ex) => activityCall('estimateExerciseMinutes', [item, ex], 0),
-    getEstimatedOneRmEpley: (weightKg, reps) => activityCall('getEstimatedOneRmEpley', [weightKg, reps], null),
-    calculateEpleyLikeFactor: (value, base, options = {}) => activityCall('calculateEpleyLikeFactor', [value, base, options], 1),
-    getIntensityFactorFromEpley: (weightKg, reps, bodyWeightKg = null, relativeLoad = null) => activityCall('getIntensityFactorFromEpley', [weightKg, reps, {
-        bodyWeightKg: Number.isFinite(parseFloat(bodyWeightKg)) && bodyWeightKg > 0 ? parseFloat(bodyWeightKg) : UI.getEffectiveWeightKg(),
-        relativeLoad
-    }], 1),
-    getExerciseKcalCoef: (item, ex) => activityCall('getExerciseKcalCoef', [item, ex, { bodyWeightKg: UI.getEffectiveWeightKg() }], 0),
-    calculateExerciseKcal: (item, ex, { weightKg = null } = {}) => {
-        const effectiveWeight = UI.getEffectiveWeightKg(weightKg);
-        return activityCall('calculateExerciseKcal', [item, ex, { weightKg: effectiveWeight, bodyWeightKg: effectiveWeight }], 0);
-    },
-    getEffectiveWeightKg: (weightKg = null) => (weightKg && weightKg > 0 ? weightKg : getProfileNumber('weight', 70)),
-    getUserHeightCm: (heightCm = null) => {
-        const direct = parseFloat(heightCm);
-        return Number.isFinite(direct) && direct > 0 ? direct : getProfileNumber('height', 0);
-    },
-    calculateStepsDistanceKm: (steps = 0, { heightCm = null } = {}) => activityCall('calculateStepsDistanceKm', [steps, { heightCm: UI.getUserHeightCm(heightCm) }], 0),
     formatKm: (km) => {
         const value = parseFloat(km);
         if (!Number.isFinite(value) || value <= 0) return '-';
         const rounded = Math.round(value * 10) / 10;
         return rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1);
     },
-    calculateStepsIntensityFactor: (stepsPerMin = 0, { baseStepsPerMin = 100, a = 1, b = 2 } = {}) => activityCall('calculateStepsIntensityFactor', [stepsPerMin, { baseStepsPerMin, a, b }], 1),
-    calculateStepsKcal: (steps = 0, { weightKg = null, stepsConfig = null } = {}) => activityCall('calculateStepsKcal', [steps, {
-        weightKg: UI.getEffectiveWeightKg(weightKg),
-        stepsConfig
-    }], 0),
-    calcTrainingTotals: (exerciseBlock, exerciseOverrides, exercisesMap, { weightKg = null } = {}) => {
-        const effectiveWeight = UI.getEffectiveWeightKg(weightKg);
-        return activityCall('calculateTrainingTotals', [exerciseBlock, exerciseOverrides, exercisesMap || {}, {
-            weightKg: effectiveWeight,
-            bodyWeightKg: effectiveWeight
-        }], { kcal: 0, min: 0, exerciseCount: 0, metAvg: 0, metMinSum: 0, intensityAvg: 0 });
-    },
-    groupExercisesByTypeFocus: (exerciseBlock, exercisesMap, {
-        typeOrder = ['fuerza', 'cardio', 'recuperacion', 'otros'],
-        focusOrder = ['tren_superior', 'tren_inferior', 'core', 'full_body', 'movilidad', 'recuperacion', 'general']
-    } = {}) => {
-        if (!exerciseBlock?.exercises) return [];
-        const groups = new Map();
-        exerciseBlock.exercises.forEach((item) => {
-            const ex = (exercisesMap || {})[item.exerciseId];
-            if (!ex) return;
-            const type = ex.type || 'otros';
-            const focus = ex.focus || 'general';
-            const key = `${type}__${focus}`;
-            if (!groups.has(key)) groups.set(key, { type, focus, items: [] });
-            groups.get(key).items.push(item);
+    getLocaleOptionsHtml: (selectedLocale = window.I18n?.getLocale?.() || 'es') => (window.I18n?.getLocales?.() || [])
+        .map(({ code, label }) => `<option value="${UI.escapeHtml(code)}"${code === selectedLocale ? ' selected' : ''}>${UI.escapeHtml(label)}</option>`)
+        .join(''),
+    bindLocaleSelect: (root = document) => {
+        const nodes = root?.querySelectorAll
+            ? [...(root.matches?.('select[data-role="locale-select"]') ? [root] : []), ...root.querySelectorAll('select[data-role="locale-select"]')]
+            : [];
+        nodes.forEach((select) => {
+            if (select.dataset.localeBound === '1') return;
+            select.dataset.localeBound = '1';
+            select.innerHTML = UI.getLocaleOptionsHtml();
+            select.value = window.I18n?.getLocale?.() || 'es';
+            select.addEventListener('change', () => {
+                if (window.I18n?.setLocale?.(select.value)) window.location.reload();
+            });
         });
-        const getOrder = (list, value) => {
-            const index = list.indexOf(value);
-            return index === -1 ? 999 : index;
-        };
-        return [...groups.values()].sort((a, b) => (
-            getOrder(typeOrder, a.type) - getOrder(typeOrder, b.type)
-            || getOrder(focusOrder, a.focus) - getOrder(focusOrder, b.focus)
-            || a.focus.localeCompare(b.focus)
-        ));
     },
     renderEditResetControls: ({ id, isEditMode, onToggle, onReset }) => {
         const controls = document.createElement('div');
         controls.id = id;
         controls.className = 'menu-controls';
         [
-            { text: isEditMode ? 'Listo' : 'Editar', active: isEditMode, action: onToggle },
-            { text: 'Reset', action: onReset }
+            { text: isEditMode ? translate('common.done', {}, 'Listo') : translate('common.edit', {}, 'Editar'), active: isEditMode, action: onToggle },
+            { text: translate('common.reset', {}, 'Reset'), action: onReset }
         ].forEach(({ text, active = false, action }) => {
             const button = document.createElement('button');
             button.className = 'btn-back';

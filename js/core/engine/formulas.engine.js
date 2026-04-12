@@ -22,16 +22,22 @@ const FormulasEngine = (() => {
         const meters = height / 100;
         return meters > 0 ? (weight / (meters * meters)).toFixed(1) : 0;
     };
+    const normalizeSex = (value = '') => {
+        const token = String(value || '').trim().toLowerCase();
+        if (token === 'hombre' || token === 'male') return 'male';
+        if (token === 'mujer' || token === 'female') return 'female';
+        return 'male';
+    };
     const getBMICategory = (bmi) => {
         const value = parseFloat(bmi);
-        if (value <= 0) return { label: '-', className: 'text-muted' };
-        if (value < 18.5) return { label: 'Bajo peso', className: 'color-blue' };
-        if (value < 25) return { label: 'Adecuado', className: 'color-success' };
-        if (value < 30) return { label: 'Sobrepeso', className: 'color-warning' };
-        if (value < 35) return { label: 'Obesidad', className: 'color-danger' };
-        return { label: 'Gran obesidad', className: 'color-critical' };
+        if (value <= 0) return { code: 'invalid', className: 'text-muted' };
+        if (value < 18.5) return { code: 'underweight', className: 'color-blue' };
+        if (value < 25) return { code: 'normal', className: 'color-success' };
+        if (value < 30) return { code: 'overweight', className: 'color-warning' };
+        if (value < 35) return { code: 'obesity', className: 'color-danger' };
+        return { code: 'severe_obesity', className: 'color-critical' };
     };
-    const calcBMR = (weight, height, age, sex) => Math.round((10 * weight) + (6.25 * height) - (5 * age) + (sex === 'hombre' ? 5 : -161));
+    const calcBMR = (weight, height, age, sex) => Math.round((10 * weight) + (6.25 * height) - (5 * age) + (normalizeSex(sex) === 'male' ? 5 : -161));
     const calcMacros = (kcal, macroContext, overrideDefaults = null) => {
         const source = macroContext && macroContext.macroRatios ? macroContext.macroRatios : macroContext || {};
         const ratios = ['p', 'c', 'f'].every((key) => typeof source[key] === 'number') ? source : (overrideDefaults || defaultMacroRatios);

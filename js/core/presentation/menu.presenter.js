@@ -1,21 +1,28 @@
 const MenuPresenter = (() => {
-    const NUTRITION_METRIC_LABELS = {
-        kcal: 'Kcal',
-        protein: 'Prote\u00EDna',
-        carbs: 'Carbohidratos',
-        fat: 'Grasas',
-        fiber: 'Fibra',
-        sugar: 'Az\u00FAcar',
-        saturatedFat: 'Grasa sat.',
-        salt: 'Sal',
-        processing: 'Procesamiento'
-    };
-    const PRIMARY_NUTRIENTS = [['protein', 'Prot'], ['carbs', 'Carbohidratos'], ['fat', 'Grasas']];
+    const METRICS = typeof MetricsRegistry !== 'undefined' ? MetricsRegistry : null;
+    const NUTRITION_KEYS = METRICS && typeof METRICS.getOrderedKeys === 'function'
+        ? METRICS.getOrderedKeys({ nutritionOnly: true })
+        : ['kcal', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'saturatedFat', 'salt', 'processing'];
+    const NUTRITION_METRIC_LABELS = METRICS && typeof METRICS.toLabelMap === 'function'
+        ? METRICS.toLabelMap({ keys: NUTRITION_KEYS })
+        : Object.fromEntries(NUTRITION_KEYS.map((key) => [key, key]));
+    const PRIMARY_NUTRIENTS = ['protein', 'carbs', 'fat'];
     const SECONDARY_GROUPS = [
-        [['salt', 'Sal', 2], ['sugar', 'Az\u00FAcar', 1], ['saturatedFat', 'Grasa sat.', 1]],
-        [['fiber', 'Fibra', 1], ['processing', 'Procesamiento', 1]]
+        ['salt', 'sugar', 'saturatedFat'],
+        ['fiber', 'processing']
     ];
+    const t = (key, params = {}, fallback = '') => window.I18n?.t?.(key, params, fallback) || fallback || String(key || '');
 
+    const getMetricLabel = (key, options = {}) => (
+        METRICS && typeof METRICS.getLabel === 'function'
+            ? METRICS.getLabel(key, options)
+            : String(key || '')
+    );
+    const getMetricDecimals = (key, fallback = 0) => (
+        METRICS && typeof METRICS.getDecimals === 'function'
+            ? METRICS.getDecimals(key, fallback)
+            : fallback
+    );
     const safeText = (escapeHtml, value) => typeof escapeHtml === 'function' ? escapeHtml(value) : String(value || '');
     const metricRow = (label, value, target = '', css = '') => `
         <div class="stat-pill nutrition-pill">
@@ -32,8 +39,13 @@ const MenuPresenter = (() => {
         </div>
     `;
 
-    const renderMealMacroPills = (nut = {}) => [['Kcal', Math.round(nut.kcal || 0)], ['Prot', `${Math.round(nut.protein || 0)}g`], ['Carb', `${Math.round(nut.carbs || 0)}g`], ['Grasa', `${Math.round(nut.fat || 0)}g`]]
-        .map(([label, value], index) => `<div class="stat-pill${index ? '' : ' stat-pill--kcal'} stat-pill--xs">${label} ${value}</div>`)
+    const renderMealMacroPills = (nut = {}) => [
+        ['kcal', Math.round(nut.kcal || 0)],
+        ['protein', `${Math.round(nut.protein || 0)}g`],
+        ['carbs', `${Math.round(nut.carbs || 0)}g`],
+        ['fat', `${Math.round(nut.fat || 0)}g`]
+    ]
+        .map(([key, value], index) => `<div class="stat-pill${index ? '' : ' stat-pill--kcal'} stat-pill--xs">${getMetricLabel(key, { short: key !== 'kcal' })} ${value}</div>`)
         .join('');
 
     const renderNutritionScorePill = (nutritionAssessment, { formatNumber, getStatusClassFromCode, encodePayload } = {}) => {
@@ -45,7 +57,7 @@ const MenuPresenter = (() => {
                 penalties: score.penalties,
                 deviationsPct: score.deviationsPct
             })}">
-                Score nutricional: <span class="${typeof getStatusClassFromCode === 'function' ? getStatusClassFromCode(score.status) : ''}">${Number.isFinite(score.score) ? formatNumber(score.score, 1) : '-'}</span>
+                ${t('menu.nutrition.nutritional_score', {}, 'Score nutricional')}: <span class="${typeof getStatusClassFromCode === 'function' ? getStatusClassFromCode(score.status) : ''}">${Number.isFinite(score.score) ? formatNumber(score.score, 1) : '-'}</span>
             </button>
         `;
     };
@@ -54,14 +66,14 @@ const MenuPresenter = (() => {
         const { formatKcal } = helpers;
         if (typeof formatKcal !== 'function') return '';
         const kcalTarget = targets && Number.isFinite(targets.kcal) ? `${Math.round(targets.kcal * 0.9)} - ${Math.round(targets.kcal * 1.1)} kcal` : '';
-        const kcalInner = `Kcal <span class="${statusClasses.kcal || ''}">${formatKcal(nutrients.kcal)}</span>${kcalTarget ? ` <span>/ ${kcalTarget}</span>` : ''}`;
+        const kcalInner = `${getMetricLabel('kcal')} <span class="${statusClasses.kcal || ''}">${formatKcal(nutrients.kcal)}</span>${kcalTarget ? ` <span>/ ${kcalTarget}</span>` : ''}`;
         const kcalHtml = kcalDebugPayload
             ? `<button type="button" class="stat-pill stat-pill--kcal ${kcalSizeClass} stat-pill--block pill-trigger kcal-info-trigger" data-kcal-debug="${kcalDebugPayload}">${kcalInner}</button>`
             : `<div class="stat-pill stat-pill--kcal ${kcalSizeClass} stat-pill--block">${kcalInner}</div>`;
         return `
             ${kcalHtml}
-            <div class="nutrition-row">${PRIMARY_NUTRIENTS.map(([key, label]) => metricRow(
-                label,
+            <div class="nutrition-row">${PRIMARY_NUTRIENTS.map((key) => metricRow(
+                getMetricLabel(key, { short: true }),
                 `${Math.round(nutrients[key] || 0)}g`,
                 targets && Number.isFinite(targets[key]) ? ` <span class="text-muted">/ ${targets[key]}g</span>` : '',
                 statusClasses[key] || ''
@@ -86,15 +98,15 @@ const MenuPresenter = (() => {
         return SECONDARY_GROUPS.map((group, index) => {
             const className = `${index ? 'modal-grid-2 modal-grid-2--compact' : 'modal-grid-3 modal-grid-3--compact'}${containerClass ? ` ${containerClass}` : ''}`;
             return `
-                <div class="${className}">${group.map(([key, label, fallbackDecimals]) => {
-                    const currentDecimals = Number.isFinite(decimals[key]) ? decimals[key] : fallbackDecimals;
+                <div class="${className}">${group.map((key) => {
+                    const currentDecimals = Number.isFinite(decimals[key]) ? decimals[key] : getMetricDecimals(key, 0);
                     const value = key === 'processing'
                         ? (Number.isFinite(values[key]) ? `${formatNumber(values[key], currentDecimals)}/10` : '-')
                         : formatGrams(values[key], currentDecimals);
                     const target = targets && Number.isFinite(targets[key])
                         ? ` <span class="text-muted">/ ${formatNumber(targets[key], currentDecimals)}${key === 'processing' ? '/10' : 'g'}</span>`
                         : '';
-                    return metricRow(label, value, target, statusClasses[key] || '');
+                    return metricRow(getMetricLabel(key), value, target, statusClasses[key] || '');
                 }).join('')}</div>
             `;
         }).join('');
@@ -124,7 +136,7 @@ const MenuPresenter = (() => {
         const total = dayIntake && Number.isFinite(parseFloat(dayIntake.hydrationTotalMl)) ? parseFloat(dayIntake.hydrationTotalMl) : 0;
         return `
             <div class="stat-pill stat-pill--hydration stat-pill--sm stat-pill--block">
-                Agua <span class="${typeof getStatusClassFromCode === 'function' ? getStatusClassFromCode(hydrationCheck ? hydrationCheck.status : '') : ''}">${formatMl(total)}</span> / ${min > 0 ? Math.round(min) : '-'} - ${max > 0 ? formatMl(max) : '-'}
+                ${t('menu.nutrition.water', {}, 'Agua')} <span class="${typeof getStatusClassFromCode === 'function' ? getStatusClassFromCode(hydrationCheck ? hydrationCheck.status : '') : ''}">${formatMl(total)}</span> / ${min > 0 ? Math.round(min) : '-'} - ${max > 0 ? formatMl(max) : '-'}
             </div>
         `;
     };
@@ -150,8 +162,10 @@ const MenuPresenter = (() => {
         const dayIntake = dayView.dayIntake || {};
         const nutrition = dayView.dayAssessment ? dayView.dayAssessment.nutrition : null;
         const checks = nutrition ? (nutrition.checks || {}) : {};
-        const status = Object.fromEntries(['kcal', 'protein', 'carbs', 'fat', 'salt', 'fiber', 'sugar', 'saturatedFat', 'processing']
-            .map((key) => [key, typeof getStatusClassFromCode === 'function' ? getStatusClassFromCode(checks[key] ? checks[key].status : '') : '']));
+        const status = Object.fromEntries(NUTRITION_KEYS.map((key) => [
+            key,
+            typeof getStatusClassFromCode === 'function' ? getStatusClassFromCode(checks[key] ? checks[key].status : '') : ''
+        ]));
         return `
             <div class="totals-stack">
                 ${renderHydrationTotalsPill(dayTargets, dayIntake, checks.hydration, { formatMl: helpers.formatMl, getStatusClassFromCode })}
@@ -161,7 +175,13 @@ const MenuPresenter = (() => {
                     statusClasses: status,
                     kcalSizeClass: 'stat-pill--sm',
                     secondaryContainerClass: 'totals-secondary-grid',
-                    secondaryDecimals: { salt: 2, fiber: 0, sugar: 0, saturatedFat: 0, processing: 1 },
+                    secondaryDecimals: {
+                        salt: getMetricDecimals('salt', 2),
+                        fiber: 0,
+                        sugar: 0,
+                        saturatedFat: 0,
+                        processing: getMetricDecimals('processing', 1)
+                    },
                     kcalDebugPayload: typeof encodePayload === 'function' ? encodePayload(buildKcalPayload(dayIntake, dayTargets)) : ''
                 })}
                 ${renderNutritionScorePill(nutrition, { formatNumber: helpers.formatNumber, getStatusClassFromCode, encodePayload })}
@@ -169,14 +189,14 @@ const MenuPresenter = (() => {
         `;
     };
 
-    const buildMealInfoModal = ({ title = 'Comida', description = '', recipe = '', escapeHtml } = {}) => ({
+    const buildMealInfoModal = ({ title = '', description = '', recipe = '', escapeHtml } = {}) => ({
         id: 'meal-info-modal',
-        titleHtml: `<h3 class="text-primary modal-title">${safeText(escapeHtml, title)}</h3>`,
+        titleHtml: `<h3 class="text-primary modal-title">${safeText(escapeHtml, title || t('menu.meals.default_title', {}, 'Comida'))}</h3>`,
         bodyHtml: `
             <div class="text-sm">
-                ${description ? `<p class="mb-sm">${safeText(escapeHtml, description)}</p>` : '<p class="text-muted mb-sm">Sin descripci\u00F3n.</p>'}
-                <div class="text-xs text-muted mb-xs">Receta</div>
-                ${recipe ? `<p>${safeText(escapeHtml, recipe)}</p>` : '<p class="text-muted">Sin receta.</p>'}
+                ${description ? `<p class="mb-sm">${safeText(escapeHtml, description)}</p>` : `<p class="text-muted mb-sm">${t('menu.states.no_description', {}, 'Sin descripción.')}</p>`}
+                <div class="text-xs text-muted mb-xs">${t('menu.nutrition.recipe', {}, 'Receta')}</div>
+                ${recipe ? `<p>${safeText(escapeHtml, recipe)}</p>` : `<p class="text-muted">${t('menu.states.no_recipe', {}, 'Sin receta.')}</p>`}
             </div>
         `
     });
@@ -186,11 +206,15 @@ const MenuPresenter = (() => {
         const scoreText = Number.isFinite(payload.score) ? formatNumber(payload.score, 1) : '-';
         return {
             id: 'nutrition-score-modal',
-            titleHtml: '<h3 class="text-primary modal-title">Score nutricional</h3>',
+            titleHtml: `<h3 class="text-primary modal-title">${t('menu.nutrition.nutritional_score', {}, 'Score nutricional')}</h3>`,
             bodyHtml: `
                 ${tableHtml(
-                    [{ label: 'M\u00E9trica' }, { label: 'Desviaci\u00F3n', right: true }, { label: 'Penalizaci\u00F3n', right: true }],
-                    Object.keys(metricLabels).map((key) => [
+                    [
+                        { label: t('menu.nutrition.metric', {}, 'Métrica') },
+                        { label: t('menu.nutrition.deviation', {}, 'Desviación'), right: true },
+                        { label: t('menu.nutrition.penalty', {}, 'Penalización'), right: true }
+                    ],
+                    NUTRITION_KEYS.map((key) => [
                         safeText(escapeHtml, metricLabels[key]),
                         safeText(escapeHtml, Number.isFinite(payload.deviationsPct && payload.deviationsPct[key]) ? `${formatNumber(payload.deviationsPct[key], 1)}%` : '-'),
                         safeText(escapeHtml, Number.isFinite(payload.penalties && payload.penalties[key]) ? formatNumber(payload.penalties[key], 2) : '-')
@@ -198,7 +222,7 @@ const MenuPresenter = (() => {
                 )}
                 <div class="stats-pills stats-pills--center mt-lg">
                     <div class="stat-pill stat-pill--nutritional-score nutritional-score-modal-score-pill">
-                        Puntuaci\u00F3n: <span class="${nutritionScore && typeof nutritionScore.getStatusClass === 'function' ? nutritionScore.getStatusClass(payload.score) : (typeof getStatusClassFromCode === 'function' ? getStatusClassFromCode(payload.status || '') : '')}">${scoreText}</span>
+                        ${t('menu.nutrition.score_value', {}, 'Puntuación')}: <span class="${nutritionScore && typeof nutritionScore.getStatusClass === 'function' ? nutritionScore.getStatusClass(payload.score) : (typeof getStatusClassFromCode === 'function' ? getStatusClassFromCode(payload.status || '') : '')}">${scoreText}</span>
                     </div>
                 </div>
             `
@@ -210,24 +234,22 @@ const MenuPresenter = (() => {
         const targets = payload.targets || {};
         const { formatKcal, formatGrams, formatScore } = helpers;
         if (typeof formatKcal !== 'function' || typeof formatGrams !== 'function' || typeof formatScore !== 'function') return null;
-        const formatters = {
-            kcal: formatKcal,
-            protein: (value) => formatGrams(value, 0),
-            carbs: (value) => formatGrams(value, 0),
-            fat: (value) => formatGrams(value, 0),
-            fiber: (value) => formatGrams(value, 1),
-            sugar: (value) => formatGrams(value, 1),
-            saturatedFat: (value) => formatGrams(value, 1),
-            salt: (value) => formatGrams(value, 2),
-            processing: (value) => formatScore(value, 1, 10)
+        const formatMetricValue = (key, value) => {
+            if (key === 'kcal') return formatKcal(value);
+            if (key === 'processing') return formatScore(value, getMetricDecimals(key, 1), 10);
+            return formatGrams(value, getMetricDecimals(key, 0));
         };
         return {
             id: 'kcal-debug-modal',
-            titleHtml: '<h3 class="text-primary modal-title">C\u00E1lculo de kcal y macros</h3>',
+            titleHtml: `<h3 class="text-primary modal-title">${t('menu.nutrition.kcal_debug_title', {}, 'Cálculo de kcal y macros')}</h3>`,
             bodyHtml: `
                 ${tableHtml(
-                    [{ label: 'M\u00E9trica' }, { label: 'Actual', right: true }, { label: 'Objetivo', right: true }],
-                    Object.entries(NUTRITION_METRIC_LABELS).map(([key, label]) => [label, formatters[key](actuals[key]), formatters[key](targets[key])])
+                    [
+                        { label: t('menu.nutrition.metric', {}, 'Métrica') },
+                        { label: t('menu.nutrition.actual', {}, 'Actual'), right: true },
+                        { label: t('menu.nutrition.target', {}, 'Objetivo'), right: true }
+                    ],
+                    NUTRITION_KEYS.map((key) => [NUTRITION_METRIC_LABELS[key], formatMetricValue(key, actuals[key]), formatMetricValue(key, targets[key])])
                 )}
                 <div class="stats-pills stats-pills--center mt-lg"><div class="stat-pill stat-pill--kcal">${formatKcal(Number.isFinite(payload.kcalFromMacros) ? payload.kcalFromMacros : 0)}</div></div>
             `

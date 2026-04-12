@@ -22,6 +22,7 @@ const STORAGE_KEYS = Object.freeze({
     userHydrationRules: 'user_hydration_rules',
     userHydrationTargets: 'user_hydration_targets',
     dailyNutritionTargets: 'daily_nutrition_targets',
+    uiLocale: 'ui_locale',
     selectedActivityPlanFile: 'selected_activity_plan_file',
     selectedMenuFile: 'selected_menu_file',
     shoppingCustomItems: 'shop_custom_items',
@@ -62,32 +63,21 @@ const normalizeActivitySection = (section) => {
     if (section.type === 'rest') return { type: 'rest', description: section.description || '' };
     return { exercises: Array.isArray(section.exercises) ? section.exercises : [], description: section.description || '' };
 };
-const normalizeDayKey = (value) => String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/Ã©|ã©|é/g, 'e')
-    .replace(/Ã¡|ã¡|á/g, 'a')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z]/g, '');
-const DAY_NAME_MAP = {
-    lunes: 'Lunes',
-    martes: 'Martes',
-    miercoles: 'Mi\u00E9rcoles',
-    jueves: 'Jueves',
-    viernes: 'Viernes',
-    sabado: 'S\u00E1bado',
-    domingo: 'Domingo'
-};
 const normalizeDayName = (value) => {
     const raw = String(value || '').trim();
     if (!raw) return raw;
-    const key = normalizeDayKey(raw);
-    return /^mi.*rcoles$/.test(key) ? 'Mi\u00E9rcoles' : /^sa.*bado$/.test(key) ? 'S\u00E1bado' : DAY_NAME_MAP[key] || raw;
+    return typeof DateUtils !== 'undefined' && typeof DateUtils.normalizeDayName === 'function'
+        ? DateUtils.normalizeDayName(raw)
+        : raw;
 };
+const getWeekDayName = (index) => (
+    typeof DateUtils !== 'undefined' && typeof DateUtils.getWeekDayKey === 'function'
+        ? DateUtils.getWeekDayKey(index)
+        : (typeof WEEK_DAYS !== 'undefined' ? WEEK_DAYS[index] || '' : '')
+);
 const normalizeHydration = (hydration) => {
     const raw = hydration && typeof hydration === 'object' ? hydration : null;
-    const description = raw?.description || 'Hidratacion directa necesaria durante todo el dia';
+    const description = raw?.description || '';
     if (Array.isArray(raw?.items)) return { items: raw.items, description };
     if (Number.isFinite(parseFloat(raw?.directMl))) return { items: [{ foodId: 'water', amount: parseFloat(raw.directMl) }], description };
     return { items: [{ foodId: 'water', amount: 1500 }], description };
@@ -117,6 +107,14 @@ const UserStore = {
         UserStore.saveProfile(profile);
         return profile;
     }
+};
+
+const UIStore = {
+    getLocale: (fallback = 'es') => {
+        const locale = String(readKey(STORAGE_KEYS.uiLocale, fallback) || fallback).trim().toLowerCase();
+        return locale || fallback;
+    },
+    setLocale: (locale) => saveKey(STORAGE_KEYS.uiLocale, String(locale || 'es').trim().toLowerCase() || 'es')
 };
 
 const ShoppingStore = {
@@ -163,30 +161,19 @@ const ActivityStore = {
     clearSavedPlanData: (file) => removeKey(`activity_data_${normalizeActivityPlanFile(file)}`),
     normalizeActivityData: (data) => {
         if (!Array.isArray(data)) return data;
-        const normalized = data.slice(0, DAYS_COUNT).map((day) => !day || typeof day !== 'object' ? day : ({
-            day: day.day || '',
+        const normalized = data.slice(0, DAYS_COUNT).map((day, index) => !day || typeof day !== 'object' ? day : ({
+            day: normalizeDayName(day.day || getWeekDayName(index)),
             walk: normalizeActivitySection(day.walk),
             gym: normalizeActivitySection(day.gym),
             extra_activity: normalizeActivitySection(day.extra_activity)
         }));
         while (normalized.length < DAYS_COUNT) normalized.push({
-            day: typeof WEEK_DAYS !== 'undefined' ? WEEK_DAYS[normalized.length] || '' : '',
+            day: getWeekDayName(normalized.length),
             walk: null,
             gym: null,
             extra_activity: null
         });
         return normalized;
-    },
-    getWalkInfo: (dayData, { defaultStepsCfg = null, walkingExercise = null } = {}) => {
-        const defaults = defaultStepsCfg || APP_STEPS_DEFAULTS;
-        const cadenceBase = Number.isFinite(parseFloat(walkingExercise?.cadenceBase)) ? parseFloat(walkingExercise.cadenceBase) : defaults.perMinute;
-        const walkItem = Array.isArray(dayData?.walk?.exercises)
-            ? dayData.walk.exercises.find((entry) => entry?.exerciseId === 'caminar') || dayData.walk.exercises[0]
-            : null;
-        const stepsPerMin = parseFloat(walkItem?.stepsPerMin) || cadenceBase;
-        const secPerRep = parseFloat(walkItem?.secPerRep);
-        const safeSec = Number.isFinite(secPerRep) && secPerRep > 0 ? secPerRep : Math.round((defaults.target / stepsPerMin) * 60);
-        return { steps: Math.max(0, Math.round((safeSec / 60) * stepsPerMin)), stepsPerMin, secPerRep: safeSec, cadenceBase };
     }
 };
 
@@ -222,6 +209,7 @@ MenuStore.normalizeMenuData = (data) => {
 
 window.STORAGE_KEYS = STORAGE_KEYS;
 window.UserStore = UserStore;
+window.UIStore = UIStore;
 window.ShoppingStore = ShoppingStore;
 window.ActivityStore = ActivityStore;
 window.MenuStore = MenuStore;

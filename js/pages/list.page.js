@@ -1,67 +1,63 @@
 const LIST_RESET_CONTROLS_ID = 'list-controls-container';
-const SHOPPING_FALLBACK_CATEGORY = 'Other / Processed';
 const SHOPPING_MEAL_KEYS = typeof MEAL_KEYS !== 'undefined' && Array.isArray(MEAL_KEYS) && MEAL_KEYS.length ? MEAL_KEYS : ['breakfast', 'lunch', 'dinner'];
+const listT = (key, params = {}, fallback = '') => window.I18n?.t?.(key, params, fallback) || fallback || String(key || '');
+const getFoodName = (foodId, fallback = '') => window.ContentI18n?.foodName?.(foodId, fallback || foodId) || fallback || foodId;
+const getFoodCategoryLabel = (categoryId, fallback = '') => window.ContentI18n?.foodCategory?.(categoryId, fallback || categoryId) || fallback || categoryId;
 
 function renderShoppingListPage() {
-    const menuFile = MenuStore.getSelectedFile();
-    CoreBrowserAdapter?.clearLoadedData?.({ menu: true });
-    updateShoppingTitle(menuFile);
+    const availableMenus = typeof AVAILABLE_MENUS !== 'undefined' ? AVAILABLE_MENUS : [];
 
     UI.bootstrapPage({
         rootId: 'lista-container',
         requiredDeps: [{ global: 'CoreBrowserAdapter', path: 'js/core/adapters/browser.adapter.js' }],
-        afterRequired: () => CoreBrowserAdapter.resolvePageContext({ foods: true, menuFile }),
-        run: (container, context) => initShoppingList(container, context),
-        onError: (container, file) => UI.showError(container, `Error cargando ${file}`)
+        afterRequired: () => CoreBrowserAdapter.resolvePageContext({
+            requiredDeps: [
+                { when: () => typeof MenuApplicationService === 'undefined', path: 'js/core/application/menu.service.js' },
+                { when: () => typeof ShoppingApplicationService === 'undefined', path: 'js/core/application/shopping.service.js' }
+            ],
+            globals: ['ShoppingApplicationService'],
+            foods: true,
+            selectedMenuData: true
+        }),
+        run: (container, context) => initShoppingList(container, context, { availableMenus }),
+        onError: (container, file) => UI.showError(container, listT('errors.loading_file', { file }, `Error cargando ${file}`))
     });
 }
 
-function updateShoppingTitle(menuFile) {
-    const h1 = document.querySelector('h1');
-    if (!h1) return;
-    const menus = typeof AVAILABLE_MENUS !== 'undefined' ? AVAILABLE_MENUS : [];
-    const label = menus.find((option) => option.file === menuFile)?.label || menuFile.replace('.js', '');
-    h1.querySelector('.menu-label')?.remove();
-    h1.insertAdjacentHTML('beforeend', ` <span class="menu-label">(${UI.escapeHtml(label)})</span>`);
-}
-
-function initShoppingList(container, { formulas, foodsData = null, menuData = null } = {}) {
-    if (typeof APP_MACRO_RATIOS !== 'undefined' && typeof formulas?.setDefaultMacroRatios === 'function') {
-        formulas.setDefaultMacroRatios(APP_MACRO_RATIOS);
-    }
-    const foodsCatalog = foodsData?.foods || null;
-    if (!Array.isArray(menuData) || !foodsCatalog || !formulas) {
-        UI.showError(container, 'Faltan datos (Men\u00FA o Alimentos).');
+function initShoppingList(container, { formulas, foodsData = null, menuData = null, ShoppingApplicationService: shoppingService = null } = {}, { availableMenus = [] } = {}) {
+    const service = shoppingService || window.ShoppingApplicationService;
+    if (!service) {
+        UI.showError(container, listT('errors.loading_list_service', {}, 'Error cargando servicio de lista.'));
         return;
     }
 
-    const { labels, order } = getCategoryMeta(foodsData?.categories);
-    const byCategory = {};
-    Object.entries(formulas.calculateShoppingTotals(menuData, SHOPPING_MEAL_KEYS)).forEach(([foodId, amount]) => {
-        const food = foodsCatalog[foodId];
-        if (!food || amount <= 0) return;
-        const category = food.category || foodsData?.fallbackCategory || SHOPPING_FALLBACK_CATEGORY;
-        (byCategory[category] ||= []).push({ id: foodId, name: food.name, amount, unit: food.unit });
+    window.TargetsApplicationService?.applyMacroDefaults?.(formulas);
+    const pageModel = service.buildShoppingPageModel({
+        availableMenus,
+        menuData,
+        foodsData,
+        formulas,
+        mealKeys: SHOPPING_MEAL_KEYS
     });
 
-    const categories = Object.keys(byCategory).sort((a, b) => (order[a] ?? 999) - (order[b] ?? 999) || a.localeCompare(b));
-    container.innerHTML = categories.length
-        ? categories.map((category) => renderShoppingSection(labels[category] || category, byCategory[category])).join('')
-        : '<div class="glass-card card"><p>Lista vac\u00EDa.</p></div>';
-    container.onchange = handleShoppingChange;
-    appendCustomListSection(container);
-    ensureListResetControls(container);
+    updateShoppingTitle(pageModel.menuLabel);
+    if (!pageModel.isReady) {
+        UI.showError(container, listT('errors.missing_list_data', {}, 'Faltan datos (Menu o Alimentos).'));
+        return;
+    }
+
+    container.innerHTML = renderShoppingSections(pageModel.sections);
+    container.onchange = (event) => handleShoppingChange(event, service);
+    appendCustomListSection(container, service, pageModel.customItems);
+    ensureListResetControls(container, service);
 }
 
-function getCategoryMeta(categories = []) {
-    const labels = {};
-    const order = {};
-    categories.forEach((category, index) => {
-        if (!category?.id) return;
-        labels[category.id] = category.label || category.id;
-        order[category.id] = index;
-    });
-    return { labels, order };
+function updateShoppingTitle(menuLabel) {
+    const h1 = document.querySelector('h1');
+    if (!h1) return;
+    h1.querySelector('.menu-label')?.remove();
+    const localizedLabel = menuLabel ? listT(`menu.plans.${menuLabel}`, {}, menuLabel) : '';
+    h1.insertAdjacentHTML('beforeend', ` <span class="menu-label">(${UI.escapeHtml(localizedLabel)})</span>`);
 }
 
 function normalizeShoppingAmount(amount, unit) {
@@ -70,35 +66,36 @@ function normalizeShoppingAmount(amount, unit) {
     return [amount, unit || ''];
 }
 
-function renderShoppingSection(label, items) {
-    return `
-        <div class="glass-card section-group">
-            <h2>${UI.escapeHtml(label)}</h2>
-            <div class="section-group__grid">
-                ${items.map(renderShoppingRow).join('')}
+function renderShoppingSections(sections = []) {
+    return sections.length
+        ? sections.map((section) => `
+            <div class="glass-card section-group">
+                <h2>${UI.escapeHtml(getFoodCategoryLabel(section.id, section.label || section.id))}</h2>
+                <div class="section-group__grid">${section.items.map(renderShoppingRow).join('')}</div>
             </div>
-        </div>
-    `;
+        `).join('')
+        : `<div class="glass-card card"><p>${listT('common.empty', {}, 'Lista vacia.')}</p></div>`;
 }
 
-function renderShoppingRow({ id, name, amount, unit }) {
+function renderShoppingRow({ id, name, amount, unit, checked = false }) {
     const [displayAmount, displayUnit] = normalizeShoppingAmount(amount, unit);
     return `
         <label class="row-item">
-            <div class="row-item__info"><span class="row-item__title">${UI.escapeHtml(name)}</span></div>
+            <div class="row-item__info"><span class="row-item__title">${UI.escapeHtml(getFoodName(id, name || id))}</span></div>
             <div class="row-item__actions">
                 <span class="row-item__quantity">${displayAmount} ${displayUnit}</span>
-                <input type="checkbox" id="${UI.escapeHtml(id)}"${ShoppingStore.getItemChecked(id, false) ? ' checked' : ''}>
+                <input type="checkbox" id="${UI.escapeHtml(id)}"${checked ? ' checked' : ''}>
             </div>
         </label>
     `;
 }
 
-function handleShoppingChange(event) {
-    const { target } = event;
+function handleShoppingChange(event, shoppingService) {
+    const target = event.target;
     if (!target?.matches('input[type="checkbox"]')) return;
-    if (target.dataset.customId) ShoppingStore.setCustomItemChecked(target.dataset.customId, target.checked);
-    else ShoppingStore.setItemChecked(target.id, target.checked);
+    return target.dataset.customId
+        ? shoppingService.setCustomItemChecked(target.dataset.customId, target.checked)
+        : shoppingService.setItemChecked(target.id, target.checked);
 }
 
 function renderCustomListRow(item) {
@@ -110,14 +107,14 @@ function renderCustomListRow(item) {
     `;
 }
 
-function appendCustomListSection(container) {
+function appendCustomListSection(container, shoppingService, customItems = []) {
     container.insertAdjacentHTML('beforeend', `
         <div class="glass-card section-group">
-            <h2>Varios</h2>
-            <div class="section-group__grid list-custom__grid">${ShoppingStore.getCustomItems().map(renderCustomListRow).join('')}</div>
+            <h2>${listT('common.misc', {}, 'Varios')}</h2>
+            <div class="section-group__grid list-custom__grid">${(Array.isArray(customItems) ? customItems : []).map(renderCustomListRow).join('')}</div>
             <div class="list-custom__form">
-                <input type="text" class="input-base list-custom__input" placeholder="A\u00F1adir \u00EDtem a Varios..." aria-label="Nuevo \u00EDtem de varios">
-                <button type="button" class="list-custom__add">A\u00F1adir</button>
+                <input type="text" class="input-base list-custom__input" placeholder="${UI.escapeHtml(listT('list.misc_input_placeholder', {}, 'Añadir item a Varios...'))}" aria-label="${UI.escapeHtml(listT('list.misc_input_aria', {}, 'Nuevo item de varios'))}">
+                <button type="button" class="list-custom__add">${listT('common.add', {}, 'Anadir')}</button>
             </div>
         </div>
     `);
@@ -127,8 +124,7 @@ function appendCustomListSection(container) {
     const addItem = () => {
         const text = input.value.trim();
         if (!text) return;
-        const items = ShoppingStore.addCustomItem(text);
-        const item = items[items.length - 1];
+        const item = shoppingService.addCustomItem(text).at(-1);
         if (!item) return;
         itemsGrid.insertAdjacentHTML('beforeend', renderCustomListRow(item));
         input.value = '';
@@ -138,16 +134,16 @@ function appendCustomListSection(container) {
     input.addEventListener('keydown', (event) => event.key === 'Enter' && addItem());
 }
 
-function ensureListResetControls(container) {
+function ensureListResetControls(container, shoppingService) {
     document.getElementById(LIST_RESET_CONTROLS_ID)?.remove();
     container.insertAdjacentHTML('afterend', `
         <div id="${LIST_RESET_CONTROLS_ID}" class="menu-controls">
-            <button type="button" class="btn-back">Reset</button>
+            <button type="button" class="btn-back">${listT('common.reset', {}, 'Reset')}</button>
         </div>
     `);
     document.querySelector(`#${LIST_RESET_CONTROLS_ID} button`).addEventListener('click', () => {
-        if (!confirm('\u00BFRestablecer la lista? Se perder\u00E1n checks y elementos a\u00F1adidos.')) return;
-        ShoppingStore.clearAll();
+        if (!confirm(listT('list.reset_confirm', {}, 'Restablecer la lista? Se perderan checks y elementos anadidos.'))) return;
+        shoppingService.clearAll();
         renderShoppingListPage();
     });
 }

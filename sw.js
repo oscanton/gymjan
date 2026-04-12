@@ -1,4 +1,4 @@
-const CACHE_NAME = "app-cache-v17";
+const CACHE_NAME = "app-cache-v18";
 
 const FILES_TO_CACHE = [
   "index.html",
@@ -54,10 +54,32 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
+  if (event.request.method !== "GET") return;
+
+  const requestUrl = new URL(event.request.url);
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+  const isNavigation = event.request.mode === "navigate";
+  const isAppAsset = isSameOrigin && /\.(html|css|js|json)$/i.test(requestUrl.pathname);
+
+  if (isNavigation || isAppAsset) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response && response.ok && isSameOrigin) {
+            const cloned = response.clone();
+            event.waitUntil(
+              caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned))
+            );
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+    caches.match(event.request).then(response => response || fetch(event.request))
   );
 });
 

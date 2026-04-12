@@ -1,15 +1,25 @@
 const ActivityPresenter = (() => {
-    const ACTIVITY_METRIC_LABELS = {
-        stepsKcal: 'Kcal pasos',
-        trainingKcal: 'Kcal entrenamiento',
-        met: 'MET entrenamiento',
-        intensity: 'Intensidad'
-    };
+    const METRICS = typeof MetricsRegistry !== 'undefined' ? MetricsRegistry : null;
+    const ACTIVITY_SCORE_KEYS = ['stepsKcal', 'trainingKcal', 'met', 'intensity'];
+    const t = (key, params = {}, fallback = '') => window.I18n?.t?.(key, params, fallback) || fallback || String(key || '');
+    const humanize = (value = '') => String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    const getMetricLabel = (key, options = {}) => (
+        METRICS && typeof METRICS.getLabel === 'function'
+            ? METRICS.getLabel(key, options)
+            : String(key || '')
+    );
+    const getMetricDecimals = (key, fallback = 0) => (
+        METRICS && typeof METRICS.getDecimals === 'function'
+            ? METRICS.getDecimals(key, fallback)
+            : fallback
+    );
+    const ACTIVITY_METRIC_LABELS = Object.fromEntries(ACTIVITY_SCORE_KEYS.map((key) => [key, getMetricLabel(key)]));
 
     const safeText = (escapeHtml, value) => typeof escapeHtml === 'function' ? escapeHtml(value) : String(value || '');
+    const getTaxonomyLabel = (group, value = '') => t(`activity.taxonomy.${group}.${value}`, {}, humanize(value));
     const scorePill = (score, statusClass) => `
         <div class="stats-pills stats-pills--center mt-lg">
-            <div class="stat-pill stat-pill--activity-score activity-score-modal-score-pill">Puntuaci\u00F3n: <span class="${statusClass}">${score}</span></div>
+            <div class="stat-pill stat-pill--activity-score activity-score-modal-score-pill">${t('activity.labels.score_value', {}, 'Puntuación')}: <span class="${statusClass}">${score}</span></div>
         </div>
     `;
     const totalPill = (label, value, { block = false, highlight = false } = {}) => (
@@ -27,7 +37,7 @@ const ActivityPresenter = (() => {
                 targets: score.targets,
                 inputs: activityAssessment.actuals || {}
             })}">
-                Score actividad: <span class="${typeof getStatusClassFromCode === 'function' ? getStatusClassFromCode(score.status) : ''}">${Number.isFinite(score.score) ? formatNumber(score.score, 1) : '-'}</span>
+                ${t('activity.score.activity_score', {}, 'Score actividad')}: <span class="${typeof getStatusClassFromCode === 'function' ? getStatusClassFromCode(score.status) : ''}">${Number.isFinite(score.score) ? formatNumber(score.score, 1) : '-'}</span>
             </button>
         `;
     };
@@ -39,27 +49,32 @@ const ActivityPresenter = (() => {
             <div class="totals-stack">
                 ${totalPill('', `${Math.round(totals.totalKcal || 0)} kcal`, { block: true, highlight: true })}
                 <div class="totals-row totals-row--nowrap">
-                    ${totalPill('', `Pasos &middot; ${Math.round(totals.stepsKcal || 0)} kcal`)}
-                    ${totalPill('', `Entrenamiento &middot; ${Math.round(totals.trainingKcal || 0)} kcal`)}
+                    ${totalPill('', `${getMetricLabel('stepsKcal', { short: true })} &middot; ${Math.round(totals.stepsKcal || 0)} kcal`)}
+                    ${totalPill('', `${getMetricLabel('trainingKcal', { short: true })} &middot; ${Math.round(totals.trainingKcal || 0)} kcal`)}
                 </div>
                 <div class="totals-row">
-                    ${totalPill('MET', numeric(totals.metAvg, formatMet, ' MET'))}
-                    ${totalPill('Intensidad', numeric(totals.intensityAvg, formatFactor, '',).replace(/^/, 'x').replace(/^x-$/, '-'))}
-                    ${totalPill('Tiempo', numeric(totals.totalMinutes, formatMinutes, ' min'))}
+                    ${totalPill(getMetricLabel('met', { short: true }), numeric(totals.metAvg, formatMet, ' MET'))}
+                    ${totalPill(getMetricLabel('intensity'), numeric(totals.intensityAvg, formatFactor).replace(/^/, 'x').replace(/^x-$/, '-'))}
+                    ${totalPill(t('activity.labels.time', {}, 'Tiempo'), numeric(totals.totalMinutes, formatMinutes, ' min'))}
                 </div>
                 ${renderActivityScorePill(dayView.dayAssessment ? dayView.dayAssessment.activity : null, { formatNumber, getStatusClassFromCode, encodePayload })}
             </div>
         `;
     };
 
-    const buildTechniqueModal = ({ name = 'Actividad', type = '', focus = '', muscles = '', equipment = '', restSeconds = '', technique = '', kcal = 0, escapeHtml } = {}) => ({
-        titleHtml: `<h3 class="modal-title">${safeText(escapeHtml, name)}</h3>`,
+    const buildTechniqueModal = ({ name = '', type = '', focus = '', muscles = '', equipment = '', restSeconds = '', technique = '', kcal = 0, escapeHtml } = {}) => ({
+        titleHtml: `<h3 class="modal-title">${safeText(escapeHtml, name || t('pages.activity.heading', {}, 'Actividad'))}</h3>`,
         bodyHtml: `
             <div class="text-sm">
-                ${[['Tipo', type], ['Enfoque', focus], ['M\u00FAsculos', muscles], ['Equipo', equipment]].map(([label, value]) => `<div><span class="text-muted">${label}:</span> ${safeText(escapeHtml, value || '-')}</div>`).join('')}
-                ${restSeconds ? `<div><span class="text-muted">Descanso:</span> ${safeText(escapeHtml, restSeconds)} s</div>` : ''}
+                ${[
+                    [t('activity.labels.type', {}, 'Tipo'), getTaxonomyLabel('types', type)],
+                    [t('activity.labels.focus', {}, 'Enfoque'), getTaxonomyLabel('focuses', focus)],
+                    [t('activity.labels.muscles', {}, 'Músculos'), muscles],
+                    [t('activity.labels.equipment', {}, 'Equipo'), equipment]
+                ].map(([label, value]) => `<div><span class="text-muted">${label}:</span> ${safeText(escapeHtml, value || '-')}</div>`).join('')}
+                ${restSeconds ? `<div><span class="text-muted">${t('activity.labels.rest', {}, 'Descanso')}:</span> ${safeText(escapeHtml, restSeconds)} s</div>` : ''}
             </div>
-            <p class="text-sm">${safeText(escapeHtml, technique || 'T\u00E9cnica no disponible.')}</p>
+            <p class="text-sm">${safeText(escapeHtml, technique || t('activity.states.technique_unavailable', {}, 'Técnica no disponible.'))}</p>
             <div class="stats-pills stats-pills--center mt-lg"><div class="stat-pill stat-pill--kcal">Kcal ${Math.round(kcal || 0)}</div></div>
         `
     });
@@ -68,14 +83,18 @@ const ActivityPresenter = (() => {
         if (typeof formatNumber !== 'function') return null;
         const targets = payload.targets || {};
         const inputs = payload.inputs || {};
-        const rows = [['stepsKcal', 1, targets.stepsKcal || targets.stepsKcalTarget], ['trainingKcal', 1, targets.trainingKcal], ['met', 1, targets.met], ['intensity', 2, targets.intensity]];
+        const rows = ACTIVITY_SCORE_KEYS.map((key) => [
+            key,
+            getMetricDecimals(key, key === 'intensity' ? 2 : 1),
+            key === 'stepsKcal' ? (targets.stepsKcal || targets.stepsKcalTarget) : targets[key]
+        ]);
         return {
             id: 'activity-score-modal',
-            titleHtml: '<h3 class="modal-title">Score de actividad</h3>',
+            titleHtml: `<h3 class="modal-title">${t('activity.score.activity_score_title', {}, 'Score de actividad')}</h3>`,
             bodyHtml: `
                 <div class="activity-score-modal">
                     <table class="activity-score-table">
-                        <thead><tr><th>M\u00E9tricas</th><th class="text-right">Actual</th><th class="text-right">Objetivo</th></tr></thead>
+                        <thead><tr><th>${t('activity.labels.metrics', {}, 'Métricas')}</th><th class="text-right">${t('activity.labels.actual', {}, 'Actual')}</th><th class="text-right">${t('activity.labels.target', {}, 'Objetivo')}</th></tr></thead>
                         <tbody>${rows.map(([key, decimals, target]) => `
                             <tr>
                                 <td>${safeText(escapeHtml, metricLabels[key])}</td>

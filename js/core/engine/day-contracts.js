@@ -11,9 +11,9 @@ const DayContracts = (() => {
     const buildDayTargets = ({ day = '', target = {} } = {}) => ({
         day,
         kcal: toNumber(target.kcal),
-        protein: toNumber(target.protein),
-        carbs: toNumber(target.carbs),
-        fat: toNumber(target.fat),
+        protein: toNumber(Number.isFinite(parseFloat(target.protein)) ? target.protein : target.p),
+        carbs: toNumber(Number.isFinite(parseFloat(target.carbs)) ? target.carbs : target.c),
+        fat: toNumber(Number.isFinite(parseFloat(target.fat)) ? target.fat : target.f),
         salt: toNumber(target.salt),
         fiber: toNumber(target.fiber),
         sugar: toNumber(target.sugar),

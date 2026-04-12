@@ -1,7 +1,9 @@
 const __dayAssessmentRoot = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : this);
 const DayAssessmentEngine = (() => {
     const STATUS = Object.freeze({ NONE: 'none', OK: 'ok', WARNING: 'warning', DANGER: 'danger', CRITICAL: 'critical' });
-    const NUTRITION_KEYS = ['kcal', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'saturatedFat', 'salt', 'processing'];
+    const NUTRITION_KEYS = typeof MetricsRegistry !== 'undefined' && typeof MetricsRegistry.getOrderedKeys === 'function'
+        ? MetricsRegistry.getOrderedKeys({ nutritionOnly: true })
+        : ['kcal', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'saturatedFat', 'salt', 'processing'];
     const number = (value, fallback = NaN) => {
         const parsed = parseFloat(value);
         return Number.isFinite(parsed) ? parsed : fallback;

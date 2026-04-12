@@ -1,4 +1,4 @@
-﻿/* =========================================
+/* =========================================
    core/config.js - GLOBAL CONFIGURATION
    ========================================= */
 
@@ -6,7 +6,8 @@
 const APP_PREFIX = "myfitpwa_";
 
 // Global constants (single source of truth).
-const WEEK_DAYS = ["Lunes", "Martes", "Mi\u00E9rcoles", "Jueves", "Viernes", "S\u00E1bado", "Domingo"];
+const WEEK_DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const WEEK_DAYS = WEEK_DAY_KEYS.slice();
 const MEAL_KEYS = ['breakfast', 'lunch', 'dinner'];
 
 // Available menu data files.
@@ -46,7 +47,7 @@ const APP_DEFAULTS = {
 };
 
 // Derived constants to avoid repeating fallback logic across modules.
-const DAYS_COUNT = (Array.isArray(WEEK_DAYS) && WEEK_DAYS.length) ? WEEK_DAYS.length : 7;
+const DAYS_COUNT = (Array.isArray(WEEK_DAY_KEYS) && WEEK_DAY_KEYS.length) ? WEEK_DAY_KEYS.length : 7;
 const APP_REST_BMR_FACTOR = Number.isFinite(APP_DEFAULTS.restBmrFactor) ? APP_DEFAULTS.restBmrFactor : 1.2;
 const APP_MACRO_RATIOS = (APP_DEFAULTS.macroRatios && Number.isFinite(APP_DEFAULTS.macroRatios.p) && Number.isFinite(APP_DEFAULTS.macroRatios.c) && Number.isFinite(APP_DEFAULTS.macroRatios.f))
     ? APP_DEFAULTS.macroRatios
@@ -68,5 +69,3 @@ const APP_SECONDARY_DEFAULTS = (APP_DEFAULTS.secondaryTargets
     && Number.isFinite(APP_DEFAULTS.secondaryTargets.processingMaxScore))
     ? APP_DEFAULTS.secondaryTargets
     : { saltMaxG: 5, fiberPer1000Kcal: 14, sugarMaxPctKcal: 0.10, satFatMaxPctKcal: 0.10, processingMaxScore: 3.5 };
-
-
