@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 
-:: Obtener línea IPv4 que contenga 192.168.1.
+:: Obtener linea IPv4 que contenga 192.168.1.
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr "IPv4" ^| findstr "192.168.1."') do set IP=%%a
 set IP=%IP:~1%
 
