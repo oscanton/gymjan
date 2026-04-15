@@ -1,0 +1,18 @@
+{
+  "name": "GymJan MVP",
+  "short_name": "GymJan",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6fbf8",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
