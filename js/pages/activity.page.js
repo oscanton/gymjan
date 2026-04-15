@@ -21,7 +21,7 @@ function renderActivityPage() {
     if (!container && table) container = table.parentElement;
 
     const getPlanFiles = () => Array.isArray(AVAILABLE_ACTIVITY_PLAN_FILES) ? AVAILABLE_ACTIVITY_PLAN_FILES : [];
-    let currentFile = getPlanFiles().length ? getPlanFiles()[0].file : null;
+    let currentFile = null;
     const getPlanData = () => currentPlanData;
     const setPlanData = (planData) => (currentPlanData = planData);
     const clearPlanData = () => {

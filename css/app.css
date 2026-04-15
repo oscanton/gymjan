@@ -277,16 +277,17 @@ h2 {
     max-width: var(--ui-index-width);
 }
 .index-modal__header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-md);
     margin-bottom: var(--space-md);
 }
 .index-modal__title {
     font-size: var(--font-size-lg);
     font-weight: 700;
     text-align: center;
+}
+.index-modal__locale {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-lg);
 }
 .index-modal__link.is-active {
     opacity: 0.55;

@@ -30,7 +30,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const buildIndexContent = ({ basePrefix = '', title = t('common.index', {}, 'Indice') } = {}) => `
         <div class="index-modal__header">
             <div class="index-modal__title">${title}</div>
-            ${buildLocaleSelect()}
         </div>
         <nav class="stack-vertical">
             ${navItems.map(([key, href, labelKey]) => {
@@ -38,6 +37,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 return `<a class="btn btn--primary index-modal__link${isActive ? ' is-active' : ''}" href="${basePrefix}${href}"${isActive ? ' aria-current="page"' : ''}>${t(labelKey)}</a>`;
             }).join('')}
         </nav>
+        <div class="index-modal__locale">
+            ${buildLocaleSelect()}
+        </div>
     `;
     const ensureTitleSpan = (headerTitle) => {
         let titleSpan = headerTitle.querySelector('.page-title-text');
@@ -49,18 +51,6 @@ window.addEventListener('DOMContentLoaded', () => {
         textNodes.forEach((node) => node.remove());
         headerTitle.insertBefore(titleSpan, headerTitle.firstChild);
         return titleSpan;
-    };
-    const ensureHeaderLocaleSelect = (header) => {
-        if (!header) return null;
-        let wrapper = header.querySelector('.page-locale-select');
-        if (!wrapper) {
-            wrapper = document.createElement('span');
-            wrapper.className = 'page-locale-select';
-            wrapper.innerHTML = buildLocaleSelect();
-            header.appendChild(wrapper);
-        }
-        UI.bindLocaleSelect(wrapper);
-        return wrapper;
     };
     const ensureIndexModal = () => {
         let modal = document.getElementById('global-index-modal');
@@ -102,7 +92,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const header = document.querySelector('.page-header');
     const headerTitle = header ? header.querySelector('h1') : null;
     if (headerTitle) ensureTitleSpan(headerTitle);
-    if (header) ensureHeaderLocaleSelect(header);
     if (header && !header.querySelector('.page-menu-trigger')) {
         const trigger = document.createElement('button');
         trigger.type = 'button';

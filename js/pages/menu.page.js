@@ -47,7 +47,7 @@ function renderMenuPage() {
     );
     const getFoodName = (foodId, fallback = '') => window.ContentI18n?.foodName?.(foodId, fallback || foodId) || fallback || foodId;
     const getAvailableMenus = () => Array.isArray(AVAILABLE_MENUS) ? AVAILABLE_MENUS : [];
-    let currentFile = getAvailableMenus().length ? getAvailableMenus()[0].file : null;
+    let currentFile = null;
 
     const showTableError = (message, status = 'danger') => {
         tableBody.innerHTML = `<tr><td colspan="${errorColspan}" class="text-status--${status} text-center">${message}</td></tr>`;
