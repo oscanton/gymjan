@@ -167,6 +167,13 @@ User input
 
 This is the mandatory initial structure for the first release.
 
+Note:
+
+- the tree below reflects the original MVP bootstrap layout
+- as the codebase grows, exact file and folder names may evolve
+- the active repository naming source of truth is the `File And Folder Naming Policy`
+- the current layered direction is `js/application`, `js/domain`, `js/catalog`, `js/locales`, `js/ui`, `js/shared`
+
 ```text
 /
   index.html
@@ -395,6 +402,31 @@ This is the mandatory initial structure for the first release.
 - JS fields: `camelCase`
 - i18n keys: English, dotted notation
 - no accented characters in technical IDs or file names
+
+### File And Folder Naming Policy
+
+The repository naming policy must optimize for discoverability and long-term growth.
+
+- file and folder names use `kebab-case`
+- no two files in the repository should share the same basename
+- folders name the layer or collection, files name the concrete responsibility
+- avoid generic file names such as `utils`, `shared`, `defs`, `index`, `config`, `render`
+- prefer explicit responsibility suffixes such as `-calculator`, `-evaluator`, `-repository`, `-resolver`, `-catalog`, `-runtime`, `-bindings`, `-formatters`
+- application orchestration lives under `js/application/`
+- pure business logic lives under `js/domain/`
+- static reference data lives under `js/catalog/`
+- locale bundles live under `js/locales/`
+- visual presentation lives under `js/ui/`
+- transversal helpers must be split by concern under `js/shared/`
+
+Examples of preferred naming:
+
+- `activity-calculator.js`
+- `target-calculator.js`
+- `profile-preset-catalog.js`
+- `menu-template-weightloss-2b.js`
+- `ui-renderer.js`
+- `ui-text-es.js`
 
 ---
 
@@ -1565,7 +1597,7 @@ This is the main UI output contract.
 
 ## 11. Connector API
 
-The connector is conceptually divided into commands and queries, but physically lives in `js/app/connector.js`.
+The connector is conceptually divided into commands and queries, but physically lives in the application layer connector module.
 
 ## 11.1 Commands
 
@@ -1696,7 +1728,7 @@ gymjan.mvp.v1.shopping_state
 
 ## 14. Empty Builders
 
-These builders must exist in `js/core/contracts.js`.
+These builders must exist in the domain contracts module.
 
 ## 14.1 Empty User Context
 
