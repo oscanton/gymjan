@@ -12,6 +12,8 @@ const NUTRIENT_KEYS = [
   "sodiumMg",
 ];
 
+const REGULAR_MEAL_KEYS = ["breakfast", "lunch", "dinner"];
+
 function createTotals() {
   return {
     kcal: 0,
@@ -95,31 +97,61 @@ function finalizeTotals(rawTotals) {
   };
 }
 
-function calculateMealSummary(contributions) {
-  const mealTotals = contributions.reduce(
+function sumNutrientTotals(contributions) {
+  return contributions.reduce(
     (totals, contribution) => addTotals(totals, contribution.nutrients),
     createTotals(),
   );
+}
 
-  return finalizeTotals(mealTotals);
+function flattenBlockContributions(blocks) {
+  return blocks.flatMap((block) => block.contributions);
+}
+
+function calculateMealSummary(contributions) {
+  return finalizeTotals(sumNutrientTotals(contributions));
+}
+
+function buildMealBlocks(blocks, foodsById) {
+  return (blocks ?? []).map((block) => ({
+    ...block,
+    contributions: (block.items ?? []).map((item) =>
+      calculateFoodContribution(item, foodsById[item.foodId]),
+    ),
+  }));
+}
+
+function sumHydrationBySource(contributions, hydrationSource) {
+  return sumBy(
+    contributions,
+    (contribution) =>
+      contribution.hydrationSource === hydrationSource ? contribution.waterMl : 0,
+  );
+}
+
+function calculateProcessingScore(contributions) {
+  const processingKcalBase = sumBy(contributions, (item) => item.nutrients.kcal);
+  const processingWeightedSum = sumBy(
+    contributions,
+    (item) => item.processingScore * item.nutrients.kcal,
+  );
+
+  return round(
+    processingKcalBase ? processingWeightedSum / processingKcalBase : 0,
+    1,
+  );
 }
 
 export function calculateNutrition(nutritionInput = {}, options = {}) {
   const foodsById = options.foodsById ?? {};
   const hydrationItems = nutritionInput.meals?.hydration?.items ?? [];
-  const mealKeys = ["breakfast", "lunch", "dinner"];
   const hydrationContributions = hydrationItems.map((item) =>
     calculateFoodContribution(item, foodsById[item.foodId]),
   );
   const regularMealContributions = Object.fromEntries(
-    mealKeys.map((mealKey) => [
+    REGULAR_MEAL_KEYS.map((mealKey) => [
       mealKey,
-      (nutritionInput.meals?.[mealKey] ?? []).map((block) => ({
-        ...block,
-        contributions: (block.items ?? []).map((item) =>
-          calculateFoodContribution(item, foodsById[item.foodId]),
-        ),
-      })),
+      buildMealBlocks(nutritionInput.meals?.[mealKey], foodsById),
     ]),
   );
 
@@ -136,46 +168,26 @@ export function calculateNutrition(nutritionInput = {}, options = {}) {
     },
   };
 
-  for (const mealKey of mealKeys) {
-    const flatContributions = regularMealContributions[mealKey].flatMap(
-      (block) => block.contributions,
+  for (const mealKey of REGULAR_MEAL_KEYS) {
+    const flatContributions = flattenBlockContributions(
+      regularMealContributions[mealKey],
     );
     mealSummaries[mealKey] = calculateMealSummary(flatContributions);
   }
 
   const allContributions = [
     ...hydrationContributions,
-    ...mealKeys.flatMap((mealKey) =>
-      regularMealContributions[mealKey].flatMap((block) => block.contributions),
+    ...REGULAR_MEAL_KEYS.flatMap((mealKey) =>
+      flattenBlockContributions(regularMealContributions[mealKey]),
     ),
   ];
-
-  const rawTotals = allContributions.reduce(
-    (totals, contribution) => addTotals(totals, contribution.nutrients),
-    createTotals(),
+  const regularContributions = REGULAR_MEAL_KEYS.flatMap((mealKey) =>
+    flattenBlockContributions(regularMealContributions[mealKey]),
   );
-  const hydrationDirectMlRaw = sumBy(
-    hydrationContributions,
-    (contribution) =>
-      contribution.hydrationSource === "water" ? contribution.waterMl : 0,
-  );
-  const hydrationOtherDrinksMlRaw = sumBy(
-    allContributions,
-    (contribution) =>
-      contribution.hydrationSource === "drink" ? contribution.waterMl : 0,
-  );
-  const hydrationFoodMlRaw = sumBy(
-    mealKeys.flatMap((mealKey) =>
-      regularMealContributions[mealKey].flatMap((block) => block.contributions),
-    ),
-    (contribution) =>
-      contribution.hydrationSource === "food" ? contribution.waterMl : 0,
-  );
-  const processingKcalBase = sumBy(allContributions, (item) => item.nutrients.kcal);
-  const processingWeightedSum = sumBy(
-    allContributions,
-    (item) => item.processingScore * item.nutrients.kcal,
-  );
+  const rawTotals = sumNutrientTotals(allContributions);
+  const hydrationDirectMlRaw = sumHydrationBySource(hydrationContributions, "water");
+  const hydrationOtherDrinksMlRaw = sumHydrationBySource(allContributions, "drink");
+  const hydrationFoodMlRaw = sumHydrationBySource(regularContributions, "food");
   const totals = finalizeTotals(rawTotals);
   const saltG = (rawTotals.sodiumMg * 2.5) / 1000;
 
@@ -196,10 +208,7 @@ export function calculateNutrition(nutritionInput = {}, options = {}) {
       hydrationTotalMl: round(
         hydrationDirectMlRaw + hydrationFoodMlRaw + hydrationOtherDrinksMlRaw,
       ),
-      processingScore: round(
-        processingKcalBase ? processingWeightedSum / processingKcalBase : 0,
-        1,
-      ),
+      processingScore: calculateProcessingScore(allContributions),
     },
   };
 }

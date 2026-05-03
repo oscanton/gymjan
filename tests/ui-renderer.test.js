@@ -25,7 +25,7 @@ test("renderApp produces core MVP sections", () => {
   assert.match(html, /Lista de la compra/);
   assert.doesNotMatch(html, /Panel de depuracion/);
   assert.match(html, /Lunes perdida de grasa/);
-  assert.doesNotMatch(html, /Martes perdida de grasa/);
-  assert.match(html, /Gym cuerpo completo/);
-  assert.doesNotMatch(html, /Dia cardio/);
+  assert.match(html, /Martes perdida de grasa/);
+  assert.match(html, /Fuerza A/);
+  assert.match(html, /Spinning/);
 });

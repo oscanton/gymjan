@@ -1,0 +1,7 @@
+id;sourceFile;labelKey;descriptionKey
+activity_descanso;routine-template-rest.js;routines.activity_descanso.label;routines.activity_descanso.description
+activity_recuperacion;routine-template-recovery.js;routines.activity_recuperacion.label;routines.activity_recuperacion.description
+activity_fuerza_a;routine-template-strength-a.js;routines.activity_fuerza_a.label;routines.activity_fuerza_a.description
+activity_fuerza_b;routine-template-strength-b.js;routines.activity_fuerza_b.label;routines.activity_fuerza_b.description
+activity_fuerza_c;routine-template-strength-c.js;routines.activity_fuerza_c.label;routines.activity_fuerza_c.description
+activity_spinning;routine-template-spinning.js;routines.activity_spinning.label;routines.activity_spinning.description

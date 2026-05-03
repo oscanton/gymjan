@@ -1,0 +1,4 @@
+id;sourceFile;labelKey;descriptionKey;sex;targetBaseKcal;fallbackKcalDeltaPct;fallbackProtein;fallbackCarbs;fallbackFat;secondaryPresetKey;saltMaxG;fiberPer1000Kcal;sugarMaxPctKcal;saturatedFatMaxPctKcal;processingMaxScore;hydrationMlPerKg;hydrationActivityMlPerMin
+weight_loss_female_1500;profile-preset-weight-loss-female-1500.js;profiles.weight_loss_female_1500.label;profiles.weight_loss_female_1500.description;female;1500;-0,18;0,35;0,35;0,3;weight_loss;5;14;0,1;0,1;3,5;35;10
+standard_male_2000;profile-preset-standard-male-2000.js;profiles.standard_male_2000.label;profiles.standard_male_2000.description;male;2000;0;0,3;0,4;0,3;standard;5;13;0,1;0,1;3,8;35;10
+muscle_gain_male_2300;profile-preset-muscle-gain-male-2300.js;profiles.muscle_gain_male_2300.label;profiles.muscle_gain_male_2300.description;male;2300;0,12;0,3;0,45;0,25;gain;5,5;15;0,12;0,11;4;38;11

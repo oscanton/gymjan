@@ -46,6 +46,14 @@ export default {
       description: "Flat bench press for upper body strength.",
       technique: "Keep shoulders packed and feet stable.",
     },
+    barbell_bench_press: {
+      description: "Barbell bench press.",
+      technique: "Keep shoulders packed and the bar path stable over the chest.",
+    },
+    dumbbell_bench_press: {
+      description: "Dumbbell bench press.",
+      technique: "Lower with control and press both sides evenly.",
+    },
     incline_press: {
       description: "Incline press for chest and shoulders.",
       technique: "Press under control and avoid bouncing.",
@@ -53,6 +61,14 @@ export default {
     barbell_row: {
       description: "Horizontal pull for back strength.",
       technique: "Brace the trunk and row toward the lower ribs.",
+    },
+    machine_high_row: {
+      description: "High row machine.",
+      technique: "Pull toward the upper torso with a stable chest position.",
+    },
+    seated_low_row: {
+      description: "Seated low row machine.",
+      technique: "Drive elbows back without losing posture.",
     },
     squat: {
       description: "Bilateral lower-body compound lift.",
@@ -65,6 +81,14 @@ export default {
     lunges: {
       description: "Split stance lower-body work.",
       technique: "Control the descent and keep balance centered.",
+    },
+    leg_extension: {
+      description: "Leg extension.",
+      technique: "Extend the knees smoothly and control the lowering phase.",
+    },
+    leg_curl: {
+      description: "Leg curl.",
+      technique: "Curl through the hamstrings without lifting the hips.",
     },
     plank: {
       description: "Isometric core hold.",
@@ -90,6 +114,10 @@ export default {
       description: "Dumbbell chest flyes.",
       technique: "Slightly bent arms, arc movement across chest.",
     },
+    chest_fly: {
+      description: "Chest fly.",
+      technique: "Open and close under control while keeping the chest stable.",
+    },
     dips: {
       description: "Bar dips for chest and triceps.",
       technique: "Lower with control, keep elbows aligned.",
@@ -101,6 +129,14 @@ export default {
     lat_pulldown: {
       description: "Lat pulldown machine.",
       technique: "Pull the bar to chest with elbows tracking wide.",
+    },
+    behind_neck_pulldown: {
+      description: "Behind-the-neck pulldown.",
+      technique: "Lower under control without forcing the neck forward.",
+    },
+    cable_pullover: {
+      description: "Cable pullover.",
+      technique: "Keep arms nearly straight and finish toward the thighs.",
     },
     dumbbell_row: {
       description: "Single-arm dumbbell row.",
@@ -114,9 +150,25 @@ export default {
       description: "Standing overhead military press.",
       technique: "Press overhead while keeping core tight.",
     },
+    machine_shoulder_press: {
+      description: "Machine shoulder press.",
+      technique: "Press smoothly without snapping the lockout.",
+    },
+    dumbbell_shoulder_press: {
+      description: "Dumbbell shoulder press.",
+      technique: "Lift and lower with control without arching the back.",
+    },
     lateral_raise: {
       description: "Dumbbell lateral raises.",
       technique: "Slightly bent arms, raise to shoulder height.",
+    },
+    front_raise: {
+      description: "Front raise.",
+      technique: "Lift to shoulder height without swinging.",
+    },
+    rear_delt_pec_deck: {
+      description: "Rear delt pec deck.",
+      technique: "Open the arms with control and keep the chest supported.",
     },
     bicep_curl: {
       description: "Dumbbell or barbell bicep curl.",
@@ -205,6 +257,10 @@ export default {
     road_cycling: {
       description: "Road cycling.",
       technique: "Maintain steady cadence and deep breathing.",
+    },
+    stationary_bike: {
+      description: "Stationary bike.",
+      technique: "Pedal at a steady cadence with relaxed shoulders.",
     },
     mountain_biking: {
       description: "Mountain biking.",
@@ -304,21 +360,29 @@ export default {
     },
   },
   routines: {
-    activity_gymfullbody_4c: {
-      label: "Full body gym",
-      description: "Full-body strength session plus mobility for Monday and Thursday.",
+    activity_descanso: {
+      label: "Rest",
+      description: "8000 steps at a fixed cadence, with no extra block.",
     },
-    activity_rest_1a: {
-      label: "Rest and mobility",
-      description: "Lower-load day with steps and recovery work for Tuesday and Friday.",
+    activity_recuperacion: {
+      label: "Recovery",
+      description: "8000 steps plus 10 minutes of stretching.",
     },
-    activity_gymlegs_3c: {
-      label: "Leg day gym",
-      description: "Lower-body dominant session with accessory recovery for Saturday.",
+    activity_fuerza_a: {
+      label: "Strength A",
+      description: "Upper-body strength day with elliptical work, running and plank.",
     },
-    activity_cardio_1a: {
-      label: "Cardio day",
-      description: "Step target plus focused cardio work for Wednesday and Sunday.",
+    activity_fuerza_b: {
+      label: "Strength B",
+      description: "Mixed session with stationary bike, upper body, legs and core.",
+    },
+    activity_fuerza_c: {
+      label: "Strength C",
+      description: "Upper-body session with stairs, biceps and rear delts.",
+    },
+    activity_spinning: {
+      label: "Spinning",
+      description: "8000 steps plus a 45-minute spinning class.",
     },
   },
 };

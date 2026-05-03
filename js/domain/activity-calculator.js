@@ -1,16 +1,8 @@
 import {
   DEFAULT_STEPS_CADENCE,
-  DEFAULT_STEPS_MET,
-  DEFAULT_STRENGTH_REST_SEC,
-  DEFAULT_STRENGTH_SEC_PER_REP,
 } from "../shared/app-constants.js";
 import { sumBy } from "../shared/collection-utils.js";
-import {
-  clamp,
-  round,
-  toNumber,
-  weightedAverage,
-} from "../shared/number-utils.js";
+import { clamp, round, toNumber, weightedAverage } from "../shared/number-utils.js";
 
 function parseReps(reps) {
   if (typeof reps === "number" && Number.isFinite(reps)) {
@@ -43,133 +35,119 @@ function parseReps(reps) {
   return (min + max) / 2;
 }
 
-function calculateSteps(stepsInput = {}, user = {}) {
-  const plannedSteps = toNumber(stepsInput.plannedSteps, 0);
-  const minDailySteps = toNumber(stepsInput.minDailySteps, 0);
-  const cadencePerMin = toNumber(stepsInput.cadencePerMin, DEFAULT_STEPS_CADENCE);
-  const weightKg = toNumber(user.weightKg, 0);
-  const stepsMinutesRaw = cadencePerMin ? plannedSteps / cadencePerMin : 0;
-  const intensityFactorRaw = clamp(
-    cadencePerMin / DEFAULT_STEPS_CADENCE,
-    0.85,
-    1.25,
-  );
-  const metRaw = DEFAULT_STEPS_MET * intensityFactorRaw;
-  const kcalRaw = (metRaw * weightKg * stepsMinutesRaw) / 60;
-
+function createPerformanceResult(minutesRaw, kcalRaw, metRaw, intensityFactorRaw) {
   return {
-    minDailySteps,
-    plannedSteps,
-    cadencePerMin,
-    minutes: round(stepsMinutesRaw, 1),
-    kcal: round(kcalRaw),
-    met: round(metRaw, 2),
-    intensityFactor: round(intensityFactorRaw, 2),
+    performance: {
+      minutes: round(minutesRaw, 1),
+      kcal: round(kcalRaw),
+      met: round(metRaw, 2),
+      intensityFactor: round(intensityFactorRaw, 2),
+    },
     _raw: {
-      minutes: stepsMinutesRaw,
+      minutes: minutesRaw,
       kcal: kcalRaw,
-      met: metRaw,
+      adjustedMet: metRaw,
       intensityFactor: intensityFactorRaw,
     },
   };
 }
 
-function calculateStrengthItem(item, exercise, weightKg) {
-  const sets = toNumber(item.sets, 0);
-  const avgReps = parseReps(item.reps);
-  const secPerRepResolved =
-    item.secPerRep ?? exercise.defaultSecPerRep ?? DEFAULT_STRENGTH_SEC_PER_REP;
-  const restSecResolved =
-    item.restSec ?? exercise.defaultRestSec ?? DEFAULT_STRENGTH_REST_SEC;
-  const workMinutesRaw = (sets * avgReps * secPerRepResolved) / 60;
-  const restMinutesRaw = (Math.max(0, sets - 1) * restSecResolved) / 60;
+function calculateStepsItem(item, exercise, weightKg) {
+  const minSteps = toNumber(item.prescription?.min, 0);
+  const cadencePerMin = toNumber(
+    item.prescription?.cadencePerMin,
+    DEFAULT_STEPS_CADENCE,
+  );
+  // Steps are a user-facing input; performance uses the duration model.
+  const durationSec = cadencePerMin ? (minSteps / cadencePerMin) * 60 : 0;
 
-  let loadFactor = 1;
-  if (exercise.relativeLoad && weightKg && item.loadKg) {
-    const loadFactorRaw = (item.loadKg / weightKg) / exercise.relativeLoad;
-    loadFactor = clamp(loadFactorRaw, 0.7, 1.6);
+  return calculateDurationItem(
+    {
+      ...item,
+      prescription: {
+        ...item.prescription,
+        durationSec,
+        cadencePerMin,
+      },
+    },
+    exercise,
+    weightKg,
+  );
+}
+
+function calculateStrengthItem(item, exercise, weightKg) {
+  const sets = toNumber(item.prescription?.sets, 0);
+  const avgReps = parseReps(item.prescription?.reps);
+  const secPerRepResolved = item.prescription?.secPerRep ?? null;
+  const restSecResolved = item.prescription?.restSec ?? null;
+  const workMinutesRaw = (sets * avgReps * toNumber(secPerRepResolved, 0)) / 60;
+  const restMinutesRaw =
+    (Math.max(0, sets - 1) * toNumber(restSecResolved, 0)) / 60;
+
+  let loadFactorRaw = 1;
+  if (exercise.relativeLoad && weightKg && item.prescription?.loadKg) {
+    loadFactorRaw = clamp(
+      (item.prescription.loadKg / weightKg) / exercise.relativeLoad,
+      0.7,
+      1.6,
+    );
   }
 
-  const rirFactor =
-    item.rir === null || item.rir === undefined
+  const rirFactorRaw =
+    item.prescription?.rir === null || item.prescription?.rir === undefined
       ? 1
-      : clamp(1.2 - item.rir * 0.06, 0.75, 1.2);
+      : clamp(1.2 - item.prescription.rir * 0.06, 0.75, 1.2);
+  const intensityFactorRaw = loadFactorRaw * rirFactorRaw;
   const workKcalRaw =
-    ((exercise.met * weightKg * workMinutesRaw) / 60) * loadFactor * rirFactor;
+    ((exercise.met * weightKg * workMinutesRaw) / 60) * intensityFactorRaw;
   const restKcalRaw = (1.5 * weightKg * restMinutesRaw) / 60;
-  const totalMinutesRaw = workMinutesRaw + restMinutesRaw;
-  const totalKcalRaw = workKcalRaw + restKcalRaw;
-  const intensityFactor = round(loadFactor * rirFactor, 2);
+  const minutesRaw = workMinutesRaw + restMinutesRaw;
+  const kcalRaw = workKcalRaw + restKcalRaw;
 
   return {
-    exerciseId: item.exerciseId,
-    resolvedType: "strength",
-    kcal: round(totalKcalRaw),
-    minutes: round(totalMinutesRaw, 1),
-    met: round(exercise.met, 2),
-    intensityFactor,
-    loadKg: item.loadKg,
-    sets: item.sets,
-    reps: item.reps,
-    rir: item.rir,
-    secPerRepResolved,
-    restSecResolved,
-    _raw: {
-      minutes: totalMinutesRaw,
-      kcal: totalKcalRaw,
-      adjustedMet: exercise.met * intensityFactor,
-      intensityFactor: loadFactor * rirFactor,
+    ...createPerformanceResult(minutesRaw, kcalRaw, exercise.met, intensityFactorRaw),
+    prescriptionResolved: {
+      secPerRep: secPerRepResolved,
+      restSec: restSecResolved,
     },
   };
 }
 
-function calculateNonStrengthItem(item, exercise, weightKg) {
-  const sets = toNumber(item.sets, 0);
-  const avgReps = parseReps(item.reps);
-  const secPerRepResolved =
-    item.secPerRep ?? exercise.defaultSecPerRep ?? DEFAULT_STRENGTH_SEC_PER_REP;
-  const durationMinutesRaw = item.durationSec
-    ? item.durationSec / 60
-    : (sets * avgReps * secPerRepResolved) / 60;
-  const cadenceFactorRaw =
-    item.cadencePerMin && exercise.cadenceBase
-      ? clamp(item.cadencePerMin / exercise.cadenceBase, 0.8, 1.3)
+function calculateDurationItem(item, exercise, weightKg) {
+  const sets = toNumber(item.prescription?.sets, 0);
+  const avgReps = parseReps(item.prescription?.reps);
+  const secPerRepResolved = item.prescription?.secPerRep ?? null;
+  const minutesRaw = item.prescription?.durationSec
+    ? item.prescription.durationSec / 60
+    : (sets * avgReps * toNumber(secPerRepResolved, 0)) / 60;
+  const intensityFactorRaw =
+    item.prescription?.cadencePerMin && exercise.cadenceBase
+      ? clamp(item.prescription.cadencePerMin / exercise.cadenceBase, 0.8, 1.3)
       : 1;
-  const kcalRaw =
-    ((exercise.met * weightKg * durationMinutesRaw) / 60) * cadenceFactorRaw;
-  const intensityFactor = round(cadenceFactorRaw, 2);
+  const kcalRaw = ((exercise.met * weightKg * minutesRaw) / 60) * intensityFactorRaw;
 
-  return {
-    exerciseId: item.exerciseId,
-    resolvedType: exercise.type ?? "other",
-    kcal: round(kcalRaw),
-    minutes: round(durationMinutesRaw, 1),
-    met: round(exercise.met, 2),
-    intensityFactor,
-    durationSec: item.durationSec,
-    cadencePerMin: item.cadencePerMin,
-    sets: item.sets,
-    reps: item.reps,
-    _raw: {
-      minutes: durationMinutesRaw,
-      kcal: kcalRaw,
-      adjustedMet: exercise.met * cadenceFactorRaw,
-      intensityFactor: cadenceFactorRaw,
-    },
-  };
+  return createPerformanceResult(minutesRaw, kcalRaw, exercise.met, intensityFactorRaw);
 }
 
-function calculateActivityItem(item, exerciseById, weightKg) {
+function calculateActivityItem(sectionKey, item, exerciseById, weightKg) {
   const exercise = exerciseById[item.exerciseId];
+  const metric = item.prescription?.metric ?? null;
 
   if (!exercise) {
     return {
       exerciseId: item.exerciseId,
+      sectionKey,
       resolvedType: "other",
-      kcal: 0,
-      minutes: 0,
-      met: 0,
-      intensityFactor: 0,
+      resolvedFocus: "general",
+      metric,
+      prescription: item.prescription,
+      notes: item.notes ?? null,
+      performance: {
+        minutes: 0,
+        kcal: 0,
+        met: 0,
+        intensityFactor: 0,
+      },
       _raw: {
         minutes: 0,
         kcal: 0,
@@ -179,22 +157,37 @@ function calculateActivityItem(item, exerciseById, weightKg) {
     };
   }
 
-  if (exercise.type === "strength") {
-    return calculateStrengthItem(item, exercise, weightKg);
+  let result;
+  if (metric === "steps") {
+    result = calculateStepsItem(item, exercise, weightKg);
+  } else if (metric === "duration") {
+    result = calculateDurationItem(item, exercise, weightKg);
+  } else {
+    result = calculateStrengthItem(item, exercise, weightKg);
   }
 
-  return calculateNonStrengthItem(item, exercise, weightKg);
+  return {
+    exerciseId: item.exerciseId,
+    sectionKey,
+    resolvedType: exercise.type ?? "other",
+    resolvedFocus: exercise.focus ?? "general",
+    metric,
+    prescription: item.prescription,
+    notes: item.notes ?? null,
+    ...result,
+  };
 }
 
-function calculateBlock(items, exerciseById, weightKg) {
-  const derivedItems = items.map((item) =>
-    calculateActivityItem(item, exerciseById, weightKg),
+function calculateSection(section, exerciseById, weightKg) {
+  const items = (section.items ?? []).map((item) =>
+    calculateActivityItem(section.sectionKey, item, exerciseById, weightKg),
   );
-  const totalKcalRaw = sumBy(derivedItems, (item) => item._raw.kcal);
-  const totalMinutesRaw = sumBy(derivedItems, (item) => item._raw.minutes);
+  const totalKcalRaw = sumBy(items, (item) => item._raw.kcal);
+  const totalMinutesRaw = sumBy(items, (item) => item._raw.minutes);
 
   return {
-    items: derivedItems,
+    sectionKey: section.sectionKey,
+    items,
     totalKcal: round(totalKcalRaw),
     totalMinutes: round(totalMinutesRaw, 1),
     _raw: {
@@ -204,85 +197,83 @@ function calculateBlock(items, exerciseById, weightKg) {
   };
 }
 
+function summarizeSteps(sections) {
+  const stepItems = sections.flatMap((section) =>
+    section.items.filter((item) => item.metric === "steps"),
+  );
+  const minDailySteps = sumBy(stepItems, (item) => toNumber(item.prescription?.min, 0));
+  const totalMinutesRaw = sumBy(stepItems, (item) => item._raw.minutes);
+  const totalKcalRaw = sumBy(stepItems, (item) => item._raw.kcal);
+  const cadenceWeight = sumBy(stepItems, (item) => toNumber(item.prescription?.min, 0));
+  const cadenceWeightedSum = sumBy(
+    stepItems,
+    (item) =>
+      toNumber(item.prescription?.cadencePerMin, DEFAULT_STEPS_CADENCE) *
+      toNumber(item.prescription?.min, 0),
+  );
+  const metAvgRaw = weightedAverage(
+    stepItems.map((item) => ({
+      value: item._raw.adjustedMet,
+      weight: item._raw.minutes,
+    })),
+    0,
+  );
+  const intensityAvgRaw = weightedAverage(
+    stepItems.map((item) => ({
+      value: item._raw.intensityFactor,
+      weight: item._raw.minutes,
+    })),
+    0,
+  );
+
+  return {
+    minDailySteps: round(minDailySteps),
+    cadencePerMin: round(
+      cadenceWeight ? cadenceWeightedSum / cadenceWeight : DEFAULT_STEPS_CADENCE,
+    ),
+    minutes: round(totalMinutesRaw, 1),
+    kcal: round(totalKcalRaw),
+    met: round(metAvgRaw, 2),
+    intensityFactor: round(intensityAvgRaw, 2),
+  };
+}
+
 export function calculateActivity(activityInput = {}, options = {}) {
   const user = options.user ?? {};
   const exerciseById = options.exerciseById ?? {};
   const basalKcalRaw = toNumber(user.bmr, 0) * 1.2;
-  const steps = calculateSteps(activityInput.steps, user);
-  const gym = calculateBlock(activityInput.gym?.items ?? [], exerciseById, user.weightKg);
-  const extra = calculateBlock(
-    activityInput.extra?.items ?? [],
-    exerciseById,
-    user.weightKg,
+  const sections = (activityInput.sections ?? []).map((section) =>
+    calculateSection(section, exerciseById, user.weightKg),
   );
-
-  const activityKcalRaw = steps._raw.kcal + gym._raw.totalKcal + extra._raw.totalKcal;
-  const activityMinutesRaw =
-    steps._raw.minutes + gym._raw.totalMinutes + extra._raw.totalMinutes;
+  const allItems = sections.flatMap((section) => section.items);
+  const activityKcalRaw = sumBy(sections, (section) => section._raw.totalKcal);
+  const activityMinutesRaw = sumBy(sections, (section) => section._raw.totalMinutes);
   const totalKcalRaw = basalKcalRaw + activityKcalRaw;
-
   const metAvgRaw = weightedAverage(
-    [
-      {
-        value: steps._raw.met,
-        weight: steps._raw.minutes,
-      },
-      ...gym.items.map((item) => ({
-        value: item._raw.adjustedMet,
-        weight: item._raw.minutes,
-      })),
-      ...extra.items.map((item) => ({
-        value: item._raw.adjustedMet,
-        weight: item._raw.minutes,
-      })),
-    ],
+    allItems.map((item) => ({
+      value: item._raw.adjustedMet,
+      weight: item._raw.minutes,
+    })),
     0,
   );
-
   const intensityAvgRaw = weightedAverage(
-    [
-      {
-        value: steps._raw.intensityFactor,
-        weight: steps._raw.minutes,
-      },
-      ...gym.items.map((item) => ({
-        value: item._raw.intensityFactor,
-        weight: item._raw.minutes,
-      })),
-      ...extra.items.map((item) => ({
-        value: item._raw.intensityFactor,
-        weight: item._raw.minutes,
-      })),
-    ],
+    allItems.map((item) => ({
+      value: item._raw.intensityFactor,
+      weight: item._raw.minutes,
+    })),
     0,
   );
 
   return {
     dayKey: activityInput.dayKey ?? "monday",
-    steps: {
-      minDailySteps: steps.minDailySteps,
-      plannedSteps: steps.plannedSteps,
-      cadencePerMin: steps.cadencePerMin,
-      minutes: steps.minutes,
-      kcal: steps.kcal,
-      met: steps.met,
-      intensityFactor: steps.intensityFactor,
-    },
-    gym: {
-      items: gym.items.map(({ _raw, ...item }) => item),
-      totalKcal: gym.totalKcal,
-      totalMinutes: gym.totalMinutes,
-    },
-    extra: {
-      items: extra.items.map(({ _raw, ...item }) => item),
-      totalKcal: extra.totalKcal,
-      totalMinutes: extra.totalMinutes,
-    },
+    sections: sections.map(({ _raw, items, ...section }) => ({
+      ...section,
+      items: items.map(({ _raw: itemRaw, ...item }) => item),
+    })),
+    walking: summarizeSteps(sections),
     activity: {
       basalKcal: round(basalKcalRaw),
-      stepsKcal: steps.kcal,
-      gymKcal: gym.totalKcal,
-      extraKcal: extra.totalKcal,
+      exerciseKcal: round(activityKcalRaw),
       activityKcal: round(activityKcalRaw),
       totalKcal: round(totalKcalRaw),
       activityMinutes: round(activityMinutesRaw, 1),

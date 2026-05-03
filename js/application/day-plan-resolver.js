@@ -10,6 +10,7 @@ import {
   PROFILES_DB,
 } from "../catalog/profile-presets/profile-preset-catalog.js";
 import {
+  LEGACY_ROUTINE_TEMPLATE_ID_MAP,
   ROUTINE_TEMPLATE_BY_ID,
 } from "../catalog/routine-templates/routine-template-catalog.js";
 import { DAY_KEYS, MEAL_KEYS } from "../shared/app-constants.js";
@@ -55,10 +56,10 @@ export function createSelectionUpdate(currentSelection, payload) {
         Object.prototype.hasOwnProperty.call(source, "menuTemplateId")
           ? source.menuTemplateId
           : nextSelection[dayKey].menuTemplateId,
-      activityTemplateId:
-        Object.prototype.hasOwnProperty.call(source, "activityTemplateId")
-          ? source.activityTemplateId
-          : nextSelection[dayKey].activityTemplateId,
+      routineTemplateId:
+        Object.prototype.hasOwnProperty.call(source, "routineTemplateId")
+          ? source.routineTemplateId
+          : nextSelection[dayKey].routineTemplateId,
     };
   });
 
@@ -66,6 +67,14 @@ export function createSelectionUpdate(currentSelection, payload) {
 }
 
 export function createDayPlanResolver(state) {
+  function resolveRoutineTemplateId(routineTemplateId) {
+    if (!routineTemplateId) {
+      return null;
+    }
+
+    return LEGACY_ROUTINE_TEMPLATE_ID_MAP[routineTemplateId] ?? routineTemplateId;
+  }
+
   function getResolvedProfileRecord() {
     return PROFILE_BY_ID[state.userContext.profileId] ?? PROFILES_DB[0];
   }
@@ -75,24 +84,25 @@ export function createDayPlanResolver(state) {
     const basePlan = profile.weeklyPlan?.[dayKey] ?? {};
     const selection = state.dayTemplateSelection?.[dayKey] ?? {};
     const menuTemplateId = selection.menuTemplateId ?? basePlan.menuTemplateId ?? null;
-    const activityTemplateId =
-      selection.activityTemplateId ?? basePlan.activityTemplateId ?? null;
+    const routineTemplateId = resolveRoutineTemplateId(
+      selection.routineTemplateId ?? basePlan.routineTemplateId ?? null,
+    );
 
     return {
       dayKey,
       menuTemplateId,
-      activityTemplateId,
+      routineTemplateId,
       targetTuning: basePlan.targetTuning ?? profile.fallbackTargetTuning,
       menuTemplate: menuTemplateId ? MENU_TEMPLATE_BY_ID[menuTemplateId] : null,
-      activityTemplate: activityTemplateId
-        ? ROUTINE_TEMPLATE_BY_ID[activityTemplateId]
+      routineTemplate: routineTemplateId
+        ? ROUTINE_TEMPLATE_BY_ID[routineTemplateId]
         : null,
       profile,
     };
   }
 
   function getBaseDayActivity(dayKey) {
-    return buildDayActivityFromTemplate(dayKey, getDayPlan(dayKey).activityTemplate);
+    return buildDayActivityFromTemplate(dayKey, getDayPlan(dayKey).routineTemplate);
   }
 
   function getBaseDayNutrition(dayKey) {
@@ -114,7 +124,7 @@ export function createDayPlanResolver(state) {
   function createSelectionSnapshot(dayPlan) {
     return {
       menuTemplateId: dayPlan.menuTemplateId,
-      activityTemplateId: dayPlan.activityTemplateId,
+      routineTemplateId: dayPlan.routineTemplateId,
     };
   }
 

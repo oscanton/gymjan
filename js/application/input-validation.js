@@ -1,14 +1,14 @@
 import { EXERCISE_BY_ID } from "../catalog/exercise-catalog.js";
-import {
-  PROFILE_BY_ID,
-} from "../catalog/profile-presets/profile-preset-catalog.js";
+import { PROFILE_BY_ID } from "../catalog/profile-presets/profile-preset-catalog.js";
 import { isRatiosSumValid } from "../domain/target-calculator.js";
 import { forEachNutritionItem } from "./day-plan-resolver.js";
 
-const ACTIVITY_ITEM_BLOCK_KEYS = ["gym", "extra"];
-
 export function createMessage(code, path, messageKey) {
   return { code, path, messageKey };
+}
+
+function isMissingNumber(value) {
+  return value === null || value === undefined || !Number.isFinite(Number(value));
 }
 
 export function createInputValidation(options) {
@@ -63,39 +63,61 @@ export function createInputValidation(options) {
     const errors = [];
     const warnings = [];
 
-    if (activityInput.steps.plannedSteps < activityInput.steps.minDailySteps) {
-      errors.push(
-        createMessage(
-          "planned_steps_below_min",
-          "steps.plannedSteps",
-          "errors.planned_steps_below_min",
-        ),
-      );
-    }
-
-    for (const blockKey of ACTIVITY_ITEM_BLOCK_KEYS) {
-      activityInput[blockKey].items.forEach((item, index) => {
+    (activityInput.sections ?? []).forEach((section, sectionIndex) => {
+      (section.items ?? []).forEach((item, itemIndex) => {
         if (!EXERCISE_BY_ID[item.exerciseId]) {
           errors.push(
             createMessage(
               "invalid_exercise",
-              `${blockKey}.items.${index}.exerciseId`,
+              `sections.${sectionIndex}.items.${itemIndex}.exerciseId`,
               "errors.invalid_exercise",
             ),
           );
         }
 
-        if (item.rir !== null && (item.rir < 0 || item.rir > 5)) {
+        if (item.prescription?.metric === "strength") {
+          if (
+            isMissingNumber(item.prescription.secPerRep) ||
+            Number(item.prescription.secPerRep) <= 0
+          ) {
+            errors.push(
+              createMessage(
+                "invalid_sec_per_rep",
+                `sections.${sectionIndex}.items.${itemIndex}.prescription.secPerRep`,
+                "errors.invalid_sec_per_rep",
+              ),
+            );
+          }
+
+          if (
+            isMissingNumber(item.prescription.restSec) ||
+            Number(item.prescription.restSec) < 0
+          ) {
+            errors.push(
+              createMessage(
+                "invalid_rest_sec",
+                `sections.${sectionIndex}.items.${itemIndex}.prescription.restSec`,
+                "errors.invalid_rest_sec",
+              ),
+            );
+          }
+        }
+
+        if (
+          item.prescription?.rir !== null &&
+          item.prescription?.rir !== undefined &&
+          (item.prescription.rir < 0 || item.prescription.rir > 5)
+        ) {
           warnings.push(
             createMessage(
               "unexpected_rir",
-              `${blockKey}.items.${index}.rir`,
+              `sections.${sectionIndex}.items.${itemIndex}.prescription.rir`,
               "warnings.unexpected_rir",
             ),
           );
         }
       });
-    }
+    });
 
     return { errors, warnings };
   }

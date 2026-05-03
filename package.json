@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "catalog:csv": "node tests/catalog-csv/cli.js",
     "start": "python -m http.server 8000 --bind 0.0.0.0",
     "test": "node --test"
   }

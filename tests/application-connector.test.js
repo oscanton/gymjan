@@ -43,9 +43,31 @@ test("contracts normalize user context", () => {
 
 test("contracts normalize day activity and nutrition", () => {
   const activity = normalizeDayActivityInput("monday", {
-    steps: { minDailySteps: "8000", plannedSteps: "9000", cadencePerMin: "100" },
-    gym: { items: [{ exerciseId: "bench_press", sets: "4", reps: "8" }] },
-    extra: { items: [] },
+    sections: [
+      {
+        sectionKey: "walking",
+        items: [
+          {
+            exerciseId: "walk",
+            prescription: {
+              metric: "steps",
+              min: "8000",
+              cadencePerMin: "100",
+            },
+          },
+        ],
+      },
+      {
+        sectionKey: "gym",
+        items: [
+          {
+            exerciseId: "bench_press",
+            prescription: { metric: "strength", sets: "4", reps: "8" },
+          },
+        ],
+      },
+      { sectionKey: "extra", items: [] },
+    ],
   });
   const nutrition = normalizeDayNutritionInput("monday", {
     meals: {
@@ -62,8 +84,8 @@ test("contracts normalize day activity and nutrition", () => {
     },
   });
 
-  assert.equal(activity.steps.plannedSteps, 9000);
-  assert.equal(activity.gym.items[0].sets, 4);
+  assert.equal(activity.sections[0].items[0].prescription.min, 8000);
+  assert.equal(activity.sections[1].items[0].prescription.sets, 4);
   assert.equal(nutrition.meals.hydration.items[0].amount, 1000);
   assert.equal(nutrition.meals.breakfast[0].items[0].foodId, "oats");
 });
@@ -95,7 +117,11 @@ test("connector resolves profile and calculateDay shape", () => {
   const day = connector.calculateDay("monday");
 
   assert.equal(profile.id, "standard_male_2000");
-  assert.equal(profile.weeklyPlan.monday.menuTemplateId, "menu_standard_1a");
+  assert.equal(profile.weeklyPlan.monday.menuTemplateId, "menu_monday_weightloss");
+  assert.equal(
+    profile.weeklyPlan.monday.routineTemplateId,
+    "activity_fuerza_a",
+  );
   assert.equal(day.dayKey, "monday");
   assert.ok(day.input);
   assert.ok(day.derived.activity.activity);
@@ -113,6 +139,10 @@ test("weight loss profile resolves day-specific menu templates", () => {
 
   assert.equal(profile.weeklyPlan.monday.menuTemplateId, "menu_monday_weightloss");
   assert.equal(profile.weeklyPlan.sunday.menuTemplateId, "menu_sunday_weightloss");
+  assert.equal(
+    profile.weeklyPlan.sunday.routineTemplateId,
+    "activity_descanso",
+  );
 });
 
 test("connector loads and saves editable day state", () => {
@@ -124,16 +154,64 @@ test("connector loads and saves editable day state", () => {
   });
   connector.saveDayActivity("monday", {
     dayKey: "monday",
-    steps: { minDailySteps: 7000, plannedSteps: 9000, cadencePerMin: 100 },
-    gym: { items: [] },
-    extra: { items: [] },
+    sections: [
+      {
+        sectionKey: "walking",
+        items: [
+          {
+            exerciseId: "walk",
+            prescription: {
+              metric: "steps",
+              min: 7000,
+              cadencePerMin: 100,
+            },
+          },
+        ],
+      },
+      { sectionKey: "gym", items: [] },
+      { sectionKey: "extra", items: [] },
+    ],
   });
 
   const reloaded = createConnector({ provider });
   const input = reloaded.getDayInput("monday");
 
-  assert.equal(input.activity.steps.minDailySteps, 7000);
-  assert.equal(input.activity.steps.plannedSteps, 9000);
+  assert.equal(input.activity.sections[0].items[0].prescription.min, 7000);
+  assert.equal(input.activity.sections[0].items[0].prescription.cadencePerMin, 100);
+});
+
+test("connector validates strength timing as routine-owned data", () => {
+  const connector = createConnector();
+  const response = connector.saveDayActivity("monday", {
+    dayKey: "monday",
+    sections: [
+      { sectionKey: "walking", items: [] },
+      {
+        sectionKey: "gym",
+        items: [
+          {
+            exerciseId: "bench_press",
+            prescription: {
+              metric: "strength",
+              sets: 3,
+              reps: "8",
+              loadKg: 40,
+              rir: 2,
+              secPerRep: null,
+              restSec: null,
+            },
+          },
+        ],
+      },
+      { sectionKey: "extra", items: [] },
+    ],
+  });
+
+  assert.equal(response.ok, false);
+  assert.deepEqual(
+    response.errors.map((error) => error.code),
+    ["invalid_sec_per_rep", "invalid_rest_sec"],
+  );
 });
 
 test("connector getAppState returns aggregated app read model", () => {

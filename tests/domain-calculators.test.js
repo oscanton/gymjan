@@ -10,6 +10,13 @@ import { calculateScores } from "../js/domain/score-calculator.js";
 import { calculateTargets } from "../js/domain/target-calculator.js";
 import { calculateUser } from "../js/domain/user-calculator.js";
 
+function createActivityInput(sections) {
+  return {
+    dayKey: "monday",
+    sections,
+  };
+}
+
 test("user core calculates BMI and BMR", () => {
   const user = calculateUser({
     weightKg: 80,
@@ -30,18 +37,29 @@ test("activity core calculates steps kcal", () => {
     sex: "male",
   });
   const activity = calculateActivity(
-    {
-      dayKey: "monday",
-      steps: { minDailySteps: 8000, plannedSteps: 10000, cadencePerMin: 100 },
-      gym: { items: [] },
-      extra: { items: [] },
-    },
+    createActivityInput([
+      {
+        sectionKey: "walking",
+        items: [
+          {
+            exerciseId: "walk",
+            prescription: {
+              metric: "steps",
+              min: 8000,
+              cadencePerMin: 100,
+            },
+          },
+        ],
+      },
+      { sectionKey: "gym", items: [] },
+      { sectionKey: "extra", items: [] },
+    ]),
     { user, exerciseById: EXERCISE_BY_ID },
   );
 
-  assert.equal(activity.steps.minutes, 100);
-  assert.equal(activity.steps.kcal, 467);
-  assert.equal(activity.activity.activityKcal, 467);
+  assert.equal(activity.walking.minutes, 80);
+  assert.equal(activity.walking.kcal, 373);
+  assert.equal(activity.activity.activityKcal, 373);
 });
 
 test("activity core calculates strength kcal", () => {
@@ -52,29 +70,32 @@ test("activity core calculates strength kcal", () => {
     sex: "male",
   });
   const activity = calculateActivity(
-    {
-      dayKey: "monday",
-      steps: { minDailySteps: 0, plannedSteps: 0, cadencePerMin: 100 },
-      gym: {
+    createActivityInput([
+      { sectionKey: "walking", items: [] },
+      {
+        sectionKey: "gym",
         items: [
           {
             exerciseId: "bench_press",
-            sets: 4,
-            reps: "6-10",
-            loadKg: 40,
-            rir: 2,
-            secPerRep: null,
-            restSec: null,
+            prescription: {
+              metric: "strength",
+              sets: 4,
+              reps: "6-10",
+              loadKg: 40,
+              rir: 2,
+              secPerRep: 4,
+              restSec: 120,
+            },
           },
         ],
       },
-      extra: { items: [] },
-    },
+      { sectionKey: "extra", items: [] },
+    ]),
     { user, exerciseById: EXERCISE_BY_ID },
   );
 
-  assert.equal(activity.gym.items[0].minutes, 8.1);
-  assert.equal(activity.gym.items[0].kcal, 32);
+  assert.equal(activity.sections[1].items[0].performance.minutes, 8.1);
+  assert.equal(activity.sections[1].items[0].performance.kcal, 32);
 });
 
 test("activity core calculates cardio kcal", () => {
@@ -85,31 +106,28 @@ test("activity core calculates cardio kcal", () => {
     sex: "male",
   });
   const activity = calculateActivity(
-    {
-      dayKey: "monday",
-      steps: { minDailySteps: 0, plannedSteps: 0, cadencePerMin: 100 },
-      gym: { items: [] },
-      extra: {
+    createActivityInput([
+      { sectionKey: "walking", items: [] },
+      { sectionKey: "gym", items: [] },
+      {
+        sectionKey: "extra",
         items: [
           {
             exerciseId: "spinning",
-            durationSec: 1800,
-            cadencePerMin: 90,
-            sets: null,
-            reps: null,
-            loadKg: null,
-            rir: null,
-            secPerRep: null,
-            restSec: null,
+            prescription: {
+              metric: "duration",
+              durationSec: 1800,
+              cadencePerMin: 90,
+            },
           },
         ],
       },
-    },
+    ]),
     { user, exerciseById: EXERCISE_BY_ID },
   );
 
-  assert.equal(activity.extra.items[0].minutes, 30);
-  assert.equal(activity.extra.items[0].kcal, 340);
+  assert.equal(activity.sections[2].items[0].performance.minutes, 30);
+  assert.equal(activity.sections[2].items[0].performance.kcal, 340);
 });
 
 test("nutrition core calculates totals and hydration", () => {
@@ -151,12 +169,23 @@ test("targets core resolves macro and hydration targets", () => {
     sex: "male",
   });
   const activity = calculateActivity(
-    {
-      dayKey: "monday",
-      steps: { minDailySteps: 8000, plannedSteps: 10000, cadencePerMin: 100 },
-      gym: { items: [] },
-      extra: { items: [] },
-    },
+    createActivityInput([
+      {
+        sectionKey: "walking",
+        items: [
+          {
+            exerciseId: "walk",
+            prescription: {
+              metric: "steps",
+              min: 8000,
+              cadencePerMin: 100,
+            },
+          },
+        ],
+      },
+      { sectionKey: "gym", items: [] },
+      { sectionKey: "extra", items: [] },
+    ]),
     { user, exerciseById: EXERCISE_BY_ID },
   );
   const targets = calculateTargets({
@@ -172,9 +201,7 @@ test("targets core resolves macro and hydration targets", () => {
         sugarMaxPctKcal: 0.1,
         saturatedFatMaxPctKcal: 0.1,
         processingMaxScore: 3.8,
-        hydrationBaseMl: 2200,
-        hydrationMinMlPerKg: 30,
-        hydrationMaxMlPerKg: 36,
+        hydrationMlPerKg: 35,
         hydrationActivityMlPerMin: 10,
       },
     },
@@ -183,12 +210,13 @@ test("targets core resolves macro and hydration targets", () => {
     activityTargetKcal: activity.activity.activityKcal,
   });
 
-  assert.equal(targets.kcal, 2573);
-  assert.equal(targets.protein, 193);
-  assert.equal(targets.carbs, 257);
-  assert.equal(targets.fat, 86);
-  assert.equal(targets.hydration.minMl, 3400);
-  assert.equal(targets.hydration.maxMl, 3880);
+  assert.equal(targets.kcal, 2479);
+  assert.equal(targets.protein, 186);
+  assert.equal(targets.carbs, 248);
+  assert.equal(targets.fat, 83);
+  assert.equal(targets.hydration.ml, 3600);
+  assert.equal(targets.hydration.baseMl, 2800);
+  assert.equal(targets.hydration.extraMl, 800);
 });
 
 test("assessment core assigns statuses", () => {
@@ -220,11 +248,11 @@ test("assessment core assigns statuses", () => {
         saltMaxG: 5,
         processingMaxScore: 3,
       },
-      hydration: { minMl: 2000, maxMl: 2500 },
+      hydration: { ml: 2200 },
       activity: { targetKcal: 400, metTarget: 5, intensityTarget: 1 },
     },
     activity: {
-      steps: { plannedSteps: 9000, minDailySteps: 8000 },
+      walking: { minDailySteps: 8000 },
       activity: { activityKcal: 420, metAvg: 4.5, intensityAvg: 0.95 },
     },
   });
@@ -233,7 +261,7 @@ test("assessment core assigns statuses", () => {
   assert.equal(assessment.nutritionChecks.fiber.status, "danger");
   assert.equal(assessment.nutritionChecks.sugar.status, "danger");
   assert.equal(assessment.nutritionChecks.hydration.status, "warning");
-  assert.equal(assessment.activityChecks.steps.status, "warning");
+  assert.equal(assessment.activityChecks.activityKcal.status, "ok");
 });
 
 test("scores core calculates nutrition, activity and total score", () => {
@@ -252,7 +280,7 @@ test("scores core calculates nutrition, activity and total score", () => {
       },
     },
     activity: {
-      steps: { plannedSteps: 8000, minDailySteps: 8000 },
+      walking: { minDailySteps: 8000 },
       activity: { activityKcal: 400, metAvg: 5, intensityAvg: 1 },
     },
     targets: {

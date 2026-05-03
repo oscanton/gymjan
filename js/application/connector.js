@@ -124,7 +124,7 @@ export function createConnector(options = {}) {
           state.dayNutrition[dayKey] = dayPlanResolver.getBaseDayNutrition(dayKey);
         }
 
-        if (Object.prototype.hasOwnProperty.call(source, "activityTemplateId")) {
+        if (Object.prototype.hasOwnProperty.call(source, "routineTemplateId")) {
           state.dayActivity[dayKey] = dayPlanResolver.getBaseDayActivity(dayKey);
         }
       });

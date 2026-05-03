@@ -1,50 +1,12 @@
-function blankToNull(value) {
-  return value === "" ? null : value;
-}
-
-function copyInput(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
-function getDefaultActivityItem(blockKey) {
-  return blockKey === "extra"
-    ? {
-        exerciseId: "spinning",
-        sets: null,
-        reps: null,
-        loadKg: null,
-        rir: null,
-        durationSec: 1200,
-        cadencePerMin: 90,
-        secPerRep: null,
-        restSec: null,
-        notes: null,
-      }
-    : {
-        exerciseId: "bench_press",
-        sets: 3,
-        reps: "8",
-        loadKg: null,
-        rir: 2,
-        durationSec: null,
-        cadencePerMin: null,
-        secPerRep: null,
-        restSec: null,
-        notes: null,
-      };
-}
-
-function getDefaultMealBlock() {
-  return {
-    recipeId: null,
-    labelKey: null,
-    items: [{ foodId: "rice", amount: 100 }],
-  };
-}
-
-function getDefaultHydrationItem() {
-  return { foodId: "water", amount: 500 };
-}
+import {
+  blankToNull,
+  copyInput,
+  createDefaultPrescription,
+  getActivitySection,
+  getDefaultActivityItem,
+  getDefaultHydrationItem,
+  getDefaultMealBlock,
+} from "./ui-bindings-helpers.js";
 
 export function bindUi(root, options) {
   const { connector, screens, getViewModel, rerender } = options;
@@ -74,76 +36,145 @@ export function bindUi(root, options) {
     connector.saveDayNutrition(currentDayKey(), dayInput.nutrition);
   }
 
-  function handleAction(action, target) {
-    switch (action) {
-      case "locale":
-        commit(() => connector.setLocale(target.value));
-        return;
-      case "user-context": {
-        const field = target.dataset.field;
-        commit(() =>
-          connector.saveUserContext({
-            user: {
-              [field]: field === "sex" ? target.value : blankToNull(target.value),
-            },
-          }),
-        );
+  function updateActivityItemField(target) {
+    updateCurrentDayActivity((activity) => {
+      const section = getActivitySection(activity, target.dataset.sectionKey);
+      const item = section.items[Number(target.dataset.index)];
+      const field = target.dataset.field;
+
+      if (field === "exerciseId") {
+        item.exerciseId = blankToNull(target.value);
         return;
       }
-      case "profile":
-        commit(() => connector.saveUserContext({ profileId: target.value || null }));
-        return;
-      case "day-template":
-        commit(() =>
-          connector.saveDayTemplateSelection({
-            dayKey: currentDayKey(),
-            [target.dataset.templateField]: target.value || null,
-          }),
-        );
-        return;
-      case "steps": {
-        commit(() =>
-          updateCurrentDayActivity((activity) => {
-            activity.steps[target.dataset.field] = blankToNull(target.value);
-          }),
-        );
+
+      if (field === "metric") {
+        item.prescription = createDefaultPrescription(blankToNull(target.value));
         return;
       }
-      case "activity-item-field": {
-        commit(() =>
-          updateCurrentDayActivity((activity) => {
-            const item =
-              activity[target.dataset.blockKey].items[Number(target.dataset.index)];
-            item[target.dataset.field] = blankToNull(target.value);
-          }),
+
+      item.prescription[field] = blankToNull(target.value);
+    });
+  }
+
+  function updateHydrationItemField(target) {
+    updateCurrentDayNutrition((nutrition) => {
+      const item = nutrition.meals.hydration.items[Number(target.dataset.index)];
+      item[target.dataset.field] = blankToNull(target.value);
+    });
+  }
+
+  function updateMealItemField(target) {
+    updateCurrentDayNutrition((nutrition) => {
+      const item =
+        nutrition.meals[target.dataset.mealKey][
+          Number(target.dataset.blockIndex)
+        ].items[Number(target.dataset.itemIndex)];
+      item[target.dataset.field] = blankToNull(target.value);
+    });
+  }
+
+  const fieldActionHandlers = {
+    locale(target) {
+      connector.setLocale(target.value);
+    },
+    "user-context"(target) {
+      const field = target.dataset.field;
+      connector.saveUserContext({
+        user: {
+          [field]: field === "sex" ? target.value : blankToNull(target.value),
+        },
+      });
+    },
+    profile(target) {
+      connector.saveUserContext({ profileId: target.value || null });
+    },
+    "day-template"(target) {
+      connector.saveDayTemplateSelection({
+        dayKey: currentDayKey(),
+        [target.dataset.templateField]: target.value || null,
+      });
+    },
+    "activity-item-field"(target) {
+      updateActivityItemField(target);
+    },
+    "hydration-item-field"(target) {
+      updateHydrationItemField(target);
+    },
+    "meal-item-field"(target) {
+      updateMealItemField(target);
+    },
+    "shopping-check"(target) {
+      connector.toggleShoppingItem(target.dataset.itemId, target.checked);
+    },
+  };
+
+  const clickActionHandlers = {
+    "select-day"(target) {
+      screens.setCurrentDayKey(target.dataset.dayKey);
+    },
+    "reset-day"() {
+      connector.resetDay(currentDayKey());
+    },
+    "reset-week"() {
+      connector.resetWeekEditableState();
+    },
+    "add-activity-item"(target) {
+      updateCurrentDayActivity((activity) => {
+        const section = getActivitySection(activity, target.dataset.sectionKey);
+        section.items.push(getDefaultActivityItem(target.dataset.sectionKey));
+      });
+    },
+    "remove-activity-item"(target) {
+      updateCurrentDayActivity((activity) => {
+        const section = getActivitySection(activity, target.dataset.sectionKey);
+        section.items.splice(Number(target.dataset.index), 1);
+      });
+    },
+    "add-hydration-item"() {
+      updateCurrentDayNutrition((nutrition) => {
+        nutrition.meals.hydration.items.push(getDefaultHydrationItem());
+      });
+    },
+    "remove-hydration-item"(target) {
+      updateCurrentDayNutrition((nutrition) => {
+        nutrition.meals.hydration.items.splice(Number(target.dataset.index), 1);
+      });
+    },
+    "add-meal-block"(target) {
+      updateCurrentDayNutrition((nutrition) => {
+        nutrition.meals[target.dataset.mealKey].push(getDefaultMealBlock());
+      });
+    },
+    "remove-meal-block"(target) {
+      updateCurrentDayNutrition((nutrition) => {
+        nutrition.meals[target.dataset.mealKey].splice(
+          Number(target.dataset.blockIndex),
+          1,
         );
-        return;
-      }
-      case "hydration-item-field": {
-        commit(() =>
-          updateCurrentDayNutrition((nutrition) => {
-            const item = nutrition.meals.hydration.items[Number(target.dataset.index)];
-            item[target.dataset.field] = blankToNull(target.value);
-          }),
-        );
-        return;
-      }
-      case "meal-item-field": {
-        commit(() =>
-          updateCurrentDayNutrition((nutrition) => {
-            const item =
-              nutrition.meals[target.dataset.mealKey][
-                Number(target.dataset.blockIndex)
-              ].items[Number(target.dataset.itemIndex)];
-            item[target.dataset.field] = blankToNull(target.value);
-          }),
-        );
-        return;
-      }
-      case "shopping-check":
-        commit(() => connector.toggleShoppingItem(target.dataset.itemId, target.checked));
-        return;
-      default:
+      });
+    },
+    "add-meal-item"(target) {
+      updateCurrentDayNutrition((nutrition) => {
+        nutrition.meals[target.dataset.mealKey][
+          Number(target.dataset.blockIndex)
+        ].items.push({ foodId: "rice", amount: 100 });
+      });
+    },
+    "remove-meal-item"(target) {
+      updateCurrentDayNutrition((nutrition) => {
+        nutrition.meals[target.dataset.mealKey][
+          Number(target.dataset.blockIndex)
+        ].items.splice(Number(target.dataset.itemIndex), 1);
+      });
+    },
+  };
+
+  function handleFieldAction(target) {
+    const action = target.dataset.action;
+    const handler = action ? fieldActionHandlers[action] : null;
+
+    if (handler) {
+      commit(() => handler(target));
     }
   }
 
@@ -156,7 +187,7 @@ export function bindUi(root, options) {
 
     const action = target.dataset.action;
     if (action) {
-      handleAction(action, target);
+      handleFieldAction(target);
     }
   });
 
@@ -169,7 +200,7 @@ export function bindUi(root, options) {
 
     const action = target.dataset.action;
     if (action) {
-      handleAction(action, target);
+      handleFieldAction(target);
     }
   });
 
@@ -190,93 +221,10 @@ export function bindUi(root, options) {
       return;
     }
 
-    switch (action) {
-      case "select-day":
-        commit(() => screens.setCurrentDayKey(actionTarget.dataset.dayKey));
-        return;
-      case "reset-day":
-        commit(() => connector.resetDay(currentDayKey()));
-        return;
-      case "reset-week":
-        commit(() => connector.resetWeekEditableState());
-        return;
-      case "add-activity-item": {
-        commit(() =>
-          updateCurrentDayActivity((activity) => {
-            activity[actionTarget.dataset.blockKey].items.push(
-              getDefaultActivityItem(actionTarget.dataset.blockKey),
-            );
-          }),
-        );
-        return;
-      }
-      case "remove-activity-item": {
-        commit(() =>
-          updateCurrentDayActivity((activity) => {
-            activity[actionTarget.dataset.blockKey].items.splice(
-              Number(actionTarget.dataset.index),
-              1,
-            );
-          }),
-        );
-        return;
-      }
-      case "add-hydration-item": {
-        commit(() =>
-          updateCurrentDayNutrition((nutrition) => {
-            nutrition.meals.hydration.items.push(getDefaultHydrationItem());
-          }),
-        );
-        return;
-      }
-      case "remove-hydration-item": {
-        commit(() =>
-          updateCurrentDayNutrition((nutrition) => {
-            nutrition.meals.hydration.items.splice(Number(actionTarget.dataset.index), 1);
-          }),
-        );
-        return;
-      }
-      case "add-meal-block": {
-        commit(() =>
-          updateCurrentDayNutrition((nutrition) => {
-            nutrition.meals[actionTarget.dataset.mealKey].push(getDefaultMealBlock());
-          }),
-        );
-        return;
-      }
-      case "remove-meal-block": {
-        commit(() =>
-          updateCurrentDayNutrition((nutrition) => {
-            nutrition.meals[actionTarget.dataset.mealKey].splice(
-              Number(actionTarget.dataset.blockIndex),
-              1,
-            );
-          }),
-        );
-        return;
-      }
-      case "add-meal-item": {
-        commit(() =>
-          updateCurrentDayNutrition((nutrition) => {
-            nutrition.meals[actionTarget.dataset.mealKey][
-              Number(actionTarget.dataset.blockIndex)
-            ].items.push({ foodId: "rice", amount: 100 });
-          }),
-        );
-        return;
-      }
-      case "remove-meal-item": {
-        commit(() =>
-          updateCurrentDayNutrition((nutrition) => {
-            nutrition.meals[actionTarget.dataset.mealKey][
-              Number(actionTarget.dataset.blockIndex)
-            ].items.splice(Number(actionTarget.dataset.itemIndex), 1);
-          }),
-        );
-        return;
-      }
-      default:
+    const handler = clickActionHandlers[action];
+
+    if (handler) {
+      commit(() => handler(actionTarget));
     }
   });
 }

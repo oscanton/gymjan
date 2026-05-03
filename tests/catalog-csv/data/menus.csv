@@ -1,0 +1,11 @@
+id;sourceFile;labelKey;descriptionKey
+menu_weightloss_2b;menu-template-weightloss-2b.js;menus.menu_weightloss_2b.label;menus.menu_weightloss_2b.description
+menu_standard_1a;menu-template-standard-1a.js;menus.menu_standard_1a.label;menus.menu_standard_1a.description
+menu_gain_1a;menu-template-gain-1a.js;menus.menu_gain_1a.label;menus.menu_gain_1a.description
+menu_monday_weightloss;menu-template-monday-weightloss.js;menus.menu_monday_weightloss.label;menus.menu_monday_weightloss.description
+menu_tuesday_weightloss;menu-template-tuesday-weightloss.js;menus.menu_tuesday_weightloss.label;menus.menu_tuesday_weightloss.description
+menu_wednesday_weightloss;menu-template-wednesday-weightloss.js;menus.menu_wednesday_weightloss.label;menus.menu_wednesday_weightloss.description
+menu_thursday_weightloss;menu-template-thursday-weightloss.js;menus.menu_thursday_weightloss.label;menus.menu_thursday_weightloss.description
+menu_friday_weightloss;menu-template-friday-weightloss.js;menus.menu_friday_weightloss.label;menus.menu_friday_weightloss.description
+menu_saturday_weightloss;menu-template-saturday-weightloss.js;menus.menu_saturday_weightloss.label;menus.menu_saturday_weightloss.description
+menu_sunday_weightloss;menu-template-sunday-weightloss.js;menus.menu_sunday_weightloss.label;menus.menu_sunday_weightloss.description

@@ -1,0 +1,126 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+left to right direction
+
+package "Infra" #FFF4E5 {
+  [index.html] as InfraShell #FFFDF7
+  [manifest.json + sw.js] as InfraRuntime #FFFDF7
+}
+
+package "Bootstrap" #E8F4FD {
+  [app-bootstrap.js] as BootstrapEntry #F7FBFF
+}
+
+package "UI" #EAF7EA {
+  [ui-renderer.js] as UiRender #F8FFF8
+  [ui-bindings.js] as UiEvents #F8FFF8
+  [ui-formatters.js] as UiFormatting #F8FFF8
+  [screen-state.js] as UiState #F8FFF8
+}
+
+package "Application" #EDEBFF {
+  [connector.js] as AppFacade #FAF9FF
+  [read-models.js] as AppReadModels #FAF9FF
+  [day-plan-resolver.js] as AppResolver #FAF9FF
+  [input-validation.js] as AppValidation #FAF9FF
+  [state-repository.js\n+ local-storage-gateway.js] as AppPersistence #FAF9FF
+  [i18n-runtime.js\n+ pwa-registration.js\n+ application-config.js] as AppRuntime #FAF9FF
+}
+
+package "Domain" #FFEAF2 {
+  [calculators + evaluators] as DomainLogic #FFF8FB
+  [domain-contracts.js] as DomainContracts #FFF8FB
+}
+
+package "Catalog" #FFF8D9 {
+  [food + exercise catalogs] as BaseCatalogs #FFFEF2
+  [menu/profile/routine catalogs] as TemplateCatalogs #FFFEF2
+  [seed modules] as CatalogSeeds #FFFEF2
+}
+
+package "Locales" #E8FBFF {
+  [ui-text-*.js\ncontent-text-*.js] as LocaleBundles #F7FEFF
+}
+
+package "Shared" #F1F1F1 {
+  [app-constants.js] as SharedConstants #FCFCFC
+  [number / collection /\nobject / id utils] as SharedUtilities #FCFCFC
+}
+
+InfraShell --> BootstrapEntry
+InfraRuntime --> BootstrapEntry
+
+BootstrapEntry --> UiRender
+BootstrapEntry --> UiEvents
+BootstrapEntry --> UiFormatting
+BootstrapEntry --> UiState
+BootstrapEntry --> AppFacade
+BootstrapEntry --> AppRuntime
+
+UiEvents --> AppFacade
+UiRender --> SharedConstants
+UiState --> SharedConstants
+
+AppFacade --> AppReadModels
+AppFacade --> AppResolver
+AppFacade --> AppValidation
+AppFacade --> AppPersistence
+AppFacade --> AppRuntime
+AppFacade --> DomainContracts
+AppFacade --> BaseCatalogs
+AppFacade --> TemplateCatalogs
+AppFacade --> SharedConstants
+AppFacade --> SharedUtilities
+
+AppReadModels --> DomainLogic
+AppReadModels --> AppResolver
+AppReadModels --> BaseCatalogs
+AppReadModels --> SharedConstants
+AppReadModels --> SharedUtilities
+
+AppResolver --> DomainContracts
+AppResolver --> TemplateCatalogs
+AppResolver --> SharedConstants
+AppResolver --> SharedUtilities
+
+AppValidation --> DomainLogic
+AppValidation --> AppResolver
+AppValidation --> BaseCatalogs
+AppValidation --> TemplateCatalogs
+
+AppPersistence --> DomainContracts
+AppPersistence --> SharedConstants
+
+AppRuntime --> LocaleBundles
+AppRuntime --> InfraRuntime
+
+DomainLogic --> SharedConstants
+DomainLogic --> SharedUtilities
+DomainContracts --> SharedConstants
+DomainContracts --> SharedUtilities
+
+TemplateCatalogs --> CatalogSeeds
+TemplateCatalogs --> SharedUtilities
+BaseCatalogs --> SharedUtilities
+
+note right of AppFacade
+Single entry point for the UI.
+Coordinates persistence,
+validation and read models.
+end note
+
+note bottom of DomainLogic
+Pure business rules.
+No dependency on UI
+or application orchestration.
+end note
+
+note bottom of CatalogSeeds
+Static reference data and template presets.
+end note
+
+@enduml

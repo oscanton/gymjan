@@ -1,0 +1,210 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+left to right direction
+
+package "Infra" #FFF4E5 {
+  [index.html] as IndexHtml #FFFDF7
+  [manifest.json] as ManifestJson #FFFDF7
+  [sw.js] as ServiceWorker #FFFDF7
+}
+
+package "Bootstrap" #E8F4FD {
+  [js/app-bootstrap.js] as AppBootstrap #F7FBFF
+}
+
+package "UI" #EAF7EA {
+  [js/ui/ui-renderer.js] as UiRenderer #F8FFF8
+  [js/ui/ui-bindings.js] as UiBindings #F8FFF8
+  [js/ui/ui-formatters.js] as UiFormatters #F8FFF8
+  [js/ui/screen-state.js] as UiScreenState #F8FFF8
+}
+
+package "Application" #EDEBFF {
+  [js/application/connector.js] as AppConnector #FAF9FF
+  [js/application/read-models.js] as AppReadModels #FAF9FF
+  [js/application/day-plan-resolver.js] as DayPlanResolver #FAF9FF
+  [js/application/input-validation.js] as InputValidation #FAF9FF
+  [js/application/state-repository.js] as StateRepository #FAF9FF
+  [js/application/local-storage-gateway.js] as LocalStorageGateway #FAF9FF
+  [js/application/i18n-runtime.js] as I18nRuntime #FAF9FF
+  [js/application/pwa-registration.js] as PwaRegistration #FAF9FF
+  [js/application/application-config.js] as ApplicationConfig #FAF9FF
+}
+
+package "Domain" #FFEAF2 {
+  [js/domain/user-calculator.js] as UserCalculator #FFF8FB
+  [js/domain/activity-calculator.js] as ActivityCalculator #FFF8FB
+  [js/domain/nutrition-calculator.js] as NutritionCalculator #FFF8FB
+  [js/domain/target-calculator.js] as TargetCalculator #FFF8FB
+  [js/domain/assessment-evaluator.js] as AssessmentEvaluator #FFF8FB
+  [js/domain/score-calculator.js] as ScoreCalculator #FFF8FB
+  [js/domain/domain-contracts.js] as DomainContracts #FFF8FB
+}
+
+package "Catalog" #FFF8D9 {
+  [js/catalog/food-catalog.js] as FoodCatalog #FFFEF2
+  [js/catalog/exercise-catalog.js] as ExerciseCatalog #FFFEF2
+  [js/catalog/menu-templates/menu-template-catalog.js] as MenuTemplateCatalog #FFFEF2
+  [js/catalog/profile-presets/profile-preset-catalog.js] as ProfilePresetCatalog #FFFEF2
+  [js/catalog/profile-presets/profile-preset-builders.js] as ProfilePresetBuilders #FFFEF2
+  [js/catalog/routine-templates/routine-template-catalog.js] as RoutineTemplateCatalog #FFFEF2
+}
+
+package "Locales" #E8FBFF {
+  [js/locales/ui-text-es.js] as UiTextEs #F7FEFF
+  [js/locales/ui-text-en.js] as UiTextEn #F7FEFF
+  [js/locales/content-text-es.js] as ContentTextEs #F7FEFF
+  [js/locales/content-text-en.js] as ContentTextEn #F7FEFF
+}
+
+package "Shared" #F1F1F1 {
+  [js/shared/app-constants.js] as AppConstants #FCFCFC
+  [js/shared/number-utils.js] as NumberUtils #FCFCFC
+  [js/shared/collection-utils.js] as CollectionUtils #FCFCFC
+  [js/shared/object-utils.js] as ObjectUtils #FCFCFC
+  [js/shared/id-utils.js] as IdUtils #FCFCFC
+}
+
+package "Catalog Seeds" #FFFDEB {
+  [menu-template seed modules] as MenuTemplateSeeds #FFFFF8
+  [profile-preset seed modules] as ProfilePresetSeeds #FFFFF8
+  [routine-template seed modules] as RoutineTemplateSeeds #FFFFF8
+}
+
+IndexHtml --> AppBootstrap
+ManifestJson --> ServiceWorker
+ServiceWorker --> AppBootstrap
+ServiceWorker --> AppConnector
+ServiceWorker --> I18nRuntime
+ServiceWorker --> UiRenderer
+
+AppBootstrap --> AppConnector
+AppBootstrap --> I18nRuntime
+AppBootstrap --> PwaRegistration
+AppBootstrap --> ApplicationConfig
+AppBootstrap --> UiRenderer
+AppBootstrap --> UiBindings
+AppBootstrap --> UiFormatters
+AppBootstrap --> UiScreenState
+
+UiBindings --> AppConnector
+UiRenderer --> AppConstants
+UiScreenState --> AppConstants
+
+PwaRegistration --> ServiceWorker
+I18nRuntime --> UiTextEs
+I18nRuntime --> UiTextEn
+I18nRuntime --> ContentTextEs
+I18nRuntime --> ContentTextEn
+
+AppConnector --> ApplicationConfig
+AppConnector --> LocalStorageGateway
+AppConnector --> StateRepository
+AppConnector --> DayPlanResolver
+AppConnector --> InputValidation
+AppConnector --> AppReadModels
+
+AppConnector --> FoodCatalog
+AppConnector --> ExerciseCatalog
+AppConnector --> MenuTemplateCatalog
+AppConnector --> ProfilePresetCatalog
+AppConnector --> RoutineTemplateCatalog
+
+AppConnector --> DomainContracts
+
+AppConnector --> AppConstants
+AppConnector --> CollectionUtils
+AppConnector --> ObjectUtils
+AppConnector --> IdUtils
+
+StateRepository --> DomainContracts
+StateRepository --> AppConstants
+
+LocalStorageGateway --> ApplicationConfig
+LocalStorageGateway --> AppConstants
+
+DayPlanResolver --> DomainContracts
+DayPlanResolver --> MenuTemplateCatalog
+DayPlanResolver --> ProfilePresetCatalog
+DayPlanResolver --> RoutineTemplateCatalog
+DayPlanResolver --> AppConstants
+DayPlanResolver --> ObjectUtils
+
+InputValidation --> ExerciseCatalog
+InputValidation --> ProfilePresetCatalog
+InputValidation --> TargetCalculator
+InputValidation --> DayPlanResolver
+
+AppReadModels --> UserCalculator
+AppReadModels --> ActivityCalculator
+AppReadModels --> NutritionCalculator
+AppReadModels --> TargetCalculator
+AppReadModels --> AssessmentEvaluator
+AppReadModels --> ScoreCalculator
+AppReadModels --> ExerciseCatalog
+AppReadModels --> AppConstants
+AppReadModels --> NumberUtils
+AppReadModels --> ObjectUtils
+AppReadModels --> DayPlanResolver
+
+UserCalculator --> NumberUtils
+
+ActivityCalculator --> AppConstants
+ActivityCalculator --> CollectionUtils
+ActivityCalculator --> NumberUtils
+
+NutritionCalculator --> CollectionUtils
+NutritionCalculator --> NumberUtils
+
+TargetCalculator --> AppConstants
+TargetCalculator --> NumberUtils
+TargetCalculator --> ObjectUtils
+
+AssessmentEvaluator --> NumberUtils
+ScoreCalculator --> NumberUtils
+
+DomainContracts --> AppConstants
+DomainContracts --> NumberUtils
+DomainContracts --> ObjectUtils
+
+FoodCatalog --> CollectionUtils
+ExerciseCatalog --> CollectionUtils
+
+MenuTemplateCatalog --> MenuTemplateSeeds
+MenuTemplateCatalog --> CollectionUtils
+
+ProfilePresetCatalog --> ProfilePresetSeeds
+ProfilePresetCatalog --> CollectionUtils
+ProfilePresetCatalog --> ProfilePresetBuilders
+
+ProfilePresetBuilders --> AppConstants
+
+RoutineTemplateCatalog --> RoutineTemplateSeeds
+RoutineTemplateCatalog --> CollectionUtils
+
+note right of AppConnector
+Facade of the application layer.
+UI should enter here,
+not into domain.
+end note
+
+note bottom of DomainContracts
+Domain stays pure:
+no dependency on UI
+or Application.
+end note
+
+note bottom of MenuTemplateCatalog
+Seed modules represented here:
+menu-template-weightloss-2b.js
+menu-template-standard-1a.js
+menu-template-gain-1a.js
+menu-template-monday-weightloss.js
+...
+end note
+
+@enduml

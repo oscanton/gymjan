@@ -2,6 +2,12 @@ import { SCORE_TARGETS } from "../shared/app-constants.js";
 import { round, toNumber } from "../shared/number-utils.js";
 import { mergeDefined } from "../shared/object-utils.js";
 
+const DEFAULT_MACRO_RATIOS = {
+  protein: 0.3,
+  carbs: 0.4,
+  fat: 0.3,
+};
+
 function normalizeRatios(ratios, fallbackRatios) {
   const source = {
     protein: toNumber(ratios?.protein, fallbackRatios?.protein ?? 0),
@@ -18,6 +24,14 @@ function normalizeRatios(ratios, fallbackRatios) {
     protein: source.protein / total,
     carbs: source.carbs / total,
     fat: source.fat / total,
+  };
+}
+
+function calculateMacroTargets(targetKcal, macroRatios) {
+  return {
+    protein: Math.round((targetKcal * macroRatios.protein) / 4),
+    carbs: Math.round((targetKcal * macroRatios.carbs) / 4),
+    fat: Math.round((targetKcal * macroRatios.fat) / 9),
   };
 }
 
@@ -46,6 +60,55 @@ function resolveProfileTuning(profileFallback = {}, dayTargetTuning = {}) {
   };
 }
 
+function resolveMacroRatios(resolvedProfileTuning, userAdjustments) {
+  const baseMacroRatios = resolvedProfileTuning.macroRatios ?? DEFAULT_MACRO_RATIOS;
+  const effectiveMacroInput = userAdjustments.macroRatios
+    ? { ...baseMacroRatios, ...userAdjustments.macroRatios }
+    : baseMacroRatios;
+
+  return normalizeRatios(effectiveMacroInput, baseMacroRatios);
+}
+
+function resolveSecondary(resolvedProfileTuning, userAdjustments) {
+  return mergeDefined(
+    resolvedProfileTuning.secondary ?? {},
+    userAdjustments.secondary ?? {},
+  );
+}
+
+function calculateHydrationTargets(user, secondary, activityMinutes) {
+  const baseMl =
+    toNumber(user.weightKg, 0) * toNumber(secondary.hydrationMlPerKg, 0);
+  const extraMl = Math.round(
+    activityMinutes * toNumber(secondary.hydrationActivityMlPerMin, 0),
+  );
+
+  return {
+    ml: Math.round(baseMl + extraMl),
+    baseMl: Math.round(baseMl),
+    extraMl,
+  };
+}
+
+function calculateSecondaryTargets(targetKcal, secondary) {
+  return {
+    saltMaxG: round(toNumber(secondary.saltMaxG, 0), 2),
+    fiberMinG: round(
+      (targetKcal / 1000) * toNumber(secondary.fiberPer1000Kcal, 0),
+      1,
+    ),
+    sugarMaxG: round(
+      (targetKcal * toNumber(secondary.sugarMaxPctKcal, 0)) / 4,
+      1,
+    ),
+    saturatedFatMaxG: round(
+      (targetKcal * toNumber(secondary.saturatedFatMaxPctKcal, 0)) / 9,
+      1,
+    ),
+    processingMaxScore: round(toNumber(secondary.processingMaxScore, 0), 1),
+  };
+}
+
 export function calculateTargets(options = {}) {
   const dayKey = options.dayKey ?? "monday";
   const user = options.user ?? {};
@@ -63,32 +126,11 @@ export function calculateTargets(options = {}) {
   const targetKcal = Math.round(
     tdee * (1 + profileKcalDeltaPct) * (1 + userKcalDeltaPct),
   );
-  const baseMacroRatios = resolvedProfileTuning.macroRatios ?? {
-    protein: 0.3,
-    carbs: 0.4,
-    fat: 0.3,
-  };
-  const effectiveMacroInput = userAdjustments.macroRatios
-    ? { ...baseMacroRatios, ...userAdjustments.macroRatios }
-    : baseMacroRatios;
-  const macroRatios = normalizeRatios(effectiveMacroInput, baseMacroRatios);
-  const profileSecondary = resolvedProfileTuning.secondary ?? {};
-  const secondary = mergeDefined(profileSecondary, userAdjustments.secondary ?? {});
-  const protein = Math.round((targetKcal * macroRatios.protein) / 4);
-  const carbs = Math.round((targetKcal * macroRatios.carbs) / 4);
-  const fat = Math.round((targetKcal * macroRatios.fat) / 9);
-  const hydrationBaseMinByWeight =
-    toNumber(user.weightKg, 0) * toNumber(secondary.hydrationMinMlPerKg, 0);
-  const hydrationBaseMaxByWeight =
-    toNumber(user.weightKg, 0) * toNumber(secondary.hydrationMaxMlPerKg, 0);
-  const hydrationBaseMin = Math.max(
-    toNumber(secondary.hydrationBaseMl, 0),
-    hydrationBaseMinByWeight,
-  );
-  const hydrationBaseMax = Math.max(hydrationBaseMin, hydrationBaseMaxByWeight);
-  const hydrationExtraMl = Math.round(
-    activityMinutes * toNumber(secondary.hydrationActivityMlPerMin, 0),
-  );
+  const macroRatios = resolveMacroRatios(resolvedProfileTuning, userAdjustments);
+  const secondary = resolveSecondary(resolvedProfileTuning, userAdjustments);
+  const macroTargets = calculateMacroTargets(targetKcal, macroRatios);
+  const hydrationTargets = calculateHydrationTargets(user, secondary, activityMinutes);
+  const secondaryTargets = calculateSecondaryTargets(targetKcal, secondary);
 
   return {
     dayKey,
@@ -98,32 +140,11 @@ export function calculateTargets(options = {}) {
       carbs: round(macroRatios.carbs, 2),
       fat: round(macroRatios.fat, 2),
     },
-    protein,
-    carbs,
-    fat,
-    secondary: {
-      saltMaxG: round(toNumber(secondary.saltMaxG, 0), 2),
-      fiberMinG: round(
-        (targetKcal / 1000) * toNumber(secondary.fiberPer1000Kcal, 0),
-        1,
-      ),
-      sugarMaxG: round(
-        (targetKcal * toNumber(secondary.sugarMaxPctKcal, 0)) / 4,
-        1,
-      ),
-      saturatedFatMaxG: round(
-        (targetKcal * toNumber(secondary.saturatedFatMaxPctKcal, 0)) / 9,
-        1,
-      ),
-      processingMaxScore: round(toNumber(secondary.processingMaxScore, 0), 1),
-    },
-    hydration: {
-      minMl: Math.round(hydrationBaseMin + hydrationExtraMl),
-      maxMl: Math.round(hydrationBaseMax + hydrationExtraMl),
-      baseMinMl: Math.round(hydrationBaseMin),
-      baseMaxMl: Math.round(hydrationBaseMax),
-      extraMl: hydrationExtraMl,
-    },
+    protein: macroTargets.protein,
+    carbs: macroTargets.carbs,
+    fat: macroTargets.fat,
+    secondary: secondaryTargets,
+    hydration: hydrationTargets,
     activity: {
       targetKcal: round(toNumber(options.activityTargetKcal, 0)),
       metTarget: SCORE_TARGETS.met,

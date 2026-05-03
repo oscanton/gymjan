@@ -1,4 +1,9 @@
-import { DAY_KEYS, DEFAULT_LOCALE, MEAL_KEYS } from "../shared/app-constants.js";
+import {
+  ACTIVITY_SECTION_KEYS,
+  DAY_KEYS,
+  DEFAULT_LOCALE,
+  MEAL_KEYS,
+} from "../shared/app-constants.js";
 import { toNumber, toNullableNumber } from "../shared/number-utils.js";
 import { clone } from "../shared/object-utils.js";
 
@@ -38,7 +43,7 @@ export function createEmptyDayTemplateSelection() {
       dayKey,
       {
         menuTemplateId: null,
-        activityTemplateId: null,
+        routineTemplateId: null,
       },
     ]),
   );
@@ -47,17 +52,10 @@ export function createEmptyDayTemplateSelection() {
 export function createEmptyDayActivityInput(dayKey = "monday") {
   return {
     dayKey,
-    steps: {
-      minDailySteps: 8000,
-      plannedSteps: 8000,
-      cadencePerMin: 100,
-    },
-    gym: {
+    sections: ACTIVITY_SECTION_KEYS.map((sectionKey) => ({
+      sectionKey,
       items: [],
-    },
-    extra: {
-      items: [],
-    },
+    })),
   };
 }
 
@@ -99,9 +97,7 @@ function normalizeSecondary(secondary) {
     sugarMaxPctKcal: toNullableNumber(secondary.sugarMaxPctKcal),
     saturatedFatMaxPctKcal: toNullableNumber(secondary.saturatedFatMaxPctKcal),
     processingMaxScore: toNullableNumber(secondary.processingMaxScore),
-    hydrationBaseMl: toNullableNumber(secondary.hydrationBaseMl),
-    hydrationMinMlPerKg: toNullableNumber(secondary.hydrationMinMlPerKg),
-    hydrationMaxMlPerKg: toNullableNumber(secondary.hydrationMaxMlPerKg),
+    hydrationMlPerKg: toNullableNumber(secondary.hydrationMlPerKg),
     hydrationActivityMlPerMin: toNullableNumber(
       secondary.hydrationActivityMlPerMin,
     ),
@@ -120,27 +116,117 @@ function normalizeMacroRatios(ratios) {
   };
 }
 
+function inferActivityMetric(source = {}) {
+  if (typeof source.metric === "string" && source.metric) {
+    return source.metric;
+  }
+
+  if (
+    source.min !== undefined ||
+    source.target !== undefined ||
+    source.minDailySteps !== undefined ||
+    source.plannedSteps !== undefined
+  ) {
+    return "steps";
+  }
+
+  if (source.durationSec !== undefined) {
+    return "duration";
+  }
+
+  return "strength";
+}
+
+function createEmptyActivityPrescription(metric = null) {
+  return {
+    metric,
+    min: null,
+    durationSec: null,
+    cadencePerMin: null,
+    sets: null,
+    reps: null,
+    loadKg: null,
+    rir: null,
+    secPerRep: null,
+    restSec: null,
+  };
+}
+
+function normalizeActivityPrescription(source = {}) {
+  const raw =
+    source.prescription && typeof source.prescription === "object"
+      ? source.prescription
+      : source;
+  const metric = inferActivityMetric({ ...source, ...raw });
+  const prescription = createEmptyActivityPrescription(metric);
+
+  if (metric === "steps") {
+    prescription.min = toNullableNumber(
+      raw.min ?? raw.minDailySteps ?? raw.target ?? raw.plannedSteps,
+    );
+    prescription.cadencePerMin = toNullableNumber(raw.cadencePerMin);
+    return prescription;
+  }
+
+  if (metric === "duration") {
+    prescription.durationSec = toNullableNumber(raw.durationSec);
+    prescription.cadencePerMin = toNullableNumber(raw.cadencePerMin);
+    return prescription;
+  }
+
+  prescription.sets = toNullableNumber(raw.sets);
+  prescription.reps =
+    typeof raw.reps === "string" ? raw.reps : toNullableNumber(raw.reps);
+  prescription.loadKg = toNullableNumber(raw.loadKg);
+  prescription.rir = toNullableNumber(raw.rir);
+  prescription.secPerRep = toNullableNumber(raw.secPerRep);
+  prescription.restSec = toNullableNumber(raw.restSec);
+
+  return prescription;
+}
+
 function normalizeActivityItem(item = {}) {
   return {
     exerciseId: item.exerciseId ?? null,
-    sets: toNullableNumber(item.sets),
-    reps: typeof item.reps === "string" ? item.reps : toNullableNumber(item.reps),
-    loadKg: toNullableNumber(item.loadKg),
-    rir: toNullableNumber(item.rir),
-    durationSec: toNullableNumber(item.durationSec),
-    cadencePerMin: toNullableNumber(item.cadencePerMin),
-    secPerRep: toNullableNumber(item.secPerRep),
-    restSec: toNullableNumber(item.restSec),
-    notes: item.notes ?? null,
+    prescription: normalizeActivityPrescription(item),
+    notes: item.notes ?? item.notesKey ?? null,
   };
+}
+
+function normalizeActivitySection(section = {}, fallbackSectionKey = "extra") {
+  return {
+    sectionKey: section.sectionKey ?? fallbackSectionKey,
+    items: Array.isArray(section.items) ? section.items.map(normalizeActivityItem) : [],
+  };
+}
+
+function mergeActivitySections(sections = []) {
+  const baseSections = new Map(
+    ACTIVITY_SECTION_KEYS.map((sectionKey) => [sectionKey, { sectionKey, items: [] }]),
+  );
+  const customSections = [];
+
+  sections.forEach((section) => {
+    const normalized = normalizeActivitySection(section);
+
+    if (ACTIVITY_SECTION_KEYS.includes(normalized.sectionKey)) {
+      baseSections.set(normalized.sectionKey, normalized);
+      return;
+    }
+
+    customSections.push(normalized);
+  });
+
+  return [
+    ...ACTIVITY_SECTION_KEYS.map((sectionKey) => baseSections.get(sectionKey)),
+    ...customSections,
+  ];
 }
 
 export function buildDayActivityFromTemplate(dayKey, template) {
   return normalizeDayActivityInput(dayKey, {
     dayKey,
-    steps: template?.steps,
-    gym: template?.gym,
-    extra: template?.extra,
+    sections: template?.sections,
   });
 }
 
@@ -175,34 +261,15 @@ export function normalizeUserTargetAdjustments(payload = {}) {
 }
 
 export function normalizeDayActivityInput(dayKey = "monday", payload = {}) {
-  const base = createEmptyDayActivityInput(dayKey);
   const resolvedDayKey = payload.dayKey ?? dayKey;
-  const gymItems = Array.isArray(payload.gym?.items)
-    ? payload.gym.items.map(normalizeActivityItem)
-    : [];
-  const extraItems = Array.isArray(payload.extra?.items)
-    ? payload.extra.items.map(normalizeActivityItem)
-    : [];
+  const base = createEmptyDayActivityInput(dayKey);
+  const sections = Array.isArray(payload.sections)
+    ? mergeActivitySections(payload.sections)
+    : clone(base.sections);
 
   return {
     dayKey: resolvedDayKey,
-    steps: {
-      minDailySteps: toNumber(
-        payload.steps?.minDailySteps,
-        base.steps.minDailySteps,
-      ),
-      plannedSteps: toNumber(payload.steps?.plannedSteps, base.steps.plannedSteps),
-      cadencePerMin: toNumber(
-        payload.steps?.cadencePerMin,
-        base.steps.cadencePerMin,
-      ),
-    },
-    gym: {
-      items: gymItems,
-    },
-    extra: {
-      items: extraItems,
-    },
+    sections,
   };
 }
 
@@ -265,4 +332,4 @@ export function normalizeFoodEquivalence(payload = {}) {
   };
 }
 
-export { DAY_KEYS, MEAL_KEYS };
+export { ACTIVITY_SECTION_KEYS, DAY_KEYS, MEAL_KEYS };

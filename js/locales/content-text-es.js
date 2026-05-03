@@ -46,6 +46,14 @@ export default {
       description: "Press banca para fuerza de tren superior.",
       technique: "Escapulas firmes y apoyo estable de los pies.",
     },
+    barbell_bench_press: {
+      description: "Press banca con barra.",
+      technique: "Escapulas firmes y barra estable sobre el pecho.",
+    },
+    dumbbell_bench_press: {
+      description: "Press banca con mancuernas.",
+      technique: "Baja con control y empuja manteniendo ambos lados simetricos.",
+    },
     incline_press: {
       description: "Press inclinado para pecho y hombro.",
       technique: "Empuja con control y sin rebotes.",
@@ -53,6 +61,14 @@ export default {
     barbell_row: {
       description: "Remo horizontal para espalda.",
       technique: "Tronco firme y traccion hacia costillas bajas.",
+    },
+    machine_high_row: {
+      description: "Remo alto en maquina.",
+      technique: "Tira hacia el torso alto con pecho estable.",
+    },
+    seated_low_row: {
+      description: "Remo bajo en maquina.",
+      technique: "Lleva los codos atras sin perder la postura.",
     },
     squat: {
       description: "Sentadilla bilateral de fuerza.",
@@ -65,6 +81,14 @@ export default {
     lunges: {
       description: "Zancadas para tren inferior.",
       technique: "Desciende con control y reparte el peso.",
+    },
+    leg_extension: {
+      description: "Extension de cuadriceps.",
+      technique: "Extiende las rodillas sin rebote y controla la bajada.",
+    },
+    leg_curl: {
+      description: "Curl femoral.",
+      technique: "Flexiona las rodillas sin despegar la cadera del apoyo.",
     },
     plank: {
       description: "Plancha isometrica de core.",
@@ -90,6 +114,10 @@ export default {
       description: "Aperturas con mancuernas.",
       technique: "Brazos ligeramente flexionados, movimiento de arco.",
     },
+    chest_fly: {
+      description: "Aperturas de pecho.",
+      technique: "Abre y cierra con control manteniendo el pecho estable.",
+    },
     dips: {
       description: "Fondos para pecho y triceps.",
       technique: "Baja controladamente, codos alineados.",
@@ -101,6 +129,14 @@ export default {
     lat_pulldown: {
       description: "Polea alta para espalda.",
       technique: "Tira hacia el pecho manteniendo los codos abiertos.",
+    },
+    behind_neck_pulldown: {
+      description: "Jalon a nuca.",
+      technique: "Desciende con control sin forzar el cuello.",
+    },
+    cable_pullover: {
+      description: "Pull-over en polea.",
+      technique: "Brazos casi extendidos, lleva la barra hacia los muslos.",
     },
     dumbbell_row: {
       description: "Remo unilateral con mancuerna.",
@@ -114,9 +150,25 @@ export default {
       description: "Press militar de pie.",
       technique: "Presiona hacia arriba manteniendo el core tenso.",
     },
+    machine_shoulder_press: {
+      description: "Press de hombro en maquina.",
+      technique: "Empuja sin bloquear de golpe y manteniendo el cuello relajado.",
+    },
+    dumbbell_shoulder_press: {
+      description: "Press de hombro con mancuernas.",
+      technique: "Sube y baja con control sin arquear la espalda.",
+    },
     lateral_raise: {
       description: "Elevacion lateral de hombros.",
       technique: "Brazos ligeramente flexionados, sube hasta hombro.",
+    },
+    front_raise: {
+      description: "Elevaciones frontales.",
+      technique: "Sube los brazos hasta la altura del hombro sin balanceo.",
+    },
+    rear_delt_pec_deck: {
+      description: "Deltoides posterior en maquina mariposa.",
+      technique: "Abre con control y mantiene el pecho estable.",
     },
     bicep_curl: {
       description: "Curl de biceps.",
@@ -205,6 +257,10 @@ export default {
     road_cycling: {
       description: "Ciclismo en ruta.",
       technique: "Mantiene cadencia constante y respiracion profunda.",
+    },
+    stationary_bike: {
+      description: "Bicicleta estatica.",
+      technique: "Pedalea con cadencia estable y hombros relajados.",
     },
     mountain_biking: {
       description: "Mountain bike.",
@@ -304,21 +360,29 @@ export default {
     },
   },
   routines: {
-    activity_gymfullbody_4c: {
-      label: "Gym cuerpo completo",
-      description: "Sesion de fuerza global con bloque de movilidad para lunes y jueves.",
+    activity_descanso: {
+      label: "Descanso",
+      description: "8000 pasos a ritmo fijo, sin bloque extra.",
     },
-    activity_rest_1a: {
-      label: "Descanso y movilidad",
-      description: "Dia de menor carga con pasos y recuperacion para martes y viernes.",
+    activity_recuperacion: {
+      label: "Recuperacion",
+      description: "8000 pasos mas 10 minutos de estiramientos.",
     },
-    activity_gymlegs_3c: {
-      label: "Gym pierna",
-      description: "Sesion dominante de tren inferior con recuperacion ligera para sabado.",
+    activity_fuerza_a: {
+      label: "Fuerza A",
+      description: "Fuerza de torso con eliptica, carrera y plancha.",
     },
-    activity_cardio_1a: {
-      label: "Dia cardio",
-      description: "Objetivo de pasos mas una sesion principal de cardio para miercoles y domingo.",
+    activity_fuerza_b: {
+      label: "Fuerza B",
+      description: "Sesion mixta con bici estatica, torso, pierna y core.",
+    },
+    activity_fuerza_c: {
+      label: "Fuerza C",
+      description: "Sesion de torso con escaleras, biceps y deltoides posterior.",
+    },
+    activity_spinning: {
+      label: "Spinning",
+      description: "8000 pasos mas una clase de spinning de 45 minutos.",
     },
   },
 };

@@ -4,6 +4,101 @@ import {
   toNumber,
 } from "../shared/number-utils.js";
 
+const TARGET_STATUS_STEPS = [
+  { limit: 5, status: "ok", relationKey: "on_target" },
+  { limit: 15, status: "warning" },
+  { limit: 30, status: "danger" },
+];
+
+const MIN_STATUS_STEPS = [
+  { threshold: 1, status: "ok", relationKey: "on_target" },
+  { threshold: 0.9, status: "warning", relationKey: "below_min" },
+  { threshold: 0.75, status: "danger", relationKey: "below_min" },
+];
+
+const MAX_STATUS_STEPS = [
+  { threshold: 1, status: "ok", relationKey: "on_target" },
+  { threshold: 1.1, status: "warning", relationKey: "above_max" },
+  { threshold: 1.25, status: "danger", relationKey: "above_max" },
+];
+
+const NUTRITION_TARGET_CHECKS = [
+  {
+    metricKey: "kcal",
+    actual: (value) => toNumber(value.totals?.kcal, 0),
+    target: (value) => toNumber(value.kcal, 0),
+  },
+  {
+    metricKey: "protein",
+    actual: (value) => toNumber(value.totals?.protein, 0),
+    target: (value) => toNumber(value.protein, 0),
+  },
+  {
+    metricKey: "carbs",
+    actual: (value) => toNumber(value.totals?.carbs, 0),
+    target: (value) => toNumber(value.carbs, 0),
+  },
+  {
+    metricKey: "fat",
+    actual: (value) => toNumber(value.totals?.fat, 0),
+    target: (value) => toNumber(value.fat, 0),
+  },
+  {
+    metricKey: "hydration",
+    actual: (value) => toNumber(value.totals?.hydrationTotalMl, 0),
+    target: (value) => toNumber(value.hydration?.ml, 0),
+  },
+];
+
+const NUTRITION_MIN_CHECKS = [
+  {
+    metricKey: "fiber",
+    actual: (value) => toNumber(value.totals?.fiber, 0),
+    target: (value) => toNumber(value.secondary?.fiberMinG, 0),
+  },
+];
+
+const NUTRITION_MAX_CHECKS = [
+  {
+    metricKey: "sugar",
+    actual: (value) => toNumber(value.totals?.sugar, 0),
+    target: (value) => toNumber(value.secondary?.sugarMaxG, 0),
+  },
+  {
+    metricKey: "saturatedFat",
+    actual: (value) => toNumber(value.totals?.saturatedFat, 0),
+    target: (value) => toNumber(value.secondary?.saturatedFatMaxG, 0),
+  },
+  {
+    metricKey: "saltG",
+    actual: (value) => toNumber(value.totals?.saltG, 0),
+    target: (value) => toNumber(value.secondary?.saltMaxG, 0),
+  },
+  {
+    metricKey: "processingScore",
+    actual: (value) => toNumber(value.totals?.processingScore, 0),
+    target: (value) => toNumber(value.secondary?.processingMaxScore, 0),
+  },
+];
+
+const ACTIVITY_TARGET_CHECKS = [
+  {
+    metricKey: "activityKcal",
+    actual: (value) => toNumber(value.activity?.activityKcal, 0),
+    target: (value) => toNumber(value.activity?.targetKcal, 0),
+  },
+  {
+    metricKey: "metAvg",
+    actual: (value) => toNumber(value.activity?.metAvg, 0),
+    target: (value) => toNumber(value.activity?.metTarget, 0),
+  },
+  {
+    metricKey: "intensityAvg",
+    actual: (value) => toNumber(value.activity?.intensityAvg, 0),
+    target: (value) => toNumber(value.activity?.intensityTarget, 0),
+  },
+];
+
 function createCheck(metricKey, actual, target, status, relationKey) {
   return {
     actual: round(actual, 2),
@@ -14,122 +109,43 @@ function createCheck(metricKey, actual, target, status, relationKey) {
   };
 }
 
-function assessTargetMetric(metricKey, actual, target) {
+function assessMetric(metricKey, actual, target, mode) {
   if (!target) {
     return createCheck(metricKey, actual, target, "none", "none");
   }
 
-  const deviationPct = Math.abs(percentageDeviation(actual, target));
-  const relationKey =
-    actual < target ? "below_target" : actual > target ? "above_target" : "on_target";
+  if (mode === "target") {
+    const deviationPct = Math.abs(percentageDeviation(actual, target));
+    const relationKey =
+      actual < target
+        ? "below_target"
+        : actual > target
+          ? "above_target"
+          : "on_target";
+    const step = TARGET_STATUS_STEPS.find((entry) => deviationPct <= entry.limit);
 
-  if (deviationPct <= 5) {
-    return createCheck(metricKey, actual, target, "ok", "on_target");
-  }
-
-  if (deviationPct <= 15) {
-    return createCheck(metricKey, actual, target, "warning", relationKey);
-  }
-
-  if (deviationPct <= 30) {
-    return createCheck(metricKey, actual, target, "danger", relationKey);
-  }
-
-  return createCheck(metricKey, actual, target, "critical", relationKey);
-}
-
-function assessMinMetric(metricKey, actual, target) {
-  if (!target) {
-    return createCheck(metricKey, actual, target, "none", "none");
-  }
-
-  if (actual >= target) {
-    return createCheck(metricKey, actual, target, "ok", "on_target");
-  }
-
-  if (actual >= target * 0.9) {
-    return createCheck(metricKey, actual, target, "warning", "below_min");
-  }
-
-  if (actual >= target * 0.75) {
-    return createCheck(metricKey, actual, target, "danger", "below_min");
-  }
-
-  return createCheck(metricKey, actual, target, "critical", "below_min");
-}
-
-function assessMaxMetric(metricKey, actual, target) {
-  if (!target) {
-    return createCheck(metricKey, actual, target, "none", "none");
-  }
-
-  if (actual <= target) {
-    return createCheck(metricKey, actual, target, "ok", "on_target");
-  }
-
-  if (actual <= target * 1.1) {
-    return createCheck(metricKey, actual, target, "warning", "above_max");
-  }
-
-  if (actual <= target * 1.25) {
-    return createCheck(metricKey, actual, target, "danger", "above_max");
-  }
-
-  return createCheck(metricKey, actual, target, "critical", "above_max");
-}
-
-function assessHydrationRange(actual, min, max) {
-  if (!min || !max) {
-    return {
+    return createCheck(
+      metricKey,
       actual,
-      target: { min, max },
-      deviationPct: 0,
-      status: "none",
-      messageKey: "assessment.hydration.none",
-    };
+      target,
+      step?.status ?? "critical",
+      step?.relationKey ?? relationKey,
+    );
   }
 
-  if (actual >= min && actual <= max) {
-    return {
-      actual,
-      target: { min, max },
-      deviationPct: 0,
-      status: "ok",
-      messageKey: "assessment.hydration.within_range",
-    };
-  }
+  const ratio = actual / target;
+  const steps = mode === "min" ? MIN_STATUS_STEPS : MAX_STATUS_STEPS;
+  const step = steps.find((entry) =>
+    mode === "min" ? ratio >= entry.threshold : ratio <= entry.threshold,
+  );
 
-  const nearestBound = actual < min ? min : max;
-  const deviationPct = Math.abs(((actual - nearestBound) / nearestBound) * 100);
-  const relationKey = actual < min ? "below_range" : "above_range";
-
-  if (deviationPct <= 10) {
-    return {
-      actual,
-      target: { min, max },
-      deviationPct: round(deviationPct, 2),
-      status: "warning",
-      messageKey: `assessment.hydration.${relationKey}`,
-    };
-  }
-
-  if (deviationPct <= 25) {
-    return {
-      actual,
-      target: { min, max },
-      deviationPct: round(deviationPct, 2),
-      status: "danger",
-      messageKey: `assessment.hydration.${relationKey}`,
-    };
-  }
-
-  return {
+  return createCheck(
+    metricKey,
     actual,
-    target: { min, max },
-    deviationPct: round(deviationPct, 2),
-    status: "critical",
-    messageKey: `assessment.hydration.${relationKey}`,
-  };
+    target,
+    step?.status ?? "critical",
+    step?.relationKey ?? (mode === "min" ? "below_min" : "above_max"),
+  );
 }
 
 function buildFlag(metricKey, check) {
@@ -148,81 +164,50 @@ function buildFlag(metricKey, check) {
   return `${metricKey}_${check.status}`;
 }
 
+function buildChecks(definitions, source, targets, mode) {
+  return Object.fromEntries(
+    definitions.map(({ metricKey, actual, target }) => [
+      metricKey,
+      assessMetric(metricKey, actual(source), target(targets), mode),
+    ]),
+  );
+}
+
 export function calculateAssessment(options = {}) {
   const nutrition = options.nutrition ?? {};
   const targets = options.targets ?? {};
   const activity = options.activity ?? {};
+
   const nutritionChecks = {
-    kcal: assessTargetMetric("kcal", toNumber(nutrition.totals?.kcal, 0), toNumber(targets.kcal, 0)),
-    protein: assessTargetMetric(
-      "protein",
-      toNumber(nutrition.totals?.protein, 0),
-      toNumber(targets.protein, 0),
+    ...buildChecks(
+      NUTRITION_TARGET_CHECKS,
+      nutrition,
+      targets,
+      "target",
     ),
-    carbs: assessTargetMetric(
-      "carbs",
-      toNumber(nutrition.totals?.carbs, 0),
-      toNumber(targets.carbs, 0),
+    ...buildChecks(
+      NUTRITION_MIN_CHECKS,
+      nutrition,
+      targets,
+      "min",
     ),
-    fat: assessTargetMetric(
-      "fat",
-      toNumber(nutrition.totals?.fat, 0),
-      toNumber(targets.fat, 0),
-    ),
-    fiber: assessMinMetric(
-      "fiber",
-      toNumber(nutrition.totals?.fiber, 0),
-      toNumber(targets.secondary?.fiberMinG, 0),
-    ),
-    sugar: assessMaxMetric(
-      "sugar",
-      toNumber(nutrition.totals?.sugar, 0),
-      toNumber(targets.secondary?.sugarMaxG, 0),
-    ),
-    saturatedFat: assessMaxMetric(
-      "saturatedFat",
-      toNumber(nutrition.totals?.saturatedFat, 0),
-      toNumber(targets.secondary?.saturatedFatMaxG, 0),
-    ),
-    saltG: assessMaxMetric(
-      "saltG",
-      toNumber(nutrition.totals?.saltG, 0),
-      toNumber(targets.secondary?.saltMaxG, 0),
-    ),
-    processingScore: assessMaxMetric(
-      "processingScore",
-      toNumber(nutrition.totals?.processingScore, 0),
-      toNumber(targets.secondary?.processingMaxScore, 0),
-    ),
-    hydration: assessHydrationRange(
-      toNumber(nutrition.totals?.hydrationTotalMl, 0),
-      toNumber(targets.hydration?.minMl, 0),
-      toNumber(targets.hydration?.maxMl, 0),
+    ...buildChecks(
+      NUTRITION_MAX_CHECKS,
+      nutrition,
+      targets,
+      "max",
     ),
   };
 
-  const activityChecks = {
-    steps: assessTargetMetric(
-      "steps",
-      toNumber(activity.steps?.plannedSteps, 0),
-      toNumber(activity.steps?.minDailySteps, 0),
-    ),
-    activityKcal: assessTargetMetric(
-      "activity",
-      toNumber(activity.activity?.activityKcal, 0),
-      toNumber(targets.activity?.targetKcal, 0),
-    ),
-    metAvg: assessTargetMetric(
-      "metAvg",
-      toNumber(activity.activity?.metAvg, 0),
-      toNumber(targets.activity?.metTarget, 0),
-    ),
-    intensityAvg: assessTargetMetric(
-      "intensityAvg",
-      toNumber(activity.activity?.intensityAvg, 0),
-      toNumber(targets.activity?.intensityTarget, 0),
-    ),
-  };
+  const activityChecks = buildChecks(
+    ACTIVITY_TARGET_CHECKS,
+    activity,
+    {
+      walking: activity.walking,
+      activity: targets.activity,
+    },
+    "target",
+  );
 
   const flags = [
     ...Object.entries(nutritionChecks).map(([metricKey, check]) =>
